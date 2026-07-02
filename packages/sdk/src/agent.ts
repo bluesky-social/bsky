@@ -355,7 +355,7 @@ export class Agent extends XrpcClient {
     })
 
     // assemble a map of labeler dids to the interpreted label value definitions
-    const labelDefs = {}
+    const labelDefs: Record<string, InterpretedLabelValueDefinition[]> = {}
     if (labelers.data) {
       for (const labeler of labelers.data
         .views as AppBskyLabelerDefs.LabelerViewDetailed[]) {
@@ -1474,7 +1474,7 @@ export class Agent extends XrpcClient {
       pinned: string[],
     ) => { saved: string[]; pinned: string[] },
   ): Promise<{ saved: string[]; pinned: string[] }> {
-    let res
+    let res: { saved: string[]; pinned: string[] } | undefined
     await this.updatePreferences((prefs) => {
       const feedsPref = prefs.findLast(predicate.isValidSavedFeedsPref) || {
         $type: 'app.bsky.actor.defs#savedFeedsPref',
@@ -1490,7 +1490,8 @@ export class Agent extends XrpcClient {
         .filter((pref) => !AppBskyActorDefs.isSavedFeedsPref(pref))
         .concat(feedsPref)
     })
-    return res
+    // the updatePreferences callback above always runs and assigns res
+    return res!
   }
 
   private async updateSavedFeedsV2Preferences(

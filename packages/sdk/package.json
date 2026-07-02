@@ -1,25 +1,15 @@
 {
-  "name": "@atproto/api",
-  "version": "0.20.25",
+  "name": "@bsky.app/sdk",
+  "version": "0.0.0",
   "license": "MIT",
-  "description": "Client library for atproto and Bluesky",
-  "keywords": [
-    "atproto",
-    "bluesky",
-    "api"
-  ],
-  "homepage": "https://atproto.com",
+  "description": "Client library for Bluesky",
+  "keywords": ["atproto", "bluesky", "api", "sdk"],
+  "homepage": "https://bsky.app",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bluesky-social/atproto",
-    "directory": "packages/api"
+    "url": "https://github.com/bluesky-social/bsky",
+    "directory": "packages/sdk"
   },
-  "files": [
-    "./dist",
-    "./OAUTH.md",
-    "./README.md",
-    "./CHANGELOG.md"
-  ],
   "type": "module",
   "exports": {
     ".": {
@@ -27,31 +17,25 @@
       "default": "./dist/index.js"
     }
   },
+  "files": ["dist", "OAUTH.md", "README.md", "CHANGELOG.md"],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12.0"
   },
   "dependencies": {
-    "@atproto/common-web": "workspace:^",
-    "@atproto/lexicon": "workspace:^",
-    "@atproto/syntax": "workspace:^",
-    "@atproto/xrpc": "workspace:^",
+    "@atproto/common-web": "^0.5.3",
+    "@atproto/lexicon": "^0.7.4",
+    "@atproto/syntax": "^0.6.4",
+    "@atproto/xrpc": "^0.8.3",
     "await-lock": "^3.0.0",
     "multiformats": "^13.0.0",
     "tlds": "^1.234.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@atproto/lex-cli": "workspace:^",
-    "@jest/globals": "^28.1.3",
-    "http-terminator": "^3.2.0",
-    "jest": "^30.0.0",
-    "prettier": "^3.2.5"
+    "prettier": "^3.9.4"
   },
   "scripts": {
-    "codegen:lex": "lex gen-api --yes ./src/client ../../lexicons/com/atproto/*/* ../../lexicons/app/bsky/*/* ../../lexicons/chat/bsky/*/* ../../lexicons/tools/ozone/*/* ../../lexicons/com/germnetwork/*",
-    "codegen:code": "node ./scripts/generate-code.mjs",
-    "prebuild": "pnpm run codegen:code && if [ ! -f ./src/client/index.ts ] || [ -n \"$(find ../../lexicons -name '*.json' -newer ./src/client/index.ts -type f -print -quit)\" ]; then pnpm run codegen:lex; fi",
-    "build": "tsgo --build tsconfig.build.json",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "codegen:labels": "node ./scripts/generate-code.mjs",
+    "build": "tsgo --build tsconfig.build.json"
   }
 }

@@ -1,10 +1,11 @@
 import { AppBskyGraphDefs } from '../client/index.js'
-import { LABELS } from './const/labels.js'
+import { KnownLabelValue, LABELS } from './const/labels.js'
 import { MuteWordMatch } from './mutewords.js'
 import {
   BLOCK_BEHAVIOR,
   CUSTOM_LABEL_VALUE_RE,
   HIDE_BEHAVIOR,
+  InterpretedLabelValueDefinition,
   Label,
   LabelPreference,
   LabelTarget,
@@ -250,12 +251,15 @@ export class ModerationDecision {
   }
 
   addLabel(target: LabelTarget, label: Label, opts: ModerationOpts) {
-    // look up the label definition
+    // look up the label definition (LABELS lookup may miss: label.val is an
+    // arbitrary string while LABELS is keyed by KnownLabelValue)
+    const knownLabelDef: InterpretedLabelValueDefinition | undefined =
+      LABELS[label.val as KnownLabelValue]
     const labelDef = CUSTOM_LABEL_VALUE_RE.test(label.val)
       ? opts.labelDefs?.[label.src]?.find(
           (def) => def.identifier === label.val,
-        ) || LABELS[label.val]
-      : LABELS[label.val]
+        ) || knownLabelDef
+      : knownLabelDef
     if (!labelDef) {
       // ignore labels we don't understand
       return

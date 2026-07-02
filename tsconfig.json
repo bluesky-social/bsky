@@ -1,4 +1,7 @@
 {
   "include": [],
-  "references": [{ "path": "./packages/internal-smoke-test" }],
+  "references": [
+    { "path": "./packages/internal-smoke-test" },
+    { "path": "./packages/sdk" },
+  ],
 }
