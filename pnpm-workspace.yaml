@@ -1,0 +1,6 @@
+packages:
+  - 'packages/*'
+  - 'services/*'
+allowBuilds:
+  rolldown: false
+  unrs-resolver: true

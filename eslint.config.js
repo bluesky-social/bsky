@@ -1,0 +1,60 @@
+import js from '@eslint/js'
+import prettier from 'eslint-config-prettier'
+import { flatConfigs as importX } from 'eslint-plugin-import-x'
+import n from 'eslint-plugin-n'
+import { config, configs as tseslint } from 'typescript-eslint'
+
+export default config(
+  {
+    ignores: ['**/dist/', '**/build/', '**/coverage/', '**/node_modules/'],
+  },
+  js.configs.recommended,
+  ...tseslint.recommended,
+  importX.recommended,
+  importX.typescript,
+  {
+    plugins: { n },
+    settings: {
+      'import-x/internal-regex': '^@bsky\\.app/',
+      'import-x/resolver': {
+        typescript: true,
+      },
+    },
+    rules: {
+      eqeqeq: ['error', 'always', { null: 'ignore' }],
+      'no-var': 'error',
+      'prefer-const': 'warn',
+      'n/prefer-node-protocol': 'error',
+      'import-x/order': [
+        'error',
+        {
+          alphabetize: { order: 'asc', orderImportKind: 'asc' },
+          named: true,
+          'newlines-between': 'never',
+          groups: [
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            ['index', 'sibling'],
+            'object',
+          ],
+        },
+      ],
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'all',
+          caughtErrorsIgnorePattern: '^_|^err$|^error$',
+          destructuredArrayIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
+  },
+  prettier,
+)

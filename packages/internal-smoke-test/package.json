@@ -1,0 +1,23 @@
+{
+  "name": "@bsky.app/internal-smoke-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsgo --build tsconfig.build.json",
+    "test": "vitest --run"
+  }
+}

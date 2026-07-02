@@ -1,0 +1,66 @@
+{
+  "name": "@bsky.app/monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bluesky-social/bsky.git"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.12.0",
+      "onFail": "error"
+    },
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.5.3",
+      "onFail": "error"
+    }
+  },
+  "scripts": {
+    "build": "pnpm --recursive --sort --stream run build",
+    "typecheck": "tsgo --build tsconfig.json",
+    "dev:ts": "tsgo --build tsconfig.json --preserveWatchOutput --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest --run",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
+    "changeset": "changeset",
+    "version-packages": "changeset version && git add .",
+    "release": "pnpm build && changeset publish",
+    "prepare": "is-ci || husky"
+  },
+  "lint-staged": {
+    "*{.js,.jsx,.ts,.tsx,.css,.md,.json,.yml,.yaml}": [
+      "prettier --cache --write --ignore-unknown"
+    ]
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.0",
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.0",
+    "@typescript/native-preview": "7.0.0-dev.20260701.1",
+    "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^10.6.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-n": "^18.2.1",
+    "husky": "^9.1.7",
+    "is-ci": "^4.1.0",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.4",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
+    "vitest": "^4.1.9"
+  }
+}
