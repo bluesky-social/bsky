@@ -303,9 +303,7 @@ export interface SkeletonFeedPost {
   $type?: 'app.bsky.feed.defs#skeletonFeedPost'
   post: string
   reason?:
-    | $Typed<SkeletonReasonRepost>
-    | $Typed<SkeletonReasonPin>
-    | { $type: string }
+    $Typed<SkeletonReasonRepost> | $Typed<SkeletonReasonPin> | { $type: string }
   /** Context that will be passed through to client and may be passed to feed generator back alongside interactions. */
   feedContext?: string
 }

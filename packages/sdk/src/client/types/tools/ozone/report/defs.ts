@@ -170,12 +170,7 @@ export interface ReportView {
   eventId: number
   /** Current status of the report */
   status:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
   subject: ToolsOzoneModerationDefs.SubjectView
   reportType: ComAtprotoModerationDefs.ReasonType
   /** DID of the user who made the report */
@@ -219,12 +214,7 @@ export interface QueueActivity {
   $type?: 'tools.ozone.report.defs#queueActivity'
   /** The report's status before this activity. Populated automatically from the report row; not required in input. */
   previousStatus?:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
 }
 
 const hashQueueActivity = 'queueActivity'
@@ -242,12 +232,7 @@ export interface AssignmentActivity {
   $type?: 'tools.ozone.report.defs#assignmentActivity'
   /** The report's status before this activity. Populated automatically from the report row; not required in input. */
   previousStatus?:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
 }
 
 const hashAssignmentActivity = 'assignmentActivity'
@@ -265,12 +250,7 @@ export interface EscalationActivity {
   $type?: 'tools.ozone.report.defs#escalationActivity'
   /** The report's status before this activity. Populated automatically from the report row; not required in input. */
   previousStatus?:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
 }
 
 const hashEscalationActivity = 'escalationActivity'
@@ -288,12 +268,7 @@ export interface CloseActivity {
   $type?: 'tools.ozone.report.defs#closeActivity'
   /** The report's status before this activity. Populated automatically from the report row; not required in input. */
   previousStatus?:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
 }
 
 const hashCloseActivity = 'closeActivity'
@@ -311,12 +286,7 @@ export interface ReopenActivity {
   $type?: 'tools.ozone.report.defs#reopenActivity'
   /** The report's status before this activity. Populated automatically from the report row; not required in input. */
   previousStatus?:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
 }
 
 const hashReopenActivity = 'reopenActivity'

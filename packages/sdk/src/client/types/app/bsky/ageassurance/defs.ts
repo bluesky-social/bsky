@@ -18,11 +18,7 @@ const id = 'app.bsky.ageassurance.defs'
 export type Access = 'unknown' | 'none' | 'safe' | 'full' | (string & {})
 /** The status of the Age Assurance process. */
 export type Status =
-  | 'unknown'
-  | 'pending'
-  | 'assured'
-  | 'blocked'
-  | (string & {})
+  'unknown' | 'pending' | 'assured' | 'blocked' | (string & {})
 
 /** The user's computed Age Assurance state. */
 export interface State {

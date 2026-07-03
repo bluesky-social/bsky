@@ -21,10 +21,7 @@ const id = 'chat.bsky.convo.defs'
 
 export type ConvoKind = 'direct' | 'group' | (string & {})
 export type ConvoLockStatus =
-  | 'unlocked'
-  | 'locked'
-  | 'locked-permanently'
-  | (string & {})
+  'unlocked' | 'locked' | 'locked-permanently' | (string & {})
 export type ConvoStatus = 'request' | 'accepted' | (string & {})
 
 export interface ConvoRef {

@@ -23,12 +23,7 @@ export type QueryParams = {
   reportTypes?: string[]
   /** Filter by report status. */
   status:
-    | 'open'
-    | 'closed'
-    | 'escalated'
-    | 'queued'
-    | 'assigned'
-    | (string & {})
+    'open' | 'closed' | 'escalated' | 'queued' | 'assigned' | (string & {})
   /** Filter by subject DID or AT-URI. */
   subject?: string
   /** Filter to reports where the subject is this DID or any record owned by this DID. Unlike `subject` (which scopes to a specific account or record), this returns all reports tied to the DID across both account-level and record-level subjects. */

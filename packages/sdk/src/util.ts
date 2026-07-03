@@ -1,5 +1,5 @@
-import { z } from 'zod'
 import { AtUri } from '@atproto/syntax'
+import { z } from 'zod'
 import { AppBskyActorDefs } from './client/index.js'
 import { Nux } from './client/types/app/bsky/actor/defs.js'
 

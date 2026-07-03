@@ -166,12 +166,7 @@ export interface SubjectStatusView {
   accountStrike?: AccountStrike
   /** Current age assurance state of the subject. */
   ageAssuranceState?:
-    | 'pending'
-    | 'assured'
-    | 'unknown'
-    | 'reset'
-    | 'blocked'
-    | (string & {})
+    'pending' | 'assured' | 'unknown' | 'reset' | 'blocked' | (string & {})
   /** Whether or not the last successful update to age assurance was made by the user or admin. */
   ageAssuranceUpdatedBy?: 'admin' | 'user' | (string & {})
 }

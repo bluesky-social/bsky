@@ -445,12 +445,7 @@ export interface ThreadViewPref {
   $type?: 'app.bsky.actor.defs#threadViewPref'
   /** Sorting mode for threads. */
   sort?:
-    | 'oldest'
-    | 'newest'
-    | 'most-likes'
-    | 'random'
-    | 'hotness'
-    | (string & {})
+    'oldest' | 'newest' | 'most-likes' | 'random' | 'hotness' | (string & {})
 }
 
 const hashThreadViewPref = 'threadViewPref'
@@ -673,8 +668,7 @@ export interface PostInteractionSettingsPref {
   )[]
   /** Matches postgate record. List of rules defining who can embed this users posts. If value is an empty array or is undefined, no particular rules apply and anyone can embed. */
   postgateEmbeddingRules?: (
-    | $Typed<AppBskyFeedPostgate.DisableRule>
-    | { $type: string }
+    $Typed<AppBskyFeedPostgate.DisableRule> | { $type: string }
   )[]
 }
 

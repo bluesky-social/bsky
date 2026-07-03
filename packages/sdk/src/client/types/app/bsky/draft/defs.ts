@@ -49,8 +49,7 @@ export interface Draft {
   langs?: string[]
   /** Embedding rules for the postgates to be created when this draft is published. */
   postgateEmbeddingRules?: (
-    | $Typed<AppBskyFeedPostgate.DisableRule>
-    | { $type: string }
+    $Typed<AppBskyFeedPostgate.DisableRule> | { $type: string }
   )[]
   /** Allow-rules for the threadgate to be created when this draft is published. */
   threadgateAllow?: (
@@ -165,8 +164,7 @@ export function validateDraftEmbedGallery<V>(v: V) {
 }
 
 export type DraftEmbedGalleryItems = (
-  | $Typed<DraftEmbedImage>
-  | { $type: string }
+  $Typed<DraftEmbedImage> | { $type: string }
 )[]
 
 export interface DraftEmbedImage {

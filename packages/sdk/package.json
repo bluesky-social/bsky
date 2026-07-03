@@ -3,7 +3,12 @@
   "version": "0.0.0",
   "license": "MIT",
   "description": "Client library for Bluesky",
-  "keywords": ["atproto", "bluesky", "api", "sdk"],
+  "keywords": [
+    "atproto",
+    "bluesky",
+    "api",
+    "sdk"
+  ],
   "homepage": "https://bsky.app",
   "repository": {
     "type": "git",
@@ -17,7 +22,12 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "OAUTH.md", "README.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "OAUTH.md",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=22.12.0"
   },

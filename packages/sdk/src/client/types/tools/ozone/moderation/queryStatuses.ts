@@ -92,12 +92,7 @@ export type QueryParams = {
   minStrikeCount?: number
   /** If specified, only subjects with the given age assurance state will be returned. */
   ageAssuranceState?:
-    | 'pending'
-    | 'assured'
-    | 'unknown'
-    | 'reset'
-    | 'blocked'
-    | (string & {})
+    'pending' | 'assured' | 'unknown' | 'reset' | 'blocked' | (string & {})
 }
 export type InputSchema = undefined
 

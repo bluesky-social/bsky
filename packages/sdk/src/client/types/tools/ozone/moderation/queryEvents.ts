@@ -54,12 +54,7 @@ export type QueryParams = {
   batchId?: string
   /** If specified, only events where the age assurance state matches the given value are returned */
   ageAssuranceState?:
-    | 'pending'
-    | 'assured'
-    | 'unknown'
-    | 'reset'
-    | 'blocked'
-    | (string & {})
+    'pending' | 'assured' | 'unknown' | 'reset' | 'blocked' | (string & {})
   /** If specified, only events where strikeCount value is set are returned. */
   withStrike?: boolean
   cursor?: string

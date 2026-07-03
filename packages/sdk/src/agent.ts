@@ -1,4 +1,3 @@
-import AwaitLock from 'await-lock'
 import { TID, retry } from '@atproto/common-web'
 import { AtUri, DidString, ensureValidDidRegex } from '@atproto/syntax'
 import {
@@ -7,6 +6,7 @@ import {
   XrpcClient,
   buildFetchHandler,
 } from '@atproto/xrpc'
+import AwaitLock from 'await-lock'
 import {
   AppBskyActorDefs,
   AppBskyActorProfile,
@@ -556,7 +556,7 @@ export class Agent extends XrpcClient {
         saved: undefined,
         pinned: undefined,
       },
-      // @ts-ignore populating below
+      // @ts-expect-error populating below
       savedFeeds: undefined,
       feedViewPrefs: {
         home: {

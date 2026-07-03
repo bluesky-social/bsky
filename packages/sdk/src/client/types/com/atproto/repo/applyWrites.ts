@@ -31,9 +31,7 @@ export interface InputSchema {
 export interface OutputSchema {
   commit?: ComAtprotoRepoDefs.CommitMeta
   results?: (
-    | $Typed<CreateResult>
-    | $Typed<UpdateResult>
-    | $Typed<DeleteResult>
+    $Typed<CreateResult> | $Typed<UpdateResult> | $Typed<DeleteResult>
   )[]
 }
 

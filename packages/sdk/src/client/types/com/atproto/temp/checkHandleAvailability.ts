@@ -29,9 +29,7 @@ export interface OutputSchema {
   /** Echo of the input handle. */
   handle: string
   result:
-    | $Typed<ResultAvailable>
-    | $Typed<ResultUnavailable>
-    | { $type: string }
+    $Typed<ResultAvailable> | $Typed<ResultUnavailable> | { $type: string }
 }
 
 export interface CallOptions {

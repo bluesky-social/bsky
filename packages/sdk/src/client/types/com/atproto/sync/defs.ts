@@ -15,9 +15,4 @@ const is$typed = _is$typed,
 const id = 'com.atproto.sync.defs'
 
 export type HostStatus =
-  | 'active'
-  | 'idle'
-  | 'offline'
-  | 'throttled'
-  | 'banned'
-  | (string & {})
+  'active' | 'idle' | 'offline' | 'throttled' | 'banned' | (string & {})
