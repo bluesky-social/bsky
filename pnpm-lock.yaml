@@ -266,36 +266,18 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@atproto/common-web':
-        specifier: ^0.5.3
-        version: 0.5.3
       '@atproto/lex-client':
         specifier: ^0.2.1
         version: 0.2.1
       '@atproto/lex-schema':
         specifier: ^0.1.6
         version: 0.1.6
-      '@atproto/lexicon':
-        specifier: ^0.7.4
-        version: 0.7.4
       '@atproto/syntax':
         specifier: ^0.6.4
         version: 0.6.4
-      '@atproto/xrpc':
-        specifier: ^0.8.3
-        version: 0.8.3
-      await-lock:
-        specifier: ^3.0.0
-        version: 3.0.0
-      multiformats:
-        specifier: ^13.0.0
-        version: 13.4.2
       tlds:
         specifier: ^1.234.0
         version: 1.261.0
-      zod:
-        specifier: ^3.23.8
-        version: 3.25.76
     devDependencies:
       '@atproto/lex':
         specifier: ^0.1.7
@@ -386,20 +368,12 @@ packages:
     engines: {node: '>=22'}
     hasBin: true
 
-  '@atproto/lexicon@0.7.4':
-    resolution: {integrity: sha512-ulk4RGwMBp4vbkTOZcIwZJeTEPlj3PImOnx9TqxSxMDnBdySxarpd0Aprg7+iAvGyKTsMcrYHpeoLukZaquk0A==}
-    engines: {node: '>=22'}
-
   '@atproto/repo@0.10.3':
     resolution: {integrity: sha512-Zk4xWtE/Mrf1+dAUwJLnWbeYwnvLMXF102mewzhPwsVkU63LsYO6nP9e5d4nqW/ClFDg9WKXo8zAv4792OnZNw==}
     engines: {node: '>=22'}
 
   '@atproto/syntax@0.6.4':
     resolution: {integrity: sha512-ELgpShRGMF65cvLXcoMCZFL0HBzy67yz/Nlhox3yOtTh120B09KjjvZYXhMysVog3nUJqv2EW5rf1VRYCeM/hw==}
-    engines: {node: '>=22'}
-
-  '@atproto/xrpc@0.8.3':
-    resolution: {integrity: sha512-0gUGN71+bSqV3PI5U4cQ4fdnw4nI0eD6czHDQ6jB7hMYBwNcJpwAyfA9W+C1G1wayIvP0SIap/M0H/pSKDWFIQ==}
     engines: {node: '>=22'}
 
   '@babel/helper-string-parser@7.29.7':
@@ -1067,9 +1041,6 @@ packages:
   atomic-sleep@1.0.0:
     resolution: {integrity: sha512-kNOjDqAh7px0XWNI+4QbzoiR/nTkHAWNud2uvnJquD1/x5a7EQZMJT0AczqK0Qn67oY/TTQ1LbUKajZpp3I9tQ==}
     engines: {node: '>=8.0.0'}
-
-  await-lock@3.0.0:
-    resolution: {integrity: sha512-eO6fLiSnrJrMdjWMNK8zbVRXPs2TKJg78iKZd9wDpN3na5tcoV6EoeiOlMgk2QaAQ1gIrK1YuMsJHXWqz89tSA==}
 
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
@@ -2289,13 +2260,6 @@ snapshots:
       tslib: 2.8.1
       yargs: 18.0.0
 
-  '@atproto/lexicon@0.7.4':
-    dependencies:
-      '@atproto/common-web': 0.5.3
-      '@atproto/syntax': 0.6.4
-      multiformats: 13.4.2
-      zod: 3.25.76
-
   '@atproto/repo@0.10.3':
     dependencies:
       '@atproto/common': 0.6.5
@@ -2311,11 +2275,6 @@ snapshots:
     dependencies:
       iso-datestring-validator: 2.2.2
       tslib: 2.8.1
-
-  '@atproto/xrpc@0.8.3':
-    dependencies:
-      '@atproto/lexicon': 0.7.4
-      zod: 3.25.76
 
   '@babel/helper-string-parser@7.29.7': {}
 
@@ -3014,8 +2973,6 @@ snapshots:
       js-tokens: 10.0.0
 
   atomic-sleep@1.0.0: {}
-
-  await-lock@3.0.0: {}
 
   balanced-match@4.0.4: {}
 

@@ -49,16 +49,10 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@atproto/common-web": "^0.5.3",
     "@atproto/lex-client": "^0.2.1",
     "@atproto/lex-schema": "^0.1.6",
-    "@atproto/lexicon": "^0.7.4",
     "@atproto/syntax": "^0.6.4",
-    "@atproto/xrpc": "^0.8.3",
-    "await-lock": "^3.0.0",
-    "multiformats": "^13.0.0",
-    "tlds": "^1.234.0",
-    "zod": "^3.23.8"
+    "tlds": "^1.234.0"
   },
   "devDependencies": {
     "@atproto/lex": "^0.1.7",
@@ -67,7 +61,8 @@
   },
   "scripts": {
     "codegen": "lex build --clear --index-file --out ./src/lexicons",
-    "prebuild": "pnpm run codegen",
+    "codegen:labels": "node ./scripts/generate-code.mjs",
+    "prebuild": "pnpm run codegen && pnpm run codegen:labels",
     "build": "tsgo --build tsconfig.build.json",
     "test": "vitest run"
   }
