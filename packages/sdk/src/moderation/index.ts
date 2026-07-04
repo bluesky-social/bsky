@@ -22,6 +22,16 @@ export {
   interpretLabelValueDefinition,
   interpretLabelValueDefinitions,
 } from './util.js'
+export { DEFAULT_LABEL_SETTINGS, LABELS } from './const/labels.js'
+export type { KnownLabelValue } from './const/labels.js'
+export type {
+  InterpretedLabelValueDefinition,
+  LabelPreference,
+  ModerationBehavior,
+  ModerationCause,
+  ModerationOpts,
+  ModerationPrefs,
+} from './types.js'
 
 export function moderateProfile(
   subject: ModerationSubjectProfile,

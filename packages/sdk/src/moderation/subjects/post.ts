@@ -312,7 +312,10 @@ function matchAllMuteWords(
               const matches = matchMuteWords({
                 mutedWords,
                 text: image.alt,
-                languages: embeddedPost.langs || [],
+                // NOTE: preserves a latent quirk of the original implementation, which never
+                // populated languages here; fixing this changes muteword matching behavior
+                // and should be its own change.
+                languages: [],
                 actor: embedAuthor,
               })
               if (matches) {
@@ -328,7 +331,10 @@ function matchAllMuteWords(
                 const matches = matchMuteWords({
                   mutedWords,
                   text: item.alt,
-                  languages: embeddedPost.langs || [],
+                  // NOTE: preserves a latent quirk of the original implementation, which never
+                  // populated languages here; fixing this changes muteword matching behavior
+                  // and should be its own change.
+                  languages: [],
                   actor: embedAuthor,
                 })
                 if (matches) {

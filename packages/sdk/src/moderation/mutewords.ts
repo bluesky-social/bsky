@@ -60,8 +60,9 @@ export function matchMuteWords({
     .concat(
       (facets || []).flatMap((facet) =>
         facet.features
-          .filter((f): f is $Typed<app.bsky.richtext.facet.Tag> =>
-            app.bsky.richtext.facet.tag.isTypeOf(f),
+          .filter(
+            (f): f is $Typed<app.bsky.richtext.facet.Tag> =>
+              f.$type === app.bsky.richtext.facet.tag.$type,
           )
           .map((tag) => tag.tag),
       ),

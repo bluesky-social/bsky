@@ -111,7 +111,7 @@ export function interpretLabelValueDefinitions(
 ): InterpretedLabelValueDefinition[] {
   return (labelerView.policies?.labelValueDefinitions || [])
     .filter((v): v is com.atproto.label.defs.LabelValueDefinition =>
-      com.atproto.label.defs.labelValueDefinition.isTypeOf(v),
+      com.atproto.label.defs.labelValueDefinition.matches(v),
     )
     .map((labelValDef) =>
       interpretLabelValueDefinition(labelValDef, labelerView.creator.did),
