@@ -15,7 +15,6 @@ export default config(
       'packages/sdk/src/lexicons/',
       // temporarily excluded during sdk makeover (tasks 4-6)
       'packages/sdk/src/age-assurance.ts',
-      'packages/sdk/src/moderation/',
       'packages/sdk/src/rich-text/',
       'packages/sdk/src/utils-legacy.ts',
     ],

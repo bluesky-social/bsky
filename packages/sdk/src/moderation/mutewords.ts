@@ -1,4 +1,5 @@
-import { AppBskyActorDefs, AppBskyRichtextFacet } from '../client/index.js'
+import type { $Typed } from '@atproto/lex-schema'
+import { app } from '../lexicons/index.js'
 
 const REGEX = {
   LEADING_TRAILING_PUNCTUATION: /(?:^\p{P}+|\p{P}+$)/gu,
@@ -23,9 +24,9 @@ const LANGUAGE_EXCEPTIONS = [
 
 export type MuteWordMatch = {
   /**
-   * The `AppBskyActorDefs.MutedWord` that matched.
+   * The `app.bsky.actor.defs.MutedWord` that matched.
    */
-  word: AppBskyActorDefs.MutedWord
+  word: app.bsky.actor.defs.MutedWord
   /**
    * The string that matched the muted word.
    */
@@ -33,12 +34,12 @@ export type MuteWordMatch = {
 }
 
 export type Params = {
-  mutedWords: AppBskyActorDefs.MutedWord[]
+  mutedWords: app.bsky.actor.defs.MutedWord[]
   text: string
-  facets?: AppBskyRichtextFacet.Main[]
+  facets?: app.bsky.richtext.facet.Main[]
   outlineTags?: string[]
   languages?: string[]
-  actor?: AppBskyActorDefs.ProfileView | AppBskyActorDefs.ProfileViewBasic
+  actor?: app.bsky.actor.defs.ProfileView | app.bsky.actor.defs.ProfileViewBasic
 }
 
 /**
@@ -58,7 +59,11 @@ export function matchMuteWords({
     .concat(outlineTags || [])
     .concat(
       (facets || []).flatMap((facet) =>
-        facet.features.filter(AppBskyRichtextFacet.isTag).map((tag) => tag.tag),
+        facet.features
+          .filter((f): f is $Typed<app.bsky.richtext.facet.Tag> =>
+            app.bsky.richtext.facet.tag.isTypeOf(f),
+          )
+          .map((tag) => tag.tag),
       ),
     )
     .map((t) => t.toLowerCase())

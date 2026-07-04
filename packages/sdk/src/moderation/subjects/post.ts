@@ -1,13 +1,4 @@
-import {
-  AppBskyActorDefs,
-  AppBskyEmbedExternal,
-  AppBskyEmbedGallery,
-  AppBskyEmbedImages,
-  AppBskyEmbedRecord,
-  AppBskyEmbedRecordWithMedia,
-  AppBskyFeedPost,
-} from '../../client/index.js'
-import { $Typed } from '../../client/util.js'
+import { app } from '../../lexicons/index.js'
 import { ModerationDecision } from '../decision.js'
 import { MuteWordMatch, matchMuteWords } from '../mutewords.js'
 import { ModerationOpts, ModerationSubjectPost } from '../types.js'
@@ -48,40 +39,38 @@ function decideSubject(
 }
 
 function decideEmbed(
-  embed:
-    | undefined
-    | $Typed<AppBskyEmbedRecord.View>
-    | $Typed<AppBskyEmbedRecordWithMedia.View>
-    | { $type: string },
+  embed: app.bsky.feed.defs.PostView['embed'],
   opts: ModerationOpts,
 ) {
   if (embed) {
-    if (
-      (AppBskyEmbedRecord.isView(embed) ||
-        AppBskyEmbedRecordWithMedia.isView(embed)) &&
-      AppBskyEmbedRecord.isViewRecord(embed.record)
-    ) {
-      // quote post
-      return decideQuotedPost(embed.record, opts)
-    } else if (
-      AppBskyEmbedRecordWithMedia.isView(embed) &&
-      AppBskyEmbedRecord.isViewRecord(embed.record.record)
-    ) {
-      // quoted post with media
-      return decideQuotedPost(embed.record.record, opts)
-    } else if (
-      (AppBskyEmbedRecord.isView(embed) ||
-        AppBskyEmbedRecordWithMedia.isView(embed)) &&
-      AppBskyEmbedRecord.isViewBlocked(embed.record)
-    ) {
-      // blocked quote post
-      return decideBlockedQuotedPost(embed.record, opts)
-    } else if (
-      AppBskyEmbedRecordWithMedia.isView(embed) &&
-      AppBskyEmbedRecord.isViewBlocked(embed.record.record)
-    ) {
-      // blocked quoted post with media
-      return decideBlockedQuotedPost(embed.record.record, opts)
+    if (app.bsky.embed.record.view.isTypeOf(embed)) {
+      const recordView = embed as app.bsky.embed.record.View
+      if (app.bsky.embed.record.viewRecord.isTypeOf(recordView.record)) {
+        // quote post
+        return decideQuotedPost(recordView.record, opts)
+      } else if (
+        app.bsky.embed.record.viewBlocked.isTypeOf(recordView.record)
+      ) {
+        // blocked quote post
+        return decideBlockedQuotedPost(recordView.record, opts)
+      }
+    } else if (app.bsky.embed.recordWithMedia.view.isTypeOf(embed)) {
+      const recordWithMediaView = embed as app.bsky.embed.recordWithMedia.View
+      if (
+        app.bsky.embed.record.viewRecord.isTypeOf(
+          recordWithMediaView.record.record,
+        )
+      ) {
+        // quoted post with media
+        return decideQuotedPost(recordWithMediaView.record.record, opts)
+      } else if (
+        app.bsky.embed.record.viewBlocked.isTypeOf(
+          recordWithMediaView.record.record,
+        )
+      ) {
+        // blocked quoted post with media
+        return decideBlockedQuotedPost(recordWithMediaView.record.record, opts)
+      }
     }
   }
 
@@ -89,7 +78,7 @@ function decideEmbed(
 }
 
 function decideQuotedPost(
-  subject: AppBskyEmbedRecord.ViewRecord,
+  subject: app.bsky.embed.record.ViewRecord,
   opts: ModerationOpts,
 ) {
   const acc = new ModerationDecision()
@@ -108,7 +97,7 @@ function decideQuotedPost(
 }
 
 function decideBlockedQuotedPost(
-  subject: AppBskyEmbedRecord.ViewBlocked,
+  subject: app.bsky.embed.record.ViewBlocked,
   opts: ModerationOpts,
 ) {
   const acc = new ModerationDecision()
@@ -144,15 +133,15 @@ function checkHiddenPost(
   }
   if (subject.embed) {
     if (
-      AppBskyEmbedRecord.isView(subject.embed) &&
-      AppBskyEmbedRecord.isViewRecord(subject.embed.record) &&
+      app.bsky.embed.record.view.isTypeOf(subject.embed) &&
+      app.bsky.embed.record.viewRecord.isTypeOf(subject.embed.record) &&
       hiddenPosts.includes(subject.embed.record.uri)
     ) {
       return true
     }
     if (
-      AppBskyEmbedRecordWithMedia.isView(subject.embed) &&
-      AppBskyEmbedRecord.isViewRecord(subject.embed.record.record) &&
+      app.bsky.embed.recordWithMedia.view.isTypeOf(subject.embed) &&
+      app.bsky.embed.record.viewRecord.isTypeOf(subject.embed.record.record) &&
       hiddenPosts.includes(subject.embed.record.record.uri)
     ) {
       return true
@@ -163,7 +152,7 @@ function checkHiddenPost(
 
 function matchAllMuteWords(
   subject: ModerationSubjectPost,
-  mutedWords: AppBskyActorDefs.MutedWord[] | undefined,
+  mutedWords: app.bsky.actor.defs.MutedWord[] | undefined,
 ): MuteWordMatch[] | undefined {
   if (!mutedWords?.length) {
     return
@@ -171,8 +160,8 @@ function matchAllMuteWords(
 
   const postAuthor = subject.author
 
-  if (AppBskyFeedPost.isRecord(subject.record)) {
-    const post = subject.record as AppBskyFeedPost.Record
+  if (app.bsky.feed.post.$isTypeOf(subject.record)) {
+    const post = subject.record as app.bsky.feed.post.Main
 
     const matches = matchMuteWords({
       mutedWords,
@@ -187,7 +176,7 @@ function matchAllMuteWords(
       return matches
     }
 
-    if (post.embed && AppBskyEmbedImages.isMain(post.embed)) {
+    if (post.embed && app.bsky.embed.images.$isTypeOf(post.embed)) {
       // post images
       for (const image of post.embed.images) {
         const matches = matchMuteWords({
@@ -202,10 +191,10 @@ function matchAllMuteWords(
       }
     }
 
-    if (post.embed && AppBskyEmbedGallery.isMain(post.embed)) {
+    if (post.embed && app.bsky.embed.gallery.$isTypeOf(post.embed)) {
       // post gallery items
       for (const item of post.embed.items) {
-        if (AppBskyEmbedGallery.isImage(item)) {
+        if (app.bsky.embed.gallery.image.isTypeOf(item)) {
           const matches = matchMuteWords({
             mutedWords,
             text: item.alt,
@@ -224,12 +213,11 @@ function matchAllMuteWords(
   if (embed) {
     // quote post
     if (
-      (AppBskyEmbedRecord.isView(embed) ||
-        AppBskyEmbedRecordWithMedia.isView(embed)) &&
-      AppBskyEmbedRecord.isViewRecord(embed.record)
+      app.bsky.embed.record.view.isTypeOf(embed) &&
+      app.bsky.embed.record.viewRecord.isTypeOf(embed.record)
     ) {
-      if (AppBskyFeedPost.isRecord(embed.record.value)) {
-        const embeddedPost = embed.record.value as AppBskyFeedPost.Record
+      if (app.bsky.feed.post.$isTypeOf(embed.record.value)) {
+        const embeddedPost = embed.record.value as app.bsky.feed.post.Main
         const embedAuthor = embed.record.author
         const matches = matchMuteWords({
           mutedWords,
@@ -246,7 +234,10 @@ function matchAllMuteWords(
         }
 
         // quoted post's images
-        if (AppBskyEmbedImages.isMain(embeddedPost.embed)) {
+        if (
+          embeddedPost.embed &&
+          app.bsky.embed.images.$isTypeOf(embeddedPost.embed)
+        ) {
           for (const image of embeddedPost.embed.images) {
             const matches = matchMuteWords({
               mutedWords,
@@ -261,9 +252,12 @@ function matchAllMuteWords(
         }
 
         // quoted post's gallery
-        if (AppBskyEmbedGallery.isMain(embeddedPost.embed)) {
+        if (
+          embeddedPost.embed &&
+          app.bsky.embed.gallery.$isTypeOf(embeddedPost.embed)
+        ) {
           for (const item of embeddedPost.embed.items) {
-            if (AppBskyEmbedGallery.isImage(item)) {
+            if (app.bsky.embed.gallery.image.isTypeOf(item)) {
               const matches = matchMuteWords({
                 mutedWords,
                 text: item.alt,
@@ -278,7 +272,10 @@ function matchAllMuteWords(
         }
 
         // quoted post's link card
-        if (AppBskyEmbedExternal.isMain(embeddedPost.embed)) {
+        if (
+          embeddedPost.embed &&
+          app.bsky.embed.external.$isTypeOf(embeddedPost.embed)
+        ) {
           const { external } = embeddedPost.embed
           const matches = matchMuteWords({
             mutedWords,
@@ -291,9 +288,12 @@ function matchAllMuteWords(
           }
         }
 
-        if (AppBskyEmbedRecordWithMedia.isMain(embeddedPost.embed)) {
+        if (
+          embeddedPost.embed &&
+          app.bsky.embed.recordWithMedia.$isTypeOf(embeddedPost.embed)
+        ) {
           // quoted post's link card when it did a quote + media
-          if (AppBskyEmbedExternal.isMain(embeddedPost.embed.media)) {
+          if (app.bsky.embed.external.$isTypeOf(embeddedPost.embed.media)) {
             const { external } = embeddedPost.embed.media
             const matches = matchMuteWords({
               mutedWords,
@@ -307,14 +307,12 @@ function matchAllMuteWords(
           }
 
           // quoted post's images when it did a quote + media
-          if (AppBskyEmbedImages.isMain(embeddedPost.embed.media)) {
+          if (app.bsky.embed.images.$isTypeOf(embeddedPost.embed.media)) {
             for (const image of embeddedPost.embed.media.images) {
               const matches = matchMuteWords({
                 mutedWords,
                 text: image.alt,
-                languages: AppBskyFeedPost.isRecord(embeddedPost.record)
-                  ? embeddedPost.langs
-                  : [],
+                languages: embeddedPost.langs || [],
                 actor: embedAuthor,
               })
               if (matches) {
@@ -324,15 +322,13 @@ function matchAllMuteWords(
           }
 
           // quoted post's gallery when it did a quote + media
-          if (AppBskyEmbedGallery.isMain(embeddedPost.embed.media)) {
+          if (app.bsky.embed.gallery.$isTypeOf(embeddedPost.embed.media)) {
             for (const item of embeddedPost.embed.media.items) {
-              if (AppBskyEmbedGallery.isImage(item)) {
+              if (app.bsky.embed.gallery.image.isTypeOf(item)) {
                 const matches = matchMuteWords({
                   mutedWords,
                   text: item.alt,
-                  languages: AppBskyFeedPost.isRecord(embeddedPost.record)
-                    ? embeddedPost.langs
-                    : [],
+                  languages: embeddedPost.langs || [],
                   actor: embedAuthor,
                 })
                 if (matches) {
@@ -345,7 +341,7 @@ function matchAllMuteWords(
       }
     }
     // link card
-    else if (AppBskyEmbedExternal.isView(embed)) {
+    else if (app.bsky.embed.external.view.isTypeOf(embed)) {
       const { external } = embed
       const matches = matchMuteWords({
         mutedWords,
@@ -359,14 +355,14 @@ function matchAllMuteWords(
     }
     // quote post with media
     else if (
-      AppBskyEmbedRecordWithMedia.isView(embed) &&
-      AppBskyEmbedRecord.isViewRecord(embed.record.record)
+      app.bsky.embed.recordWithMedia.view.isTypeOf(embed) &&
+      app.bsky.embed.record.viewRecord.isTypeOf(embed.record.record)
     ) {
       const embedAuthor = embed.record.record.author
 
       // quoted post text
-      if (AppBskyFeedPost.isRecord(embed.record.record.value)) {
-        const post = embed.record.record.value as AppBskyFeedPost.Record
+      if (app.bsky.feed.post.$isTypeOf(embed.record.record.value)) {
+        const post = embed.record.record.value as app.bsky.feed.post.Main
         const matches = matchMuteWords({
           mutedWords,
           text: post.text,
@@ -381,13 +377,13 @@ function matchAllMuteWords(
       }
 
       // quoted post images
-      if (AppBskyEmbedImages.isView(embed.media)) {
+      if (app.bsky.embed.images.view.isTypeOf(embed.media)) {
         for (const image of embed.media.images) {
           const matches = matchMuteWords({
             mutedWords,
             text: image.alt,
-            languages: AppBskyFeedPost.isRecord(subject.record)
-              ? (subject.record as AppBskyFeedPost.Record).langs
+            languages: app.bsky.feed.post.$isTypeOf(subject.record)
+              ? (subject.record as app.bsky.feed.post.Main).langs
               : [],
             actor: embedAuthor,
           })
@@ -398,14 +394,14 @@ function matchAllMuteWords(
       }
 
       // quoted post gallery
-      if (AppBskyEmbedGallery.isView(embed.media)) {
+      if (app.bsky.embed.gallery.view.isTypeOf(embed.media)) {
         for (const item of embed.media.items) {
-          if (AppBskyEmbedGallery.isViewImage(item)) {
+          if (app.bsky.embed.gallery.viewImage.isTypeOf(item)) {
             const matches = matchMuteWords({
               mutedWords,
               text: item.alt,
-              languages: AppBskyFeedPost.isRecord(subject.record)
-                ? (subject.record as AppBskyFeedPost.Record).langs
+              languages: app.bsky.feed.post.$isTypeOf(subject.record)
+                ? (subject.record as app.bsky.feed.post.Main).langs
                 : [],
               actor: embedAuthor,
             })
@@ -416,7 +412,7 @@ function matchAllMuteWords(
         }
       }
 
-      if (AppBskyEmbedExternal.isView(embed.media)) {
+      if (app.bsky.embed.external.view.isTypeOf(embed.media)) {
         const { external } = embed.media
         const matches = matchMuteWords({
           mutedWords,

@@ -1,4 +1,4 @@
-import { AppBskyGraphDefs } from '../client/index.js'
+import type { app } from '../lexicons/index.js'
 import { KnownLabelValue, LABELS } from './const/labels.js'
 import { MuteWordMatch } from './mutewords.js'
 import {
@@ -219,7 +219,7 @@ export class ModerationDecision {
   }
 
   addBlockingByList(
-    blockingByList: AppBskyGraphDefs.ListViewBasic | undefined,
+    blockingByList: app.bsky.graph.defs.ListViewBasic | undefined,
   ) {
     if (blockingByList) {
       this.causes.push({
@@ -362,7 +362,7 @@ export class ModerationDecision {
     }
   }
 
-  addMutedByList(mutedByList: AppBskyGraphDefs.ListViewBasic | undefined) {
+  addMutedByList(mutedByList: app.bsky.graph.defs.ListViewBasic | undefined) {
     if (mutedByList) {
       this.causes.push({
         type: 'muted',

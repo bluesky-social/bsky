@@ -1,10 +1,4 @@
-import {
-  AppBskyEmbedRecord,
-  AppBskyEmbedRecordWithMedia,
-  AppBskyLabelerDefs,
-  ComAtprotoLabelDefs,
-} from '../client/index.js'
-import { asPredicate } from '../client/util.js'
+import { app, com } from '../lexicons/index.js'
 import {
   InterpretedLabelValueDefinition,
   LabelPreference,
@@ -12,18 +6,30 @@ import {
   ModerationBehavior,
 } from './types.js'
 
-export function isQuotedPost(embed: unknown): embed is AppBskyEmbedRecord.View {
-  return Boolean(embed && AppBskyEmbedRecord.isView(embed))
+export function isQuotedPost(
+  embed: unknown,
+): embed is app.bsky.embed.record.View {
+  return (
+    typeof embed === 'object' &&
+    embed !== null &&
+    app.bsky.embed.record.view.isTypeOf(embed as Record<string, unknown>)
+  )
 }
 
 export function isQuotedPostWithMedia(
   embed: unknown,
-): embed is AppBskyEmbedRecordWithMedia.View {
-  return Boolean(embed && AppBskyEmbedRecordWithMedia.isView(embed))
+): embed is app.bsky.embed.recordWithMedia.View {
+  return (
+    typeof embed === 'object' &&
+    embed !== null &&
+    app.bsky.embed.recordWithMedia.view.isTypeOf(
+      embed as Record<string, unknown>,
+    )
+  )
 }
 
 export function interpretLabelValueDefinition(
-  def: ComAtprotoLabelDefs.LabelValueDefinition,
+  def: com.atproto.label.defs.LabelValueDefinition,
   definedBy: string | undefined,
 ): InterpretedLabelValueDefinition {
   const behaviors: {
@@ -101,10 +107,12 @@ export function interpretLabelValueDefinition(
 }
 
 export function interpretLabelValueDefinitions(
-  labelerView: AppBskyLabelerDefs.LabelerViewDetailed,
+  labelerView: app.bsky.labeler.defs.LabelerViewDetailed,
 ): InterpretedLabelValueDefinition[] {
   return (labelerView.policies?.labelValueDefinitions || [])
-    .filter(asPredicate(ComAtprotoLabelDefs.validateLabelValueDefinition))
+    .filter((v): v is com.atproto.label.defs.LabelValueDefinition =>
+      com.atproto.label.defs.labelValueDefinition.isTypeOf(v),
+    )
     .map((labelValDef) =>
       interpretLabelValueDefinition(labelValDef, labelerView.creator.did),
     )

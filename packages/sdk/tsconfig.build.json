@@ -5,6 +5,7 @@
     "./src/index.ts",
     "./src/lexicons",
     "./src/lexicons-export.ts",
+    "./src/moderation",
   ],
   "compilerOptions": {
     "rootDir": "./src",

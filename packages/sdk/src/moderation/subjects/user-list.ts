@@ -1,5 +1,5 @@
 import { AtUri } from '@atproto/syntax'
-import { AppBskyActorDefs } from '../../client/index.js'
+import type { app } from '../../lexicons/index.js'
 import { ModerationDecision } from '../decision.js'
 import { ModerationOpts, ModerationSubjectUserList } from '../types.js'
 import { decideAccount } from './account.js'
@@ -43,6 +43,6 @@ export function decideUserList(
   return acc
 }
 
-function isProfile(v: any): v is AppBskyActorDefs.ProfileViewBasic {
+function isProfile(v: any): v is app.bsky.actor.defs.ProfileViewBasic {
   return v && typeof v === 'object' && 'did' in v
 }
