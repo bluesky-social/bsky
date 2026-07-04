@@ -1,37 +1,49 @@
-import { AppBskyAgeassuranceDefs } from './client/index.js'
-import { ids } from './client/lexicons.js'
+import { l } from '@atproto/lex-schema'
+import type {
+  Access,
+  Config,
+  ConfigRegion,
+  ConfigRegionRuleDefault,
+  ConfigRegionRuleIfAccountNewerThan,
+  ConfigRegionRuleIfAccountOlderThan,
+  ConfigRegionRuleIfAssuredOverAge,
+  ConfigRegionRuleIfAssuredUnderAge,
+  ConfigRegionRuleIfDeclaredOverAge,
+  ConfigRegionRuleIfDeclaredUnderAge,
+} from '../lexicons/app/bsky/ageassurance/defs.defs.js'
+import { app } from '../lexicons/index.js'
 
-export type AgeAssuranceRuleID = Exclude<
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleDefault['$type']
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleIfDeclaredOverAge['$type']
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleIfDeclaredUnderAge['$type']
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleIfAssuredOverAge['$type']
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleIfAssuredUnderAge['$type']
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleIfAccountNewerThan['$type']
-  | AppBskyAgeassuranceDefs.ConfigRegionRuleIfAccountOlderThan['$type'],
-  undefined
->
+const defs = app.bsky.ageassurance.defs
+
+export type AgeAssuranceRuleID =
+  | l.$TypeOf<ConfigRegionRuleDefault>
+  | l.$TypeOf<ConfigRegionRuleIfDeclaredOverAge>
+  | l.$TypeOf<ConfigRegionRuleIfDeclaredUnderAge>
+  | l.$TypeOf<ConfigRegionRuleIfAssuredOverAge>
+  | l.$TypeOf<ConfigRegionRuleIfAssuredUnderAge>
+  | l.$TypeOf<ConfigRegionRuleIfAccountNewerThan>
+  | l.$TypeOf<ConfigRegionRuleIfAccountOlderThan>
 
 export const ageAssuranceRuleIDs: Record<string, AgeAssuranceRuleID> = {
-  Default: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleDefault`,
-  IfDeclaredOverAge: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleIfDeclaredOverAge`,
-  IfDeclaredUnderAge: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleIfDeclaredUnderAge`,
-  IfAssuredOverAge: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleIfAssuredOverAge`,
-  IfAssuredUnderAge: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleIfAssuredUnderAge`,
-  IfAccountNewerThan: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleIfAccountNewerThan`,
-  IfAccountOlderThan: `${ids.AppBskyAgeassuranceDefs}#configRegionRuleIfAccountOlderThan`,
+  Default: defs.configRegionRuleDefault.$type,
+  IfDeclaredOverAge: defs.configRegionRuleIfDeclaredOverAge.$type,
+  IfDeclaredUnderAge: defs.configRegionRuleIfDeclaredUnderAge.$type,
+  IfAssuredOverAge: defs.configRegionRuleIfAssuredOverAge.$type,
+  IfAssuredUnderAge: defs.configRegionRuleIfAssuredUnderAge.$type,
+  IfAccountNewerThan: defs.configRegionRuleIfAccountNewerThan.$type,
+  IfAccountOlderThan: defs.configRegionRuleIfAccountOlderThan.$type,
 }
 
 /**
  * Returns the first matched region configuration based on the provided geolocation.
  */
 export function getAgeAssuranceRegionConfig(
-  config: AppBskyAgeassuranceDefs.Config,
+  config: Config,
   geolocation: {
     countryCode: string
     regionCode?: string
   },
-): AppBskyAgeassuranceDefs.ConfigRegion | undefined {
+): ConfigRegion | undefined {
   const { regions } = config
   return regions.find(({ countryCode, regionCode }) => {
     if (countryCode === geolocation.countryCode) {
@@ -41,7 +53,7 @@ export function getAgeAssuranceRegionConfig(
 }
 
 export function computeAgeAssuranceRegionAccess(
-  region: AppBskyAgeassuranceDefs.ConfigRegion,
+  region: ConfigRegion,
   data:
     | {
         /**
@@ -61,13 +73,13 @@ export function computeAgeAssuranceRegionAccess(
     | undefined,
 ):
   | {
-      access: AppBskyAgeassuranceDefs.Access
+      access: Access
       reason: AgeAssuranceRuleID
     }
   | undefined {
   // first match wins
   for (const rule of region.rules) {
-    if (AppBskyAgeassuranceDefs.isConfigRegionRuleIfAccountNewerThan(rule)) {
+    if (defs.configRegionRuleIfAccountNewerThan.isTypeOf(rule)) {
       if (data?.accountCreatedAt && !data?.assuredAge) {
         const accountCreatedAt = new Date(data.accountCreatedAt)
         const threshold = new Date(rule.date)
@@ -78,9 +90,7 @@ export function computeAgeAssuranceRegionAccess(
           }
         }
       }
-    } else if (
-      AppBskyAgeassuranceDefs.isConfigRegionRuleIfAccountOlderThan(rule)
-    ) {
+    } else if (defs.configRegionRuleIfAccountOlderThan.isTypeOf(rule)) {
       if (data?.accountCreatedAt && !data?.assuredAge) {
         const accountCreatedAt = new Date(data.accountCreatedAt)
         const threshold = new Date(rule.date)
@@ -91,43 +101,35 @@ export function computeAgeAssuranceRegionAccess(
           }
         }
       }
-    } else if (
-      AppBskyAgeassuranceDefs.isConfigRegionRuleIfDeclaredOverAge(rule)
-    ) {
+    } else if (defs.configRegionRuleIfDeclaredOverAge.isTypeOf(rule)) {
       if (data?.declaredAge !== undefined && data.declaredAge >= rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (
-      AppBskyAgeassuranceDefs.isConfigRegionRuleIfDeclaredUnderAge(rule)
-    ) {
+    } else if (defs.configRegionRuleIfDeclaredUnderAge.isTypeOf(rule)) {
       if (data?.declaredAge !== undefined && data.declaredAge < rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (
-      AppBskyAgeassuranceDefs.isConfigRegionRuleIfAssuredOverAge(rule)
-    ) {
+    } else if (defs.configRegionRuleIfAssuredOverAge.isTypeOf(rule)) {
       if (data?.assuredAge && data.assuredAge >= rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (
-      AppBskyAgeassuranceDefs.isConfigRegionRuleIfAssuredUnderAge(rule)
-    ) {
+    } else if (defs.configRegionRuleIfAssuredUnderAge.isTypeOf(rule)) {
       if (data?.assuredAge && data.assuredAge < rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (AppBskyAgeassuranceDefs.isConfigRegionRuleDefault(rule)) {
+    } else if (defs.configRegionRuleDefault.isTypeOf(rule)) {
       return {
         access: rule.access,
         reason: rule.$type,
