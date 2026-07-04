@@ -86,6 +86,25 @@ const client = new Client(session, {
 | `AtpBaseClient`      | `Client`          | `@atproto/lex-client`           |
 | `CredentialSession`  | `PasswordSession` | `@atproto/lex-password-session` |
 
+### Sessions
+
+| Old (`@atproto/api`)       | New           | Package                         | Notes                                                              |
+| -------------------------- | ------------- | ------------------------------- | ------------------------------------------------------------------ |
+| `AtpSessionData`           | `SessionData` | `@atproto/lex-password-session` | Shape for persisted session data; renamed for clarity              |
+| `AtpSessionEvent`          | removed       | —                               | Session event types now inferred from `PasswordSession` callbacks  |
+| `AtpPersistSessionHandler` | removed       | —                               | Use `onUpdated`/`onDeleted` callbacks on `PasswordSession` instead |
+| `AtpAgentLoginOpts`        | removed       | —                               | Merged into `PasswordSession.login()` parameters                   |
+| `AtpAgentGlobalOpts`       | removed       | —                               | Replaced by `Client` constructor options                           |
+
+### Preferences Types
+
+| Old (`@atproto/api`)       | New                        | Package         | Notes                                                      |
+| -------------------------- | -------------------------- | --------------- | ---------------------------------------------------------- |
+| `BskyPreferences`          | `BskyPreferences`          | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
+| `BskyFeedViewPreference`   | `BskyFeedViewPreference`   | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
+| `BskyThreadViewPreference` | `BskyThreadViewPreference` | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
+| `BskyInterestsPreference`  | `BskyInterestsPreference`  | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
+
 ### Errors
 
 | Old (`@atproto/api`) | New                                 | Package               |
@@ -127,6 +146,7 @@ const client = new Client(session, {
 | `moderateUserList`               | `moderateUserList`               | `@bsky.app/sdk/moderation` |
 | `moderateFeedGenerator`          | `moderateFeedGenerator`          | `@bsky.app/sdk/moderation` |
 | `moderateNotification`           | `moderateNotification`           | `@bsky.app/sdk/moderation` |
+| `moderateStatus`                 | `moderateStatus`                 | `@bsky.app/sdk/moderation` |
 | `ModerationUI`                   | `ModerationUI`                   | `@bsky.app/sdk/moderation` |
 | `ModerationDecision`             | `ModerationDecision`             | `@bsky.app/sdk/moderation` |
 | `interpretLabelValueDefinition`  | `interpretLabelValueDefinition`  | `@bsky.app/sdk/moderation` |
@@ -177,6 +197,7 @@ await rt.detectFacets(resolverFromClient(pdsClient))
 | ------------------------ | -------------------------------------------- | --------------------- |
 | `sanitizeMutedWordValue` | `sanitizeMutedWordValue`                     | `@bsky.app/sdk/utils` |
 | `validateNux`            | `validateNux`                                | `@bsky.app/sdk/utils` |
+| `nuxSchema`              | `nuxSchema`                                  | `@bsky.app/sdk/utils` |
 | `savedFeedsToUriArrays`  | removed — compute from `savedFeeds` directly | —                     |
 
 ### Removed without direct replacement
@@ -187,6 +208,9 @@ await rt.detectFacets(resolverFromClient(pdsClient))
 | `isDid` / `asDid` / `assertDid`         | use `isStringFormat(v, 'did')` / `asStringFormat(v, 'did')` from `@atproto/lex` |
 | `AtUri`                                 | `AtUri` from `@atproto/syntax` (still a direct dependency)                      |
 | `lexicons` export (Lexicons instance)   | use generated schema objects from `@bsky.app/sdk/lexicons`                      |
+| `matchMuteWords`                        | internal only; use `hasMutedWord()` for common use cases                        |
+| `getSavedFeedType`                      | internal only; moved to preference actions                                      |
+| `validateSavedFeed`                     | internal only; moved to preference actions                                      |
 
 ---
 
