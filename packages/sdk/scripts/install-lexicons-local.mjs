@@ -37,9 +37,19 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const sdkDir = join(__dirname, '..')
-const atprotoLexiconsDir = '/Users/devinivy/Documents/bluesky/atproto/lexicons'
+const atprotoLexiconsDir = process.argv[2] ?? '/Users/devinivy/Documents/bluesky/atproto/lexicons'
 const targetLexiconsDir = join(sdkDir, 'lexicons')
 const manifestPath = join(sdkDir, 'lexicons.json')
+
+// Validate that the source directory exists
+if (!existsSync(atprotoLexiconsDir)) {
+  console.error(
+    `Error: lexicons directory not found at ${atprotoLexiconsDir}\n` +
+    'Please pass the path to a checkout of bluesky-social/atproto as the first argument.\n' +
+    'Usage: node install-lexicons-local.mjs <path-to-atproto-repo>',
+  )
+  process.exit(1)
+}
 
 // DIDs resolved via DNS TXT lookups (_lexicon.<authority>) at install time.
 // For authorities not yet in DNS, a placeholder DID is used.
