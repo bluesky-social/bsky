@@ -1,6 +1,7 @@
 import { Client } from '@atproto/lex-client'
 import { describe, expect, it } from 'vitest'
 import {
+  DEFAULT_LABEL_SETTINGS,
   addLabeler,
   addSavedFeeds,
   getPreferences,
@@ -249,5 +250,178 @@ describe('updatePreferences round-trip', () => {
     expect(
       prefs2.moderationPrefs.labelers.some((l) => l.did === 'did:plc:other'),
     ).toBe(false)
+  })
+})
+
+describe('getPreferences full-shape (ported from old moderation-prefs.test.ts)', () => {
+  it('migrates legacy content-label prefs — full toStrictEqual shape', async () => {
+    // Ported from old agent.ts moderation-prefs.test.ts:
+    // "migrates legacy content-label prefs (no mutations)"
+    // Adapts agent calls to client.call(action, ...) with fakeClient harness.
+    let stored: unknown[] = [
+      {
+        $type: 'app.bsky.actor.defs#contentLabelPref',
+        label: 'porn',
+        visibility: 'show',
+      },
+      {
+        $type: 'app.bsky.actor.defs#contentLabelPref',
+        label: 'nudity',
+        visibility: 'show',
+      },
+      {
+        $type: 'app.bsky.actor.defs#contentLabelPref',
+        label: 'sexual',
+        visibility: 'show',
+      },
+      {
+        $type: 'app.bsky.actor.defs#contentLabelPref',
+        label: 'graphic-media',
+        visibility: 'show',
+      },
+    ]
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    const prefs = await client.call(getPreferences)
+    expect(prefs).toStrictEqual({
+      feeds: {
+        pinned: undefined,
+        saved: undefined,
+      },
+      savedFeeds: expect.any(Array),
+      interests: { tags: [] },
+      moderationPrefs: {
+        adultContentEnabled: false,
+        labels: {
+          porn: 'ignore',
+          nudity: 'ignore',
+          sexual: 'ignore',
+          'graphic-media': 'ignore',
+        },
+        labelers: [...Client.appLabelers.map((did) => ({ did, labels: {} }))],
+        hiddenPosts: [],
+        mutedWords: [],
+      },
+      birthDate: undefined,
+      declaredAge: undefined,
+      feedViewPrefs: {
+        home: {
+          hideQuotePosts: false,
+          hideReplies: false,
+          hideRepliesByLikeCount: 0,
+          hideRepliesByUnfollowed: true,
+          hideReposts: false,
+        },
+      },
+      threadViewPrefs: {
+        sort: 'hotness',
+      },
+      bskyAppState: {
+        activeProgressGuide: undefined,
+        queuedNudges: [],
+        nuxs: [],
+      },
+      postInteractionSettings: {
+        threadgateAllowRules: undefined,
+        postgateEmbeddingRules: undefined,
+      },
+      verificationPrefs: {
+        hideBadges: false,
+      },
+      liveEventPreferences: {
+        hiddenFeedIds: [],
+        hideAllFeeds: false,
+      },
+    })
+  })
+
+  it('sets label preferences globally and per-moderator', async () => {
+    // Ported from old moderation-prefs.test.ts:
+    // "sets label preferences globally and per-moderator"
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+
+    await client.call(addLabeler, 'did:plc:other')
+    await client.call(setContentLabelPref, {
+      key: 'porn',
+      value: 'ignore',
+    })
+    await client.call(setContentLabelPref, {
+      key: 'porn',
+      value: 'hide',
+      labelerDid: 'did:plc:other',
+    })
+    await client.call(setContentLabelPref, {
+      key: 'x-custom',
+      value: 'warn',
+      labelerDid: 'did:plc:other',
+    })
+
+    const prefs = await client.call(getPreferences)
+    expect(prefs).toStrictEqual({
+      feeds: {
+        pinned: undefined,
+        saved: undefined,
+      },
+      savedFeeds: expect.any(Array),
+      interests: { tags: [] },
+      moderationPrefs: {
+        adultContentEnabled: false,
+        labels: { ...DEFAULT_LABEL_SETTINGS, porn: 'ignore', nsfw: 'ignore' },
+        labelers: [
+          ...Client.appLabelers.map((did) => ({ did, labels: {} })),
+          {
+            did: 'did:plc:other',
+            labels: {
+              porn: 'hide',
+              'x-custom': 'warn',
+            },
+          },
+        ],
+        hiddenPosts: [],
+        mutedWords: [],
+      },
+      birthDate: undefined,
+      declaredAge: undefined,
+      feedViewPrefs: {
+        home: {
+          hideReplies: false,
+          hideRepliesByUnfollowed: true,
+          hideRepliesByLikeCount: 0,
+          hideReposts: false,
+          hideQuotePosts: false,
+        },
+      },
+      threadViewPrefs: {
+        sort: 'hotness',
+      },
+      bskyAppState: {
+        activeProgressGuide: undefined,
+        queuedNudges: [],
+        nuxs: [],
+      },
+      postInteractionSettings: {
+        threadgateAllowRules: undefined,
+        postgateEmbeddingRules: undefined,
+      },
+      verificationPrefs: {
+        hideBadges: false,
+      },
+      liveEventPreferences: {
+        hiddenFeedIds: [],
+        hideAllFeeds: false,
+      },
+    })
   })
 })

@@ -43,19 +43,24 @@ export const deletePost: Action<string, void> = async (client, postUri) => {
   })
 }
 
-type LikeInput = { uri: string; cid: string }
+type LikeInput = {
+  uri: string
+  cid: string
+  via?: { uri: string; cid: string }
+}
 
 /**
  * Create a like record.
  */
 export const like: Action<LikeInput, CreateOutput> = async (
   client,
-  { uri, cid },
+  { uri, cid, via },
 ) => {
   const record = {
     $type: 'app.bsky.feed.like',
     subject: { uri, cid },
     createdAt: new Date().toISOString(),
+    via,
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
@@ -81,19 +86,24 @@ export const deleteLike: Action<string, void> = async (client, likeUri) => {
   })
 }
 
-type RepostInput = { uri: string; cid: string }
+type RepostInput = {
+  uri: string
+  cid: string
+  via?: { uri: string; cid: string }
+}
 
 /**
  * Create a repost record.
  */
 export const repost: Action<RepostInput, CreateOutput> = async (
   client,
-  { uri, cid },
+  { uri, cid, via },
 ) => {
   const record = {
     $type: 'app.bsky.feed.repost',
     subject: { uri, cid },
     createdAt: new Date().toISOString(),
+    via,
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
@@ -119,19 +129,20 @@ export const deleteRepost: Action<string, void> = async (client, repostUri) => {
   })
 }
 
-type FollowInput = { did: string }
+type FollowInput = { did: string; via?: { uri: string; cid: string } }
 
 /**
  * Create a follow record.
  */
 export const follow: Action<FollowInput, CreateOutput> = async (
   client,
-  { did },
+  { did, via },
 ) => {
   const record = {
     $type: 'app.bsky.graph.follow',
     subject: did,
     createdAt: new Date().toISOString(),
+    via,
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
