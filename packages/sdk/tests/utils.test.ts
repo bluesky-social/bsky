@@ -40,6 +40,11 @@ describe('nux validation', () => {
   it('nuxSchema is exported', () => {
     expect(nuxSchema).toBeDefined()
   })
+  it('rejects unknown properties', () => {
+    expect(() =>
+      validateNux({ id: 'test-nux', completed: false, extra: true }),
+    ).toThrow()
+  })
 })
 
 describe('age assurance', () => {
