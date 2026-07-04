@@ -2,5 +2,6 @@ packages:
   - 'packages/*'
   - 'services/*'
 allowBuilds:
+  core-js: false
   rolldown: false
   unrs-resolver: true

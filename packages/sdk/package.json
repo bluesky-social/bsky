@@ -20,11 +20,28 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./lexicons": {
+      "types": "./dist/lexicons-export.d.ts",
+      "default": "./dist/lexicons-export.js"
+    },
+    "./moderation": {
+      "types": "./dist/moderation/index.d.ts",
+      "default": "./dist/moderation/index.js"
+    },
+    "./richtext": {
+      "types": "./dist/rich-text/index.d.ts",
+      "default": "./dist/rich-text/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
     }
   },
   "files": [
     "dist",
-    "OAUTH.md",
+    "lexicons",
+    "lexicons.json",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -33,6 +50,8 @@
   },
   "dependencies": {
     "@atproto/common-web": "^0.5.3",
+    "@atproto/lex-client": "^0.2.1",
+    "@atproto/lex-schema": "^0.1.6",
     "@atproto/lexicon": "^0.7.4",
     "@atproto/syntax": "^0.6.4",
     "@atproto/xrpc": "^0.8.3",
@@ -42,10 +61,14 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "prettier": "^3.9.4"
+    "@atproto/lex": "^0.1.7",
+    "prettier": "^3.9.4",
+    "vitest": "^4.1.9"
   },
   "scripts": {
-    "codegen:labels": "node ./scripts/generate-code.mjs",
-    "build": "tsgo --build tsconfig.build.json"
+    "codegen": "lex build --clear --index-file --out ./src/lexicons",
+    "prebuild": "pnpm run codegen",
+    "build": "tsgo --build tsconfig.build.json",
+    "test": "vitest run"
   }
 }
