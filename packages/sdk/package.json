@@ -57,7 +57,8 @@
   },
   "devDependencies": {
     "@atproto/lex": "^0.1.7",
-    "prettier": "^3.9.4",
+    "@atproto/lex-password-session": "^0.1.4",
+    "prettier": "^3.3.3",
     "vitest": "^4.1.9"
   },
   "scripts": {
