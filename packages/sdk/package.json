@@ -2,12 +2,12 @@
   "name": "@bsky.app/sdk",
   "version": "0.0.0",
   "license": "MIT",
-  "description": "Client library for Bluesky",
+  "description": "Bluesky SDK for use with @atproto/lex",
   "keywords": [
-    "atproto",
     "bluesky",
-    "api",
-    "sdk"
+    "atproto",
+    "sdk",
+    "lexicon"
   ],
   "homepage": "https://bsky.app",
   "repository": {

@@ -1,6 +1,11 @@
 {
   "extends": "../../tsconfig/isomorphic.json",
-  "include": ["./src/index.ts", "./src/lexicons", "./src/lexicons-export.ts"],
+  "include": [
+    "./src/api.ts",
+    "./src/index.ts",
+    "./src/lexicons",
+    "./src/lexicons-export.ts",
+  ],
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
