@@ -3,6 +3,7 @@
   "include": [
     "./src/api.ts",
     "./src/index.ts",
+    "./src/actions",
     "./src/lexicons",
     "./src/lexicons-export.ts",
     "./src/moderation",
