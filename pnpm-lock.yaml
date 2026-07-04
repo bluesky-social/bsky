@@ -266,6 +266,9 @@ importers:
 
   packages/sdk:
     dependencies:
+      '@atproto-labs/handle-resolver':
+        specifier: ^0.4.4
+        version: 0.4.4
       '@atproto/lex-client':
         specifier: ^0.2.1
         version: 0.2.1
@@ -297,6 +300,10 @@ packages:
 
   '@atproto-labs/fetch@0.3.3':
     resolution: {integrity: sha512-2gABLf0VEI86Sxo6YhGKQYK1tGhTZ4y+3TrCWputnupEZxuS/hw6+pFw9ceXZ3v9nnMNthzsAEcaAQ3V/tXsqg==}
+    engines: {node: '>=22'}
+
+  '@atproto-labs/handle-resolver@0.4.4':
+    resolution: {integrity: sha512-fQIcAQrsqmixI0Nt/3RRfBr/NLeK58lMFVCtlLoenjVOiVmI1xPBKvfktYTY3yvHcvMbo07r/RiE9ktG9nfCLQ==}
     engines: {node: '>=22'}
 
   '@atproto-labs/pipe@0.2.3':
@@ -2145,6 +2152,13 @@ snapshots:
   '@atproto-labs/fetch@0.3.3':
     dependencies:
       '@atproto-labs/pipe': 0.2.3
+
+  '@atproto-labs/handle-resolver@0.4.4':
+    dependencies:
+      '@atproto-labs/simple-store': 0.4.3
+      '@atproto-labs/simple-store-memory': 0.2.3
+      '@atproto/did': 0.5.3
+      zod: 3.25.76
 
   '@atproto-labs/pipe@0.2.3': {}
 

@@ -1,5 +1,5 @@
 import TLDs from 'tlds' with { type: 'json' }
-import { AppBskyRichtextFacet } from '../client/index.js'
+import { app } from '../lexicons/index.js'
 import { UnicodeString } from './unicode.js'
 import {
   CASHTAG_REGEX,
@@ -9,7 +9,7 @@ import {
   URL_REGEX,
 } from './util.js'
 
-export type Facet = AppBskyRichtextFacet.Main
+export type Facet = app.bsky.richtext.facet.Main
 
 export function detectFacets(text: UnicodeString): Facet[] | undefined {
   let match
@@ -32,7 +32,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         features: [
           {
             $type: 'app.bsky.richtext.facet#mention',
-            did: match[3], // must be resolved afterwards
+            did: match[3] as `did:${string}:${string}`, // must be resolved afterwards
           },
         ],
       })
@@ -69,7 +69,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         features: [
           {
             $type: 'app.bsky.richtext.facet#link',
-            uri,
+            uri: uri as `${string}:${string}`,
           },
         ],
       })
