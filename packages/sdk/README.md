@@ -18,23 +18,14 @@ Bluesky exposes three services. Use `api.*` constants for addressing:
 import { Client } from '@atproto/lex'
 import { api } from '@bsky.app/sdk'
 
-// App view (public/authenticated queries)
-const appClient = new Client({
-  service: api.app.service, // 'did:web:api.bsky.app#bsky_appview'
-  url: api.app.url, // 'https://api.bsky.app'
-})
+// PDS (writes, record mutations — requires an authenticated session)
+const pdsClient = new Client(session)
 
-// PDS (writes, record mutations — requires authentication)
-const pdsClient = new Client({
-  url: 'https://bsky.social', // your user's PDS
-  fetchHandler: myAuthFetch,
-})
+// App view (authenticated queries proxied through the PDS)
+const appviewClient = new Client(pds, { service: api.app.service })
 
-// Chat
-const chatClient = new Client({
-  service: api.chat.service, // 'did:web:api.bsky.chat#bsky_chat'
-  url: api.chat.url, // 'https://api.bsky.chat'
-})
+// App view (unauthenticated public queries)
+const publicClient = new Client(api.app.urlPublic)
 ```
 
 ## Actions
@@ -52,7 +43,7 @@ const result = await pdsClient.call(post, {
 // result: { uri: string; cid: string }
 ```
 
-Other exported actions: `deletePost`, `like`, `deleteLike`, `repost`, `deleteRepost`, `follow`, `deleteFollow`, `block`, `deleteBlock`, `getPreferences`, `putPreferences`.
+Other exported actions: `deletePost`, `like`, `deleteLike`, `repost`, `deleteRepost`, `follow`, `deleteFollow`, `blockActorList`, `unblockActorList`, `muteActor`, `unmuteActor`, `muteActorList`, `unmuteActorList`, `upsertProfile`, `updateSeenNotifications`, `getPreferences`, `updatePreferences`.
 
 ## Lexicons
 
@@ -62,10 +53,10 @@ Generated lexicon definitions are available from the `/lexicons` subpath. Use th
 import { Client } from '@atproto/lex'
 import { app } from '@bsky.app/sdk/lexicons'
 
-const appClient = new Client({ url: 'https://public.api.bsky.app' })
+const publicClient = new Client('https://public.api.bsky.app')
 
-const { body } = await appClient.xrpc(app.bsky.feed.getTimeline.main, {
-  query: { limit: 20 },
+const { body } = await publicClient.xrpc(app.bsky.feed.getTimeline.main, {
+  params: { limit: 20 },
 })
 // body: app.bsky.feed.getTimeline.OutputSchema
 ```
@@ -106,7 +97,7 @@ if (decision.ui('contentList').blur) {
 | `@bsky.app/sdk/lexicons`   | Generated lexicon definitions (`app`, `com`, `chat`, `tools`)                        |
 | `@bsky.app/sdk/moderation` | `moderatePost`, `moderateProfile`, and friends; `ModerationDecision`, `ModerationUI` |
 | `@bsky.app/sdk/richtext`   | `RichText` builder                                                                   |
-| `@bsky.app/sdk/utils`      | String utilities (`graphemeLength`, handle/DID helpers)                              |
+| `@bsky.app/sdk/utils`      | Age assurance helpers, `sanitizeMutedWordValue`, nux validation                      |
 
 ## Upgrading from @atproto/api
 

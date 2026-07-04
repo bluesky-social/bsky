@@ -65,6 +65,7 @@ import {
   unmuteActorList,
   updateLiveEventPreferences,
   updateMutedWord,
+  updatePreferences,
   updateSavedFeeds,
   updateSeenNotifications,
   upsertMutedWords,
@@ -318,5 +319,56 @@ describe('skill-examples', () => {
     // Unauthenticated public client — verifies constructor signature
     const client = new Client(api.app.urlPublic)
     expect(client).toBeDefined()
+  })
+})
+
+// ── README examples compile-check ─────────────────────────────────────────────
+
+describe('README examples', () => {
+  it('three-client pattern compiles', () => {
+    // PDS client from an authenticated session (Agent)
+    function makePdsClient(session: PasswordSession) {
+      return new Client(session)
+    }
+    // App view proxied through PDS
+    function makeAppviewClient(pds: Client) {
+      return new Client(pds, {
+        service: api.app.service as `${string}#${string}`,
+      })
+    }
+    // Public unauthenticated client from URL string
+    const publicClient = new Client(api.app.urlPublic)
+    expect(typeof makePdsClient).toBe('function')
+    expect(typeof makeAppviewClient).toBe('function')
+    expect(publicClient).toBeDefined()
+  })
+
+  it('post action compiles', () => {
+    async function example(pdsClient: Client) {
+      const result = await pdsClient.call(post, {
+        text: 'Hello from @bsky.app/sdk!',
+        langs: ['en'],
+      })
+      // result: { uri: string; cid: string }
+      const _uri: string = result.uri
+      return _uri
+    }
+    expect(typeof example).toBe('function')
+  })
+
+  it('xrpc with params compiles', () => {
+    async function example(publicClient: Client) {
+      const { body } = await publicClient.xrpc(app.bsky.feed.getTimeline.main, {
+        params: { limit: 20 },
+      })
+      return body
+    }
+    expect(typeof example).toBe('function')
+  })
+
+  it('blockActorList and unblockActorList are exported', () => {
+    expect(typeof blockActorList).toBe('function')
+    expect(typeof unblockActorList).toBe('function')
+    expect(typeof updatePreferences).toBe('function')
   })
 })
