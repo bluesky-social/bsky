@@ -1,9 +1,5 @@
-import type {
-  $Typed,
-  AtUriString,
-  BlobRef,
-  DatetimeString,
-} from '@atproto/lex-schema'
+import type { $Typed, AtUriString, BlobRef } from '@atproto/lex-schema'
+import { currentDatetimeString, toDatetimeString } from '@atproto/syntax'
 import { describe, expect, it } from 'vitest'
 import type { app } from '../src/lexicons/index.js' // type-only usage for type annotations
 import { moderatePost } from '../src/moderation/index.js'
@@ -1071,7 +1067,7 @@ describe(`matchMuteWords`, () => {
               {
                 value: 'words',
                 targets: ['content'],
-                expiresAt: new Date(now + 1e3).toISOString() as DatetimeString,
+                expiresAt: toDatetimeString(new Date(now + 1e3)),
                 actorTarget: 'all',
               },
             ],
@@ -1108,7 +1104,7 @@ describe(`matchMuteWords`, () => {
               {
                 value: 'words',
                 targets: ['content'],
-                expiresAt: new Date(now - 1e3).toISOString() as DatetimeString,
+                expiresAt: toDatetimeString(new Date(now - 1e3)),
                 actorTarget: 'all',
               },
             ],
@@ -1318,7 +1314,7 @@ describe(`matchMuteWords`, () => {
             author: carol,
             value: mock.post({ text: 'inner content' }),
             labels: [],
-            indexedAt: new Date().toISOString() as DatetimeString,
+            indexedAt: currentDatetimeString(),
           },
         },
         media: galleryView(['contains badword on view side']),

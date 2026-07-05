@@ -4,7 +4,7 @@ import {
   XrpcResponseError,
 } from '@atproto/lex-client'
 import type { DatetimeString } from '@atproto/lex-schema'
-import { AtUri } from '@atproto/syntax'
+import { AtUri, currentDatetimeString } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
 import { com as comLexicons } from '../lexicons/index.js'
 
@@ -20,7 +20,7 @@ export const post: Action<PostInput, CreateOutput> = async (client, input) => {
   const record = {
     ...input,
     $type: 'app.bsky.feed.post',
-    createdAt: input.createdAt ?? (new Date().toISOString() as DatetimeString),
+    createdAt: input.createdAt ?? currentDatetimeString(),
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
@@ -62,7 +62,7 @@ export const like: Action<LikeInput, CreateOutput> = async (
   const record = {
     $type: 'app.bsky.feed.like',
     subject: { uri, cid },
-    createdAt: new Date().toISOString(),
+    createdAt: currentDatetimeString(),
     via,
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
@@ -105,7 +105,7 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   const record = {
     $type: 'app.bsky.feed.repost',
     subject: { uri, cid },
-    createdAt: new Date().toISOString(),
+    createdAt: currentDatetimeString(),
     via,
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
@@ -144,7 +144,7 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   const record = {
     $type: 'app.bsky.graph.follow',
     subject: did,
-    createdAt: new Date().toISOString(),
+    createdAt: currentDatetimeString(),
     via,
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {

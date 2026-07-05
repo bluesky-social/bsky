@@ -1,5 +1,6 @@
 import { type Action } from '@atproto/lex-client'
 import type { DatetimeString } from '@atproto/syntax'
+import { currentDatetimeString } from '@atproto/syntax'
 import { app as appLexicons } from '../lexicons/index.js'
 
 /**
@@ -12,7 +13,7 @@ export const updateSeenNotifications: Action<string | undefined, void> = async (
 ) => {
   await client.xrpc(appLexicons.bsky.notification.updateSeen.main, {
     body: {
-      seenAt: (seenAt ?? new Date().toISOString()) as DatetimeString,
+      seenAt: (seenAt as DatetimeString | undefined) ?? currentDatetimeString(),
     },
   })
 }

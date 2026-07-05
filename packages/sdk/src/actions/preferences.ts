@@ -1,6 +1,6 @@
 import { type Action, Client } from '@atproto/lex-client'
 import type { AtUriString } from '@atproto/syntax'
-import { AtUri, ensureValidDidRegex } from '@atproto/syntax'
+import { AtUri, ensureValidDidRegex, toDatetimeString } from '@atproto/syntax'
 import {
   adultContentPref,
   bskyAppStatePref,
@@ -664,7 +664,7 @@ export const setPersonalDetails: Action<
   void
 > = async (client, { birthDate }) => {
   const birthDateStr =
-    birthDate instanceof Date ? birthDate.toISOString() : birthDate
+    birthDate instanceof Date ? toDatetimeString(birthDate) : birthDate
   await client.call(updatePreferences, (prefs) => {
     const existing = prefs.find(
       (p) => p.$type === personalDetailsPref.$type,

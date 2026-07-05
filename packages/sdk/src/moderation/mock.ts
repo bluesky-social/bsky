@@ -1,11 +1,11 @@
 import type {
   $Typed,
   AtUriString,
-  DatetimeString,
   DidString,
   HandleString,
   Un$Typed,
 } from '@atproto/lex-schema'
+import { currentDatetimeString } from '@atproto/syntax'
 import type { app, com } from '../lexicons/index.js'
 
 const FAKE_CID = 'bafyreiclp443lavogvhj3d2ob2cxbfuscni2k5jk7bebjzg7khl3esabwq'
@@ -29,7 +29,7 @@ export const mock = {
       reply,
       embed,
       langs: ['en'],
-      createdAt: new Date().toISOString() as DatetimeString,
+      createdAt: currentDatetimeString(),
     }
   },
 
@@ -62,7 +62,7 @@ export const mock = {
       replyCount,
       repostCount,
       likeCount,
-      indexedAt: new Date().toISOString() as DatetimeString,
+      indexedAt: currentDatetimeString(),
       viewer,
       labels,
     }
@@ -86,7 +86,7 @@ export const mock = {
         author,
         value: record,
         labels,
-        indexedAt: new Date().toISOString() as DatetimeString,
+        indexedAt: currentDatetimeString(),
       },
     }
   },
@@ -149,7 +149,7 @@ export const mock = {
       cid: FAKE_CID,
       name,
       purpose: 'app.bsky.graph.defs#modlist',
-      indexedAt: new Date().toISOString() as DatetimeString,
+      indexedAt: currentDatetimeString(),
     }
   },
 
@@ -171,7 +171,7 @@ export const mock = {
         `at://${author.did}/app.bsky.feed.post/fake-parent` as AtUriString,
       record,
       isRead: false,
-      indexedAt: new Date().toISOString() as DatetimeString,
+      indexedAt: currentDatetimeString(),
       labels,
     }
   },
@@ -192,11 +192,11 @@ export const mock = {
       reason: 'follow',
       record: {
         $type: 'app.bsky.graph.follow',
-        createdAt: new Date().toISOString() as DatetimeString,
+        createdAt: currentDatetimeString(),
         subject: subjectDid,
       },
       isRead: false,
-      indexedAt: new Date().toISOString() as DatetimeString,
+      indexedAt: currentDatetimeString(),
       labels,
     }
   },
@@ -215,7 +215,7 @@ export const mock = {
         'did:plc:fake-labeler') as com.atproto.label.defs.Label['src'], // boundary: lex format type
       uri: uri as com.atproto.label.defs.Label['uri'], // boundary: lex format type
       val,
-      cts: new Date().toISOString() as DatetimeString,
+      cts: currentDatetimeString(),
     }
   },
 }

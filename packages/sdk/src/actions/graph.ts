@@ -3,7 +3,7 @@ import {
   type AtIdentifierString,
   type NsidString,
 } from '@atproto/lex-client'
-import { AtUri, type AtUriString } from '@atproto/syntax'
+import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import { app as appLexicons, com as comLexicons } from '../lexicons/index.js'
 
 type CreateOutput = { uri: string; cid: string }
@@ -70,7 +70,7 @@ export const blockActorList: Action<{ list: string }, CreateOutput> = async (
       record: {
         $type: 'app.bsky.graph.listblock',
         subject: list as AtUriString,
-        createdAt: new Date().toISOString(),
+        createdAt: currentDatetimeString(),
       },
     },
   })

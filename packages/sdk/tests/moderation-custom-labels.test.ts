@@ -1,4 +1,4 @@
-import type { DatetimeString } from '@atproto/lex-schema'
+import { currentDatetimeString } from '@atproto/syntax'
 import { describe, expect, it } from 'vitest'
 import {
   InterpretedLabelValueDefinition,
@@ -228,7 +228,7 @@ describe('Moderation: custom labels', () => {
             record: {
               $type: 'app.bsky.feed.post',
               text: 'Hello',
-              createdAt: new Date().toISOString() as DatetimeString,
+              createdAt: currentDatetimeString(),
             },
             author: mock.profileViewBasic({
               handle: 'bob.test',

@@ -1,4 +1,5 @@
 import type { $Typed } from '@atproto/lex-schema'
+import { currentDatetimeString } from '@atproto/syntax'
 import { app } from '../lexicons/index.js'
 
 const REGEX = {
@@ -76,7 +77,7 @@ export function matchMuteWords({
     const postText = text.toLowerCase()
 
     // expired, ignore
-    if (muteWord.expiresAt && muteWord.expiresAt < new Date().toISOString())
+    if (muteWord.expiresAt && muteWord.expiresAt < currentDatetimeString())
       continue
 
     if (
