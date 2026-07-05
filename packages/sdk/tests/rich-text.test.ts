@@ -1,3 +1,4 @@
+import type { Unknown$Type } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import { RichText } from '../src/rich-text/index.js'
 
@@ -115,7 +116,10 @@ describe('RichText#insert', () => {
   const input = new RichText({
     text: 'hello world',
     facets: [
-      { index: { byteStart: 2, byteEnd: 7 }, features: [{ $type: '' }] },
+      {
+        index: { byteStart: 2, byteEnd: 7 },
+        features: [{ $type: '' as Unknown$Type }],
+      },
     ],
   })
 
@@ -163,9 +167,18 @@ describe('RichText#insert w/fat unicode', () => {
   const input = new RichText({
     text: 'one👨‍👩‍👧‍👧 two👨‍👩‍👧‍👧 three👨‍👩‍👧‍👧',
     facets: [
-      { index: { byteStart: 0, byteEnd: 28 }, features: [{ $type: '' }] },
-      { index: { byteStart: 29, byteEnd: 57 }, features: [{ $type: '' }] },
-      { index: { byteStart: 58, byteEnd: 88 }, features: [{ $type: '' }] },
+      {
+        index: { byteStart: 0, byteEnd: 28 },
+        features: [{ $type: '' as Unknown$Type }],
+      },
+      {
+        index: { byteStart: 29, byteEnd: 57 },
+        features: [{ $type: '' as Unknown$Type }],
+      },
+      {
+        index: { byteStart: 58, byteEnd: 88 },
+        features: [{ $type: '' as Unknown$Type }],
+      },
     ],
   })
 
@@ -243,7 +256,10 @@ describe('RichText#delete', () => {
   const input = new RichText({
     text: 'hello world',
     facets: [
-      { index: { byteStart: 2, byteEnd: 7 }, features: [{ $type: '' }] },
+      {
+        index: { byteStart: 2, byteEnd: 7 },
+        features: [{ $type: '' as Unknown$Type }],
+      },
     ],
   })
 
@@ -323,7 +339,10 @@ describe('RichText#delete w/fat unicode', () => {
   const input = new RichText({
     text: 'one👨‍👩‍👧‍👧 two👨‍👩‍👧‍👧 three👨‍👩‍👧‍👧',
     facets: [
-      { index: { byteStart: 29, byteEnd: 57 }, features: [{ $type: '' }] },
+      {
+        index: { byteStart: 29, byteEnd: 57 },
+        features: [{ $type: '' as Unknown$Type }],
+      },
     ],
   })
 
@@ -414,7 +433,10 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 4, byteEnd: 7 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 4, byteEnd: 7 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -423,7 +445,7 @@ describe('RichText#segments', () => {
         text: 'two',
         facet: {
           index: { byteStart: 4, byteEnd: 7 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' three' },
@@ -434,7 +456,10 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 0, byteEnd: 7 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 7 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -442,7 +467,7 @@ describe('RichText#segments', () => {
         text: 'one two',
         facet: {
           index: { byteStart: 0, byteEnd: 7 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' three' },
@@ -453,7 +478,10 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 4, byteEnd: 13 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 4, byteEnd: 13 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -462,7 +490,7 @@ describe('RichText#segments', () => {
         text: 'two three',
         facet: {
           index: { byteStart: 4, byteEnd: 13 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
     ])
@@ -472,7 +500,10 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 0, byteEnd: 13 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 13 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -480,7 +511,7 @@ describe('RichText#segments', () => {
         text: 'one two three',
         facet: {
           index: { byteStart: 0, byteEnd: 13 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
     ])
@@ -490,9 +521,18 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 0, byteEnd: 3 }, features: [{ $type: '' }] },
-        { index: { byteStart: 4, byteEnd: 7 }, features: [{ $type: '' }] },
-        { index: { byteStart: 8, byteEnd: 13 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 3 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 4, byteEnd: 7 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 8, byteEnd: 13 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -500,7 +540,7 @@ describe('RichText#segments', () => {
         text: 'one',
         facet: {
           index: { byteStart: 0, byteEnd: 3 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' ' },
@@ -508,7 +548,7 @@ describe('RichText#segments', () => {
         text: 'two',
         facet: {
           index: { byteStart: 4, byteEnd: 7 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' ' },
@@ -516,7 +556,7 @@ describe('RichText#segments', () => {
         text: 'three',
         facet: {
           index: { byteStart: 8, byteEnd: 13 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
     ])
@@ -526,9 +566,18 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one👨‍👩‍👧‍👧 two👨‍👩‍👧‍👧 three👨‍👩‍👧‍👧',
       facets: [
-        { index: { byteStart: 0, byteEnd: 28 }, features: [{ $type: '' }] },
-        { index: { byteStart: 29, byteEnd: 57 }, features: [{ $type: '' }] },
-        { index: { byteStart: 58, byteEnd: 88 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 28 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 29, byteEnd: 57 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 58, byteEnd: 88 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -536,7 +585,7 @@ describe('RichText#segments', () => {
         text: 'one👨‍👩‍👧‍👧',
         facet: {
           index: { byteStart: 0, byteEnd: 28 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' ' },
@@ -544,7 +593,7 @@ describe('RichText#segments', () => {
         text: 'two👨‍👩‍👧‍👧',
         facet: {
           index: { byteStart: 29, byteEnd: 57 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' ' },
@@ -552,7 +601,7 @@ describe('RichText#segments', () => {
         text: 'three👨‍👩‍👧‍👧',
         facet: {
           index: { byteStart: 58, byteEnd: 88 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
     ])
@@ -582,7 +631,7 @@ describe('RichText#segments', () => {
         },
         {
           index: { byteStart: 8, byteEnd: 13 },
-          features: [{ $type: 'other' }],
+          features: [{ $type: 'other' as Unknown$Type }],
         },
       ],
     })
@@ -603,9 +652,18 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 0, byteEnd: 3 }, features: [{ $type: '' }] },
-        { index: { byteStart: 2, byteEnd: 9 }, features: [{ $type: '' }] },
-        { index: { byteStart: 8, byteEnd: 13 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 3 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 2, byteEnd: 9 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 8, byteEnd: 13 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -613,7 +671,7 @@ describe('RichText#segments', () => {
         text: 'one',
         facet: {
           index: { byteStart: 0, byteEnd: 3 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       {
@@ -623,7 +681,7 @@ describe('RichText#segments', () => {
         text: 'three',
         facet: {
           index: { byteStart: 8, byteEnd: 13 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
     ])
@@ -633,9 +691,18 @@ describe('RichText#segments', () => {
     const input = new RichText({
       text: 'one two three',
       facets: [
-        { index: { byteStart: 0, byteEnd: 3 }, features: [{ $type: '' }] },
-        { index: { byteStart: 4, byteEnd: 9 }, features: [{ $type: '' }] },
-        { index: { byteStart: 8, byteEnd: 13 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 3 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 4, byteEnd: 9 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 8, byteEnd: 13 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     expect(Array.from(input.segments())).toEqual([
@@ -643,7 +710,7 @@ describe('RichText#segments', () => {
         text: 'one',
         facet: {
           index: { byteStart: 0, byteEnd: 3 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       { text: ' ' },
@@ -651,7 +718,7 @@ describe('RichText#segments', () => {
         text: 'two t',
         facet: {
           index: { byteStart: 4, byteEnd: 9 },
-          features: [{ $type: '' }],
+          features: [{ $type: '' as Unknown$Type }],
         },
       },
       {

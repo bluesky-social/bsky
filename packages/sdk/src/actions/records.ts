@@ -3,11 +3,14 @@ import {
   type NsidString,
   XrpcResponseError,
 } from '@atproto/lex-client'
+import type { DatetimeString } from '@atproto/lex-schema'
 import { AtUri } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
 import { com as comLexicons } from '../lexicons/index.js'
 
-type PostInput = Omit<app.bsky.feed.post.Main, '$type'> & { createdAt?: string }
+type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
+  createdAt?: DatetimeString
+}
 type CreateOutput = { uri: string; cid: string }
 
 /**
@@ -17,7 +20,7 @@ export const post: Action<PostInput, CreateOutput> = async (client, input) => {
   const record = {
     ...input,
     $type: 'app.bsky.feed.post',
-    createdAt: input.createdAt ?? new Date().toISOString(),
+    createdAt: input.createdAt ?? (new Date().toISOString() as DatetimeString),
   }
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {

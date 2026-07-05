@@ -1,4 +1,4 @@
-import type { HandleResolver } from '@atproto-labs/handle-resolver'
+import type { AtprotoDid, HandleResolver } from '@atproto-labs/handle-resolver'
 import { describe, expect, it } from 'vitest'
 import { app } from '../src/lexicons/index.js'
 import { RichText, RichTextSegment } from '../src/rich-text/index.js'
@@ -16,7 +16,7 @@ const isTag = app.bsky.richtext.facet.tag.isTypeOf.bind(
 // Stub resolver: mirrors the old AtpAgent mock — resolves every handle to did:fake:<handle>
 const resolver: HandleResolver = {
   async resolve(handle) {
-    return `did:fake:${handle}` as `did:${string}`
+    return `did:fake:${handle}` as unknown as AtprotoDid
   },
 }
 

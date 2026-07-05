@@ -10,6 +10,7 @@
 import { jsonToLex, lexParse, lexStringify, lexToJson } from '@atproto/lex'
 import {
   type DidString,
+  type HandleString,
   asAtUriString,
   asStringFormat,
   isAtUriString,
@@ -288,7 +289,7 @@ describe('skill-examples', () => {
         resolve: async (handle: string) => {
           try {
             const res = await client.call(com.atproto.identity.resolveHandle, {
-              handle,
+              handle: handle as HandleString,
             })
             return res.did as AtprotoDid
           } catch {
@@ -333,7 +334,7 @@ describe('README examples', () => {
     // App view proxied through PDS
     function makeAppviewClient(pds: Client) {
       return new Client(pds, {
-        service: api.app.service as `${string}#${string}`,
+        service: api.app.service,
       })
     }
     // Public unauthenticated client from URL string

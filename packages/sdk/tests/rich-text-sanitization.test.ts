@@ -1,3 +1,4 @@
+import type { Unknown$Type } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import {
   Facet,
@@ -121,10 +122,22 @@ describe('sanitizeRichText w/facets: cleanNewlines', () => {
     const input = new RichText({
       text: 'test\n\n\n\n\ntest\n\n\n\n\n\n\ntest\n\n\n\n\n\n\ntest\n\n\n\n\n\n\ntest',
       facets: [
-        { index: { byteStart: 0, byteEnd: 13 }, features: [{ $type: '' }] },
-        { index: { byteStart: 13, byteEnd: 24 }, features: [{ $type: '' }] },
-        { index: { byteStart: 9, byteEnd: 15 }, features: [{ $type: '' }] },
-        { index: { byteStart: 4, byteEnd: 9 }, features: [{ $type: '' }] },
+        {
+          index: { byteStart: 0, byteEnd: 13 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 13, byteEnd: 24 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 9, byteEnd: 15 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
+        {
+          index: { byteStart: 4, byteEnd: 9 },
+          features: [{ $type: '' as Unknown$Type }],
+        },
       ],
     })
     const output = sanitizeRichText(input, { cleanNewlines: true })
@@ -167,7 +180,7 @@ describe('sanitizeRichText w/facets: cleanNewlines', () => {
       const byteEnd = byteStart + new UnicodeString(match).length
       return {
         index: { byteStart, byteEnd },
-        features: [{ $type: '' }],
+        features: [{ $type: '' as Unknown$Type }],
       }
     }
 

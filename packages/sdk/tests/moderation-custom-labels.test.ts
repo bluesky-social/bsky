@@ -1,3 +1,4 @@
+import type { DatetimeString } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import {
   InterpretedLabelValueDefinition,
@@ -7,17 +8,18 @@ import {
   moderateProfile,
 } from '../src/moderation/index.js'
 import { mock } from '../src/moderation/mock.js'
+import type { ModerationTestSuiteResultFlag } from './util/moderation-behavior.js'
 import './util/moderation-behavior.js'
 
 interface ScenarioResult {
-  profileList?: string[]
-  profileView?: string[]
-  avatar?: string[]
-  banner?: string[]
-  displayName?: string[]
-  contentList?: string[]
-  contentView?: string[]
-  contentMedia?: string[]
+  profileList?: ModerationTestSuiteResultFlag[]
+  profileView?: ModerationTestSuiteResultFlag[]
+  avatar?: ModerationTestSuiteResultFlag[]
+  banner?: ModerationTestSuiteResultFlag[]
+  displayName?: ModerationTestSuiteResultFlag[]
+  contentList?: ModerationTestSuiteResultFlag[]
+  contentView?: ModerationTestSuiteResultFlag[]
+  contentMedia?: ModerationTestSuiteResultFlag[]
 }
 
 interface Scenario {
@@ -226,7 +228,7 @@ describe('Moderation: custom labels', () => {
             record: {
               $type: 'app.bsky.feed.post',
               text: 'Hello',
-              createdAt: new Date().toISOString(),
+              createdAt: new Date().toISOString() as DatetimeString,
             },
             author: mock.profileViewBasic({
               handle: 'bob.test',

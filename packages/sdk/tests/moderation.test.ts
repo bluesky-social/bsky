@@ -1,3 +1,4 @@
+import type { DatetimeString } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import {
   ModerationOpts,
@@ -20,7 +21,7 @@ describe('Moderation', () => {
             src: 'did:web:bob.test',
             uri: 'at://did:web:bob.test/app.bsky.actor.profile/self',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -54,7 +55,7 @@ describe('Moderation', () => {
             src: 'did:web:bob.test',
             uri: 'at://did:web:bob.test/app.bsky.actor.profile/self',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -90,7 +91,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.actor.profile/self',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -134,7 +135,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.actor.profile/self',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -180,7 +181,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -218,7 +219,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -229,13 +230,13 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
           {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: '!hide',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -298,7 +299,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -309,7 +310,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -360,7 +361,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -371,7 +372,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: '!hide',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -437,7 +438,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -448,13 +449,13 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'BadLabel',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
           {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'bad/label',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -526,7 +527,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -537,7 +538,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'default-hide',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -558,7 +559,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -569,7 +570,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'default-warn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -590,7 +591,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -601,7 +602,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'default-ignore',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -656,7 +657,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -667,7 +668,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'adult',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),
@@ -710,7 +711,7 @@ describe('Moderation', () => {
         record: {
           $type: 'app.bsky.feed.post',
           text: 'Hello',
-          createdAt: new Date().toISOString(),
+          createdAt: new Date().toISOString() as DatetimeString,
         },
         author: mock.profileViewBasic({
           handle: 'bob.test',
@@ -721,7 +722,7 @@ describe('Moderation', () => {
             src: 'did:web:labeler.test',
             uri: 'at://did:web:bob.test/app.bsky.post/fake',
             val: 'porn',
-            cts: new Date().toISOString(),
+            cts: new Date().toISOString() as DatetimeString,
           },
         ],
       }),

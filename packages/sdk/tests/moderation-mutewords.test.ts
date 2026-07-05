@@ -1,5 +1,9 @@
-import { BlobRef } from '@atproto/lex-data'
-import type { $Typed } from '@atproto/lex-schema'
+import type {
+  $Typed,
+  AtUriString,
+  BlobRef,
+  DatetimeString,
+} from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import type { app } from '../src/lexicons/index.js' // type-only usage for type annotations
 import { moderatePost } from '../src/moderation/index.js'
@@ -40,7 +44,7 @@ class RichText {
           {
             $type: 'app.bsky.richtext.facet#tag' as const,
             tag,
-          } as app.bsky.richtext.facet.Tag,
+          },
         ],
       })
     }
@@ -928,11 +932,11 @@ describe(`matchMuteWords`, () => {
         facets: [
           {
             features: [
+              // deliberately non-bsky $type with extra prop to exercise "other features" path
               {
                 $type: 'com.example.richtext.facet#other',
-                // @ts-expect-error unknown property on custom facet type
                 foo: 'bar',
-              },
+              } as unknown as import('@atproto/lex-schema').Unknown$TypedObject,
               {
                 $type: 'app.bsky.richtext.facet#tag',
                 tag: 'bad',
@@ -1067,7 +1071,7 @@ describe(`matchMuteWords`, () => {
               {
                 value: 'words',
                 targets: ['content'],
-                expiresAt: new Date(now + 1e3).toISOString(),
+                expiresAt: new Date(now + 1e3).toISOString() as DatetimeString,
                 actorTarget: 'all',
               },
             ],
@@ -1104,7 +1108,7 @@ describe(`matchMuteWords`, () => {
               {
                 value: 'words',
                 targets: ['content'],
-                expiresAt: new Date(now - 1e3).toISOString(),
+                expiresAt: new Date(now - 1e3).toISOString() as DatetimeString,
                 actorTarget: 'all',
               },
             ],
@@ -1147,7 +1151,8 @@ describe(`matchMuteWords`, () => {
             handle: 'bob.test',
             displayName: 'Bob',
             viewer: {
-              following: 'true',
+              // intentionally invalid value to test truthy-following detection
+              following: 'true' as AtUriString,
             },
           }),
           labels: [],
@@ -1313,7 +1318,7 @@ describe(`matchMuteWords`, () => {
             author: carol,
             value: mock.post({ text: 'inner content' }),
             labels: [],
-            indexedAt: new Date().toISOString(),
+            indexedAt: new Date().toISOString() as DatetimeString,
           },
         },
         media: galleryView(['contains badword on view side']),
