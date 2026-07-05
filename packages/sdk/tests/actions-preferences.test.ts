@@ -253,6 +253,101 @@ describe('updatePreferences round-trip', () => {
   })
 })
 
+describe('updatePreferences serialization', () => {
+  it('concurrent addSavedFeeds calls on same client do not clobber each other', async () => {
+    let stored: unknown[] = []
+    // Custom fetchHandler that properly awaits async route results and
+    // introduces a 10ms delay on getPreferences to widen the race window.
+    const client = new Client(
+      {
+        did: 'did:plc:test' as never,
+        fetchHandler: async (path, init) => {
+          const u = new URL(path, 'https://pds.test')
+          const nsid = u.pathname.replace('/xrpc/', '')
+          const body = init?.body ? JSON.parse(init.body as string) : undefined
+          if (nsid === 'app.bsky.actor.getPreferences') {
+            await new Promise((r) => setTimeout(r, 10))
+            return new Response(JSON.stringify({ preferences: stored }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            })
+          }
+          if (nsid === 'app.bsky.actor.putPreferences') {
+            stored = (body as { preferences: unknown[] }).preferences
+            return new Response(JSON.stringify({}), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            })
+          }
+          return new Response(
+            JSON.stringify({ error: 'MethodNotImplemented' }),
+            { status: 501 },
+          )
+        },
+      },
+      { validateResponse: false },
+    )
+    // Fire both concurrently; without the serialization lock the second read
+    // would see the initial empty state and overwrite the first write.
+    await Promise.all([
+      client.call(addSavedFeeds, [
+        {
+          type: 'feed',
+          value: 'at://did:plc:x/app.bsky.feed.generator/feed-a',
+          pinned: true,
+        },
+      ]),
+      client.call(addSavedFeeds, [
+        {
+          type: 'feed',
+          value: 'at://did:plc:x/app.bsky.feed.generator/feed-b',
+          pinned: false,
+        },
+      ]),
+    ])
+    // Both feeds must be present — no write was lost
+    const v2 = (stored as { $type: string; items?: unknown[] }[]).find(
+      (p) => p.$type === 'app.bsky.actor.defs#savedFeedsPrefV2',
+    )
+    const values = (v2?.items as { value: string }[] | undefined)?.map(
+      (f) => f.value,
+    )
+    expect(values).toContain('at://did:plc:x/app.bsky.feed.generator/feed-a')
+    expect(values).toContain('at://did:plc:x/app.bsky.feed.generator/feed-b')
+  })
+})
+
+describe('TID-format saved feed ids', () => {
+  it('addSavedFeeds assigns ids matching the TID s32 format (13 chars, [2-7a-z])', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    const [a] = await client.call(addSavedFeeds, [
+      {
+        type: 'feed',
+        value: 'at://did:plc:x/app.bsky.feed.generator/a',
+        pinned: true,
+      },
+    ])
+    const [b] = await client.call(addSavedFeeds, [
+      {
+        type: 'feed',
+        value: 'at://did:plc:x/app.bsky.feed.generator/b',
+        pinned: false,
+      },
+    ])
+    expect(a.id).toMatch(/^[2-7a-z]{13}$/)
+    expect(b.id).toMatch(/^[2-7a-z]{13}$/)
+    // Ids must be strictly increasing (TID ordering guarantee)
+    expect(b.id > a.id).toBe(true)
+  })
+})
+
 describe('getPreferences full-shape (ported from old moderation-prefs.test.ts)', () => {
   it('migrates legacy content-label prefs — full toStrictEqual shape', async () => {
     // Ported from old agent.ts moderation-prefs.test.ts:

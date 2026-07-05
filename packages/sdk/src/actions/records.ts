@@ -6,7 +6,7 @@ import {
 import type { DatetimeString } from '@atproto/lex-schema'
 import { AtUri, currentDatetimeString } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
-import { com as comLexicons } from '../lexicons/index.js'
+import { app as appLexicons, com as comLexicons } from '../lexicons/index.js'
 
 type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
   createdAt?: DatetimeString
@@ -197,10 +197,22 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
       })
       .catch(() => undefined)
 
-    const existingValue = existing?.body.value as
-      Partial<ProfileRecord> | undefined
+    // Pass undefined to updateFn if the existing record does NOT validate as
+    // app.bsky.actor.profile (old agent.ts:465-468: isValidProfile gate).
+    const existingValue = existing?.body.value
+    const existingRecord: Partial<ProfileRecord> | undefined =
+      appLexicons.bsky.actor.profile.main.matches(existingValue)
+        ? existingValue
+        : undefined
 
-    const updated = await updateFn(existingValue)
+    const updated = await updateFn(existingRecord)
+
+    // Validate post-update record; throw BEFORE putRecord on failure
+    // (old agent.ts:471-476: validateRecord gate).
+    appLexicons.bsky.actor.profile.main.check({
+      $type: 'app.bsky.actor.profile',
+      ...updated,
+    })
 
     try {
       await client.xrpc(comLexicons.atproto.repo.putRecord.main, {

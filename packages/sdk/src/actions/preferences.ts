@@ -33,14 +33,54 @@ import type {
 type Preferences = app.bsky.actor.defs.Preferences
 type SavedFeed = app.bsky.actor.defs.SavedFeed
 
+// TODO: align with @atproto libraries once TID moves out of @atproto/common-web
+
 /**
- * TID generator replacing TID.nextStr() from @atproto/common-web (no longer a dependency).
- * Produces unique, roughly-sortable base-32 string IDs using millisecond timestamp * 1000 + counter.
+ * Minimal faithful TID implementation. Alphabet: s32 (234567abcdefghijklmnopqrstuvwxyz).
+ * Encodes (microsecond timestamp << 10 | clockid) into 13 s32 characters, mirroring
+ * @atproto/common-web src/tid.ts (TID.next / TID.nextStr), lines 24–48.
+ * Monotonicity guard: if now <= lastTimestamp, increment the millisecond counter.
  */
-let _tidCounter = 0
+const S32 = '234567abcdefghijklmnopqrstuvwxyz'
+
+function s32encode(i: number): string {
+  let s = ''
+  while (i) {
+    s = S32.charAt(i % 32) + s
+    i = Math.floor(i / 32)
+  }
+  return s
+}
+
+let _tidLastTime = 0
+let _tidTimestampCount = 0
+let _tidClockid: number | null = null
+
 function nextTid(): string {
-  const ts = Date.now() * 1000 + (_tidCounter++ % 1000)
-  return ts.toString(32).padStart(13, '0')
+  const now = Math.max(Date.now(), _tidLastTime)
+  if (now === _tidLastTime) {
+    _tidTimestampCount++
+  } else {
+    _tidTimestampCount = 0
+  }
+  _tidLastTime = now
+  if (_tidClockid === null) {
+    _tidClockid = Math.floor(Math.random() * 32)
+  }
+  const timestamp = now * 1000 + _tidTimestampCount
+  const str = `${s32encode(timestamp)}${s32encode(_tidClockid).padStart(2, '2')}`
+  return str.padStart(13, '2')
+}
+
+// Serializes preference read-modify-write cycles per client, replacing the
+// old Agent's per-instance AwaitLock. Keyed weakly so clients can be GC'd.
+const prefsWriteChains = new WeakMap<object, Promise<unknown>>()
+
+function serialized<T>(client: object, fn: () => Promise<T>): Promise<T> {
+  const prev = prefsWriteChains.get(client) ?? Promise.resolve()
+  const next = prev.then(fn, fn) // run regardless of predecessor outcome
+  prefsWriteChains.set(client, next)
+  return next
 }
 
 // Label name remapping for legacy label names
@@ -93,23 +133,26 @@ function validateSavedFeed(feed: SavedFeed): void {
 /**
  * Low-level helper to update the raw preferences array on the server.
  *
- * Callers are responsible for sequencing concurrent calls to avoid write conflicts.
+ * Concurrent calls on the same Client are automatically serialized: each
+ * read-modify-write cycle waits for the previous one to complete before
+ * starting, matching the old Agent's per-instance AwaitLock behavior.
  */
 export const updatePreferences: Action<
   (prefs: Preferences) => Preferences | false,
   Preferences
-> = async (client, cb) => {
-  const res = await client.xrpc(appLexicons.bsky.actor.getPreferences.main, {
-    params: {},
+> = (client, cb) =>
+  serialized(client, async () => {
+    const res = await client.xrpc(appLexicons.bsky.actor.getPreferences.main, {
+      params: {},
+    })
+    const current = res.body.preferences as Preferences
+    const result = cb(current)
+    if (result === false) return current
+    await client.xrpc(appLexicons.bsky.actor.putPreferences.main, {
+      body: { preferences: result },
+    })
+    return result
   })
-  const current = res.body.preferences as Preferences
-  const result = cb(current)
-  if (result === false) return current
-  await client.xrpc(appLexicons.bsky.actor.putPreferences.main, {
-    body: { preferences: result },
-  })
-  return result
-}
 
 /**
  * Fetches and interprets the current user's preferences into a structured BskyPreferences object.

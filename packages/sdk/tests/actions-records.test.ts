@@ -84,6 +84,49 @@ describe('record actions', () => {
     expect(putCount).toBe(1)
   })
 
+  it('upsertProfile passes undefined to updateFn when existing record fails profile validation', async () => {
+    let receivedExisting: unknown = 'sentinel'
+    const { client } = fakeClient({
+      'com.atproto.repo.getRecord': () => ({
+        uri: 'at://did:plc:test/app.bsky.actor.profile/self',
+        cid: 'bafyinvalid',
+        value: {
+          $type: 'app.bsky.actor.profile',
+          // displayName exceeds the 64-grapheme limit — fails validation
+          displayName: 'x'.repeat(200),
+        },
+      }),
+      'com.atproto.repo.putRecord': () => ({ uri: 'u', cid: 'c' }),
+    })
+    await client.call(upsertProfile, (existing) => {
+      receivedExisting = existing
+      return { displayName: 'Valid' }
+    })
+    expect(receivedExisting).toBeUndefined()
+  })
+
+  it('upsertProfile throws and does not call putRecord when updateFn returns an invalid record', async () => {
+    let putCalled = false
+    const { client } = fakeClient({
+      'com.atproto.repo.getRecord': () => ({
+        uri: 'at://did:plc:test/app.bsky.actor.profile/self',
+        cid: 'bafyc',
+        value: { $type: 'app.bsky.actor.profile', displayName: 'Old' },
+      }),
+      'com.atproto.repo.putRecord': () => {
+        putCalled = true
+        return { uri: 'u', cid: 'c' }
+      },
+    })
+    await expect(
+      client.call(upsertProfile, () => ({
+        // displayName exceeds the 64-grapheme limit — invalid
+        displayName: 'x'.repeat(200),
+      })),
+    ).rejects.toThrow()
+    expect(putCalled).toBe(false)
+  })
+
   it('muteActor calls app.bsky.graph.muteActor', async () => {
     const { client, calls } = fakeClient({
       'app.bsky.graph.muteActor': () => ({}),
