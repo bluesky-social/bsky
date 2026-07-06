@@ -1,0 +1,112 @@
+name: Lexicons
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: lexicons-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Script self-test
+        run: node --test .github/scripts/
+      - name: Compute changed lexicons
+        id: changed
+        run: |
+          .github/scripts/lex-changed-files.sh "origin/${{ github.base_ref }}" > changed.txt
+          echo "count=$(grep -c . changed.txt || true)" >> "$GITHUB_OUTPUT"
+          cat changed.txt
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        if: steps.changed.outputs.count != '0'
+        with:
+          go-version: '1.25.x'
+          cache: false
+      - name: Install goat
+        if: steps.changed.outputs.count != '0'
+        run: go install github.com/bluesky-social/goat@v0.2.2
+      - name: Lint changed lexicons
+        id: goat
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set +e
+          xargs goat lex lint --json < changed.txt > findings.jsonl
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          cat findings.jsonl
+      - name: Build report
+        run: |
+          touch findings.jsonl
+          node .github/scripts/lex-report.mjs --kind lint < findings.jsonl > report.md
+      - name: Post sticky comment
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/lex-sticky-comment.mjs --marker lex-lint-report < report.md
+      - name: Enforce
+        if: steps.goat.outputs.exit != '' && steps.goat.outputs.exit != '0'
+        run: |
+          if [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-lint-override') }}" = "true" ]; then
+            echo "::notice::lint findings present, but the lex-lint-override label is applied"
+          else
+            echo "::error::lint findings on changed lexicons; fix them or have a maintainer apply the lex-lint-override label"
+            exit 1
+          fi
+
+  breaking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Compute changed lexicons
+        id: changed
+        run: |
+          .github/scripts/lex-changed-files.sh "origin/${{ github.base_ref }}" > changed.txt
+          echo "count=$(grep -c . changed.txt || true)" >> "$GITHUB_OUTPUT"
+          cat changed.txt
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        if: steps.changed.outputs.count != '0'
+        with:
+          go-version: '1.25.x'
+          cache: false
+      - name: Install goat
+        if: steps.changed.outputs.count != '0'
+        run: go install github.com/bluesky-social/goat@v0.2.2
+      - name: Check changed lexicons for breaking changes
+        id: goat
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set +e
+          xargs goat lex breaking --json < changed.txt > findings.jsonl
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          cat findings.jsonl
+      - name: Build report
+        run: |
+          touch findings.jsonl
+          node .github/scripts/lex-report.mjs --kind breaking < findings.jsonl > report.md
+      - name: Post sticky comment
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/lex-sticky-comment.mjs --marker lex-breaking-report < report.md
+      - name: Enforce
+        if: steps.goat.outputs.exit != '' && steps.goat.outputs.exit != '0'
+        run: |
+          if [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-breaking-override') }}" = "true" ]; then
+            echo "::notice::breaking changes detected, but the lex-breaking-override label is applied"
+          else
+            echo "::error::breaking lexicon changes detected; if intentional, have a maintainer apply the lex-breaking-override label"
+            exit 1
+          fi
