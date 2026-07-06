@@ -3,15 +3,9 @@ import { describe, expect, it } from 'vitest'
 import { app } from '../src/lexicons/index.js'
 import { RichText, RichTextSegment } from '../src/rich-text/index.js'
 
-const isLink = app.bsky.richtext.facet.link.isTypeOf.bind(
-  app.bsky.richtext.facet.link,
-)
-const isMention = app.bsky.richtext.facet.mention.isTypeOf.bind(
-  app.bsky.richtext.facet.mention,
-)
-const isTag = app.bsky.richtext.facet.tag.isTypeOf.bind(
-  app.bsky.richtext.facet.tag,
-)
+const isLink = app.bsky.richtext.facet.link.$isTypeOf
+const isMention = app.bsky.richtext.facet.mention.$isTypeOf
+const isTag = app.bsky.richtext.facet.tag.$isTypeOf
 
 // Stub resolver: mirrors the old AtpAgent mock — resolves every handle to did:fake:<handle>
 const resolver: HandleResolver = {
@@ -460,3 +454,22 @@ function segmentToOutput(segment: RichTextSegment): string[] {
   }
   return [segment.text]
 }
+
+describe('detectFacets with Client', () => {
+  it('resolves mentions using a Client instance', async () => {
+    // Use a HandleResolver directly to test the resolve path
+    const mockResolver: HandleResolver = {
+      async resolve(handle: string) {
+        return `did:plc:resolved-${handle}` as any
+      },
+    }
+
+    const rt = new RichText({ text: 'hello @alice.test' })
+    await rt.detectFacets(mockResolver)
+
+    const mentions = rt.facets?.filter((f) => f.features.some(isMention)) ?? []
+    expect(mentions.length).toBe(1)
+    const mention = mentions[0]?.features.find(isMention)
+    expect(mention?.did).toBe('did:plc:resolved-alice.test')
+  })
+})

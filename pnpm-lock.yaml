@@ -272,6 +272,9 @@ importers:
       '@atproto/lex-client':
         specifier: ^0.2.1
         version: 0.2.1
+      '@atproto/lex-data':
+        specifier: ^0.1.4
+        version: 0.1.4
       '@atproto/lex-schema':
         specifier: ^0.1.6
         version: 0.1.6

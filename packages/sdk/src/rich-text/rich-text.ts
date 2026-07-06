@@ -91,9 +91,11 @@ F: 0 1 2 3 4 5 6 7 8 910   // string indices
    ^-------^               // target slice {start: 0, end: 5}
  */
 
-import type { $Typed } from '@atproto/lex-schema'
+import { Client } from '@atproto/lex-client'
+import type { DidString, UriString } from '@atproto/lex-schema'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { app } from '../lexicons/index.js'
+import { handleResolverFromClient } from '../utils/index.js'
 import { detectFacets } from './detection.js'
 import { sanitizeRichText } from './sanitization.js'
 import { UnicodeString } from './unicode.js'
@@ -124,9 +126,7 @@ export class RichTextSegment {
   ) {}
 
   get link(): FacetLink | undefined {
-    return this.facet?.features.find(
-      (f) => f.$type === app.bsky.richtext.facet.link.$type,
-    ) as FacetLink | undefined
+    return this.facet?.features.find(app.bsky.richtext.facet.link.$isTypeOf)
   }
 
   isLink() {
@@ -134,9 +134,7 @@ export class RichTextSegment {
   }
 
   get mention(): FacetMention | undefined {
-    return this.facet?.features.find(
-      (f) => f.$type === app.bsky.richtext.facet.mention.$type,
-    ) as FacetMention | undefined
+    return this.facet?.features.find(app.bsky.richtext.facet.mention.$isTypeOf)
   }
 
   isMention() {
@@ -144,9 +142,7 @@ export class RichTextSegment {
   }
 
   get tag(): FacetTag | undefined {
-    return this.facet?.features.find(
-      (f) => f.$type === app.bsky.richtext.facet.tag.$type,
-    ) as FacetTag | undefined
+    return this.facet?.features.find(app.bsky.richtext.facet.tag.$isTypeOf)
   }
 
   isTag() {
@@ -187,13 +183,13 @@ export class RichText {
   clone() {
     return new RichText({
       text: this.unicodeText.utf16,
-      facets: cloneDeep(this.facets),
+      facets: structuredClone(this.facets),
     })
   }
 
   copyInto(target: RichText) {
     target.unicodeText = this.unicodeText
-    target.facets = cloneDeep(this.facets)
+    target.facets = structuredClone(this.facets)
   }
 
   *segments(): Generator<RichTextSegment, void, void> {
@@ -343,20 +339,24 @@ export class RichText {
    * Detects facets such as links and mentions
    * Note: Overwrites the existing facets with auto-detected facets
    */
-  async detectFacets(resolver: HandleResolver): Promise<void> {
+  async detectFacets(resolverOrClient: HandleResolver | Client): Promise<void> {
+    const resolver =
+      resolverOrClient instanceof Client
+        ? handleResolverFromClient(resolverOrClient)
+        : resolverOrClient
     this.facets = detectFacets(this.unicodeText)
     if (this.facets) {
       const promises: Promise<void>[] = []
       for (const facet of this.facets) {
         for (const feature of facet.features) {
-          if (feature.$type === app.bsky.richtext.facet.mention.$type) {
-            const mention = feature as $Typed<app.bsky.richtext.facet.Mention>
+          if (app.bsky.richtext.facet.mention.$isTypeOf(feature)) {
             promises.push(
               resolver
-                .resolve(mention.did)
+                .resolve(feature.did)
                 .catch(() => null)
                 .then((did) => {
-                  mention.did = (did ?? '') as `did:${string}:${string}`
+                  if (did) feature.did = did
+                  else feature.did = '' as DidString // @NOTE: unresolved mention — resolver returned null
                 }),
             )
           }
@@ -399,7 +399,7 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
         features: [
           {
             $type: 'app.bsky.richtext.facet#link',
-            uri: ent.value as `${string}:${string}`,
+            uri: ent.value as UriString,
           },
         ],
       })
@@ -413,18 +413,11 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
         features: [
           {
             $type: 'app.bsky.richtext.facet#mention',
-            did: ent.value as `did:${string}:${string}`,
+            did: ent.value as DidString,
           },
         ],
       })
     }
   }
   return facets
-}
-
-function cloneDeep<T>(v: T): T {
-  if (typeof v === 'undefined') {
-    return v
-  }
-  return JSON.parse(JSON.stringify(v))
 }

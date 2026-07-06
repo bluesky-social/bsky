@@ -1,4 +1,3 @@
-import type { $Typed } from '@atproto/lex-schema'
 import { currentDatetimeString } from '@atproto/syntax'
 import { app } from '../lexicons/index.js'
 
@@ -61,10 +60,7 @@ export function matchMuteWords({
     .concat(
       (facets || []).flatMap((facet) =>
         facet.features
-          .filter(
-            (f): f is $Typed<app.bsky.richtext.facet.Tag> =>
-              f.$type === app.bsky.richtext.facet.tag.$type,
-          )
+          .filter(app.bsky.richtext.facet.tag.$isTypeOf)
           .map((tag) => tag.tag),
       ),
     )

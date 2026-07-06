@@ -51,6 +51,7 @@
   "dependencies": {
     "@atproto-labs/handle-resolver": "^0.4.4",
     "@atproto/lex-client": "^0.2.1",
+    "@atproto/lex-data": "^0.1.4",
     "@atproto/lex-schema": "^0.1.6",
     "@atproto/syntax": "^0.6.4",
     "tlds": "^1.234.0"

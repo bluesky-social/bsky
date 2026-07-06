@@ -1,3 +1,4 @@
+import type { DidString, UriString } from '@atproto/lex-schema'
 // The `tlds` dependency stays (rather than bundling a copy): the TLD list is
 // a living dataset (IANA adds/removes TLDs), so a bundled copy would go stale
 // unless manually regenerated, and the package is tiny with no runtime deps.
@@ -35,7 +36,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         features: [
           {
             $type: 'app.bsky.richtext.facet#mention',
-            did: match[3] as `did:${string}:${string}`, // must be resolved afterwards
+            did: match[3] as DidString, // boundary: detected text must be resolved
           },
         ],
       })
@@ -72,7 +73,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         features: [
           {
             $type: 'app.bsky.richtext.facet#link',
-            uri: uri as `${string}:${string}`,
+            uri: uri as UriString, // boundary: detected text, format verified by URL_REGEX
           },
         ],
       })

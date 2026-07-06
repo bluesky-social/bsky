@@ -7,7 +7,7 @@
  * and utf16, and that's precisely what this library handles.
  */
 
-import { graphemeLen } from '@atproto/common-web'
+import { graphemeLen } from '@atproto/lex-data'
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()

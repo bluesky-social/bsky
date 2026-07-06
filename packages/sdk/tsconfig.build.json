@@ -8,6 +8,7 @@
     "./src/lexicons-export.ts",
     "./src/moderation",
     "./src/rich-text",
+    "./src/tid.ts",
     "./src/utils",
   ],
   "compilerOptions": {
