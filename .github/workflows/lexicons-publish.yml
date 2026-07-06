@@ -1,0 +1,34 @@
+name: Lexicons Publish
+
+on:
+  push:
+    branches: [main]
+    paths: [lexicons/**]
+
+permissions:
+  contents: read
+
+# Serialize publishes so merges land on the network in order. No
+# cancel-in-progress: a started publish should finish.
+concurrency: lexicons-publish
+
+jobs:
+  publish:
+    if: github.repository == 'bluesky-social/bsky'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: '1.25.x'
+          cache: false
+      - name: Install goat
+        run: go install github.com/bluesky-social/goat@v0.2.2
+      - name: Publish lexicons
+        env:
+          GOAT_USERNAME: ${{ secrets.LEX_PUBLISH_HANDLE }}
+          GOAT_PASSWORD: ${{ secrets.LEX_PUBLISH_APP_PASSWORD }}
+        # --update allows modifying existing records; safe because the
+        # breaking check gated the PR. Publish skips schemas identical to
+        # what is live, so re-runs are idempotent.
+        run: goat lex publish --update
