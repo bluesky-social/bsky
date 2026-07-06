@@ -8,9 +8,9 @@ const TITLES = {
 }
 
 export function buildReport(kind, findings) {
-  if (findings.length === 0) return ''
   const title = TITLES[kind]
   if (!title) throw new Error(`unknown report kind: ${kind}`)
+  if (findings.length === 0) return ''
   const byFile = new Map()
   for (const finding of findings) {
     // `goat lex breaking --json` output has no file-path, only nsid.

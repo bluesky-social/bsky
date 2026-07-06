@@ -44,3 +44,7 @@ test('breaking findings fall back to nsid when file-path is absent', () => {
   assert.match(report, /app\.bsky\.feed\.like/)
   assert.match(report, /`object-required` \(error\): required fields change \(main\)/)
 })
+
+test('unknown kind throws even with empty findings', () => {
+  assert.throws(() => buildReport('bogus', []), /unknown report kind/)
+})
