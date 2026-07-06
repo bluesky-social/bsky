@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { buildReport } from './lex-report.mjs'
+import { buildReport } from './lex-report.ts'
 
 test('empty findings produce empty report', () => {
   assert.equal(buildReport('lint', []), '')

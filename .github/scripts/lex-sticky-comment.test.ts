@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { planUpsert } from './lex-sticky-comment.mjs'
+import { planUpsert } from './lex-sticky-comment.ts'
 
 const marker = '<!-- lex-lint-report -->'
 

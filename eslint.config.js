@@ -64,7 +64,7 @@ export default config(
     },
   },
   {
-    files: ['.github/scripts/**/*.mjs'],
+    files: ['.github/scripts/**/*.ts'],
     languageOptions: {
       globals: {
         console: 'readonly',
@@ -72,6 +72,11 @@ export default config(
         process: 'readonly',
         URL: 'readonly',
       },
+    },
+    rules: {
+      // scripts run directly via node type stripping; imports need the
+      // real .ts extension
+      'import-x/extensions': 'off',
     },
   },
   prettier,
