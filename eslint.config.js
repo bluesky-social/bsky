@@ -63,5 +63,16 @@ export default config(
       ],
     },
   },
+  {
+    files: ['.github/scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        fetch: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+      },
+    },
+  },
   prettier,
 )
