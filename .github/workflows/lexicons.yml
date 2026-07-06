@@ -20,7 +20,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Script self-test
-        run: node --test .github/scripts/
+        run: node --test '.github/scripts/*.test.mjs'
       - name: Compute changed lexicons
         id: changed
         run: |
