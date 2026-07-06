@@ -8,19 +8,15 @@ export interface LiveTransport {
   stream(getUrl: () => string, signal: AbortSignal): AsyncIterable<Uint8Array>
 }
 
-const te = new TextEncoder()
-
+// NOTE: WebSocketKeepAlive declares AsyncGenerator<Uint8Array> but actually
+// yields strings for websocket text frames — and jetstream sends JSON as
+// text. This is why the decoders accept Uint8Array | string.
+// tests/live/transport.test.ts pins the behavior over a real websocket.
 export const wsKeepAliveTransport: LiveTransport = {
-  async *stream(getUrl, signal) {
-    const ka = new WebSocketKeepAlive({
+  stream(getUrl, signal) {
+    return new WebSocketKeepAlive({
       getUrl: async () => getUrl(),
       signal,
     })
-    // Jetstream v1 sends WebSocket TEXT frames, which ws (in object mode)
-    // yields as strings; binary frames arrive as bytes. The LiveTransport
-    // contract is bytes, so normalize here.
-    for await (const chunk of ka) {
-      yield typeof chunk === 'string' ? te.encode(chunk) : chunk
-    }
   },
 }

@@ -35,9 +35,9 @@ const KINDS = new Set(['commit', 'identity', 'account'])
 const OPS = new Set(['create', 'update', 'delete'])
 
 export function decodeLiveFrameV1(
-  data: Uint8Array,
+  data: Uint8Array | string,
 ): RawEventV1 | typeof SKIP_FRAME {
-  const text = td.decode(data)
+  const text = typeof data === 'string' ? data : td.decode(data)
   let f: WireV1Frame
   try {
     f = JSON.parse(text) as WireV1Frame
