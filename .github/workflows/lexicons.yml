@@ -19,8 +19,12 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+      # Node 24 runs the .ts scripts directly via default type stripping
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
       - name: Script self-test
-        run: node --test '.github/scripts/*.test.mjs'
+        run: node --test '.github/scripts/*.test.ts'
       - name: Compute changed lexicons
         id: changed
         run: |
@@ -45,30 +49,31 @@ jobs:
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           cat findings.jsonl
       - name: Build report
+        id: report
         run: |
           touch findings.jsonl
           if [ "${{ steps.goat.outputs.exit }}" != "" ] && [ "${{ steps.goat.outputs.exit }}" != "0" ] && [ ! -s findings.jsonl ]; then
             echo "goat exited nonzero with no findings (operational error); leaving any existing comment untouched"
+            echo "operational-error=true" >> "$GITHUB_OUTPUT"
             printf '' > report.md
-            touch skip-comment
           else
-            node .github/scripts/lex-report.mjs --kind lint < findings.jsonl > report.md
+            echo "operational-error=false" >> "$GITHUB_OUTPUT"
+            node .github/scripts/lex-report.ts --kind lint < findings.jsonl > report.md
           fi
       - name: Post sticky comment
+        if: steps.report.outputs.operational-error == 'false'
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          if [ -f skip-comment ]; then
-            echo "skipping comment upsert due to operational goat failure"
-          else
-            node .github/scripts/lex-sticky-comment.mjs --marker lex-lint-report < report.md
-          fi
+        run: node .github/scripts/lex-sticky-comment.ts --marker lex-lint-report < report.md
       - name: Enforce
         if: steps.goat.outputs.exit != '' && steps.goat.outputs.exit != '0'
         run: |
-          if [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-lint-override') }}" = "true" ]; then
+          if [ "${{ steps.report.outputs.operational-error }}" = "true" ]; then
+            echo "::error::goat lex lint failed without producing findings (operational error); re-run the check — do not apply an override label for this"
+            exit 1
+          elif [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-lint-override') }}" = "true" ]; then
             echo "::notice::lint findings present, but the lex-lint-override label is applied"
           else
             echo "::error::lint findings on changed lexicons; fix them or have a maintainer apply the lex-lint-override label"
@@ -81,6 +86,10 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+      # Node 24 runs the .ts scripts directly via default type stripping
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
       - name: Compute changed lexicons
         id: changed
         run: |
@@ -105,30 +114,31 @@ jobs:
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           cat findings.jsonl
       - name: Build report
+        id: report
         run: |
           touch findings.jsonl
           if [ "${{ steps.goat.outputs.exit }}" != "" ] && [ "${{ steps.goat.outputs.exit }}" != "0" ] && [ ! -s findings.jsonl ]; then
             echo "goat exited nonzero with no findings (operational error); leaving any existing comment untouched"
+            echo "operational-error=true" >> "$GITHUB_OUTPUT"
             printf '' > report.md
-            touch skip-comment
           else
-            node .github/scripts/lex-report.mjs --kind breaking < findings.jsonl > report.md
+            echo "operational-error=false" >> "$GITHUB_OUTPUT"
+            node .github/scripts/lex-report.ts --kind breaking < findings.jsonl > report.md
           fi
       - name: Post sticky comment
+        if: steps.report.outputs.operational-error == 'false'
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          if [ -f skip-comment ]; then
-            echo "skipping comment upsert due to operational goat failure"
-          else
-            node .github/scripts/lex-sticky-comment.mjs --marker lex-breaking-report < report.md
-          fi
+        run: node .github/scripts/lex-sticky-comment.ts --marker lex-breaking-report < report.md
       - name: Enforce
         if: steps.goat.outputs.exit != '' && steps.goat.outputs.exit != '0'
         run: |
-          if [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-breaking-override') }}" = "true" ]; then
+          if [ "${{ steps.report.outputs.operational-error }}" = "true" ]; then
+            echo "::error::goat lex breaking failed without producing findings (operational error); re-run the check — do not apply an override label for this"
+            exit 1
+          elif [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-breaking-override') }}" = "true" ]; then
             echo "::notice::breaking changes detected, but the lex-breaking-override label is applied"
           else
             echo "::error::breaking lexicon changes detected; if intentional, have a maintainer apply the lex-breaking-override label"
