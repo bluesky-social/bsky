@@ -6,47 +6,7 @@ import { moderatePost } from '../src/moderation/index.js'
 import { mock } from '../src/moderation/mock.js'
 import { matchMuteWords } from '../src/moderation/mutewords.js'
 import { ModerationOpts } from '../src/moderation/types.js'
-
-/**
- * Minimal RichText stand-in for tests. Detects hashtag facets without
- * importing the full rich-text module (which still depends on ../client/).
- */
-class RichText {
-  text: string
-  facets?: app.bsky.richtext.facet.Main[]
-
-  constructor({ text }: { text: string }) {
-    this.text = text
-  }
-
-  detectFacetsWithoutResolution() {
-    const TAG_REGEX = /(^|\s)(#[^\d\s]\S*)(\b|$)/giu
-    const facets: app.bsky.richtext.facet.Main[] = []
-    const encoder = new TextEncoder()
-    let match
-    while ((match = TAG_REGEX.exec(this.text)) !== null) {
-      const leading = match[1]
-      let tag = match[2].slice(1) // remove '#'
-      if (!tag) continue
-      tag = tag.replace(/[.,;:!?'"]+$/, '').trim()
-      if (tag.length === 0 || tag.length > 64) continue
-      const startIndex = match.index + leading.length
-      const hashWithTag = '#' + tag
-      const byteStart = encoder.encode(this.text.slice(0, startIndex)).length
-      const byteEnd = byteStart + encoder.encode(hashWithTag).length
-      facets.push({
-        index: { byteStart, byteEnd },
-        features: [
-          {
-            $type: 'app.bsky.richtext.facet#tag' as const,
-            tag,
-          },
-        ],
-      })
-    }
-    this.facets = facets.length > 0 ? facets : undefined
-  }
-}
+import { RichText } from '../src/rich-text/index.js'
 
 const FAKE_CID = 'bafyreiclp443lavogvhj3d2ob2cxbfuscni2k5jk7bebjzg7khl3esabwq'
 

@@ -9,6 +9,7 @@ import {
   setAdultContentEnabled,
   setContentLabelPref,
 } from '../src/index.js'
+import { app } from '../src/lexicons/index.js'
 
 function fakeClient(
   routes: Record<string, (init: { url: URL; body?: unknown }) => unknown>,
@@ -228,6 +229,84 @@ describe('updatePreferences round-trip', () => {
     // double-write: both porn and nsfw should be 'hide'
     expect(prefs.moderationPrefs.labels.porn).toBe('hide')
     expect(prefs.moderationPrefs.labels.nsfw).toBe('hide')
+  })
+
+  it('setContentLabelPref keeps all legacy pairs in sync through updates', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    const pairs = [
+      ['graphic-media', 'gore'],
+      ['porn', 'nsfw'],
+      ['sexual', 'suggestive'],
+    ] as const
+    for (const [key, legacy] of pairs) {
+      await client.call(setContentLabelPref, { key, value: 'hide' })
+      const a = await client.call(getPreferences)
+      expect(a.moderationPrefs.labels[key]).toBe('hide')
+      expect(a.moderationPrefs.labels[legacy]).toBe('hide')
+
+      await client.call(setContentLabelPref, { key, value: 'warn' })
+      const b = await client.call(getPreferences)
+      expect(b.moderationPrefs.labels[key]).toBe('warn')
+      expect(b.moderationPrefs.labels[legacy]).toBe('warn')
+    }
+  })
+
+  it('setContentLabelPref updates an existing pref, globally and per-labeler', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    await client.call(addLabeler, 'did:plc:other')
+    await client.call(setContentLabelPref, { key: 'porn', value: 'ignore' })
+    await client.call(setContentLabelPref, {
+      key: 'porn',
+      value: 'ignore',
+      labelerDid: 'did:plc:other',
+    })
+    await client.call(setContentLabelPref, { key: 'porn', value: 'hide' })
+    await client.call(setContentLabelPref, {
+      key: 'porn',
+      value: 'hide',
+      labelerDid: 'did:plc:other',
+    })
+
+    const { moderationPrefs } = await client.call(getPreferences)
+    const labeler = moderationPrefs.labelers.find(
+      (l) => l.did === 'did:plc:other',
+    )
+    expect(moderationPrefs.labels.porn).toBe('hide')
+    expect(labeler?.labels?.porn).toBe('hide')
+  })
+
+  it('setContentLabelPref does not accumulate duplicate legacy prefs when double-writing', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    await client.call(setContentLabelPref, { key: 'nsfw', value: 'hide' })
+    await client.call(setContentLabelPref, { key: 'porn', value: 'hide' })
+
+    const nsfwSettings = stored.filter(
+      (pref) =>
+        app.bsky.actor.defs.contentLabelPref.matches(pref) &&
+        pref.label === 'nsfw',
+    )
+    expect(nsfwSettings.length).toBe(1)
   })
 
   it('addLabeler + removeLabeler updates labelers', async () => {

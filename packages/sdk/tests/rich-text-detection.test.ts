@@ -426,11 +426,7 @@ describe('detectFacets', () => {
             detectedTags.push(feature.tag)
           }
         }
-        if (
-          facet.features.some(
-            (f) => isTag(f) && (f as { tag?: string }).tag?.startsWith('$'),
-          )
-        ) {
+        if (facet.features.some((f) => isTag(f) && f.tag.startsWith('$'))) {
           detectedIndices.push(facet.index)
         }
       }
@@ -460,7 +456,7 @@ describe('detectFacets with Client', () => {
     // Use a HandleResolver directly to test the resolve path
     const mockResolver: HandleResolver = {
       async resolve(handle: string) {
-        return `did:plc:resolved-${handle}` as any
+        return `did:plc:resolved-${handle}` as const
       },
     }
 

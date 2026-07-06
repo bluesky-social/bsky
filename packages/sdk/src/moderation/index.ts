@@ -31,6 +31,7 @@ export type {
   ModerationCause,
   ModerationOpts,
   ModerationPrefs,
+  ModerationPrefsLabeler,
 } from './types.js'
 
 export function moderateProfile(

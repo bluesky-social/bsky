@@ -1,8 +1,4 @@
-import {
-  type Action,
-  type AtIdentifierString,
-  type NsidString,
-} from '@atproto/lex-client'
+import { type Action, type AtIdentifierString } from '@atproto/lex-client'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import { app as appLexicons, com as comLexicons } from '../lexicons/index.js'
 
@@ -66,7 +62,7 @@ export const blockActorList: Action<
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
       repo: client.assertDid,
-      collection: 'app.bsky.graph.listblock' as NsidString, // wire nsid
+      collection: 'app.bsky.graph.listblock',
       record: {
         $type: 'app.bsky.graph.listblock',
         subject: list,
@@ -74,7 +70,7 @@ export const blockActorList: Action<
       },
     },
   })
-  return res.body as CreateOutput // xrpc response shape
+  return res.body
 }
 
 /**
@@ -94,7 +90,7 @@ export const unblockActorList: Action<{ list: AtUriString }, void> = async (
     await client.xrpc(comLexicons.atproto.repo.deleteRecord.main, {
       body: {
         repo: client.assertDid,
-        collection: 'app.bsky.graph.listblock' as NsidString, // wire nsid
+        collection: 'app.bsky.graph.listblock',
         rkey: urip.rkey,
       },
     })

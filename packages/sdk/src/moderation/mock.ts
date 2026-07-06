@@ -1,7 +1,6 @@
 import type {
   $Typed,
   AtUriString,
-  DidString,
   HandleString,
   Un$Typed,
 } from '@atproto/lex-schema'
@@ -98,17 +97,15 @@ export const mock = {
     viewer,
     labels,
   }: {
-    handle: string
+    handle: HandleString
     displayName?: string
     description?: string
     viewer?: app.bsky.actor.defs.ViewerState
     labels?: com.atproto.label.defs.Label[]
   }): app.bsky.actor.defs.ProfileViewBasic {
     return {
-      // test helper: constructing well-formed did:web from handle
-      did: `did:web:${handle}` as DidString,
-      // test helper: handle parameter is already valid
-      handle: handle as HandleString,
+      did: `did:web:${handle}`,
+      handle,
       displayName,
       // @ts-expect-error technically not in ProfileViewBasic but useful in some cases
       description,
@@ -129,28 +126,25 @@ export const mock = {
     muted?: boolean
     mutedByList?: app.bsky.graph.defs.ListViewBasic
     blockedBy?: boolean
-    blocking?: string
+    blocking?: AtUriString
     blockingByList?: app.bsky.graph.defs.ListViewBasic
-    following?: string
-    followedBy?: string
+    following?: AtUriString
+    followedBy?: AtUriString
   }): app.bsky.actor.defs.ViewerState {
     return {
       muted,
       mutedByList,
       blockedBy,
-      // test helper: optional uri string from input
-      blocking: blocking as AtUriString | undefined,
+      blocking,
       blockingByList,
-      // test helper: optional uri string from input
-      following: following as AtUriString | undefined,
-      // test helper: optional uri string from input
-      followedBy: followedBy as AtUriString | undefined,
+      following,
+      followedBy,
     }
   },
 
   listViewBasic({ name }: { name: string }): app.bsky.graph.defs.ListViewBasic {
     return {
-      uri: 'at://did:plc:fake/app.bsky.graph.list/fake' as AtUriString,
+      uri: 'at://did:plc:fake/app.bsky.graph.list/fake',
       cid: FAKE_CID,
       name,
       purpose: 'app.bsky.graph.defs#modlist',
@@ -168,12 +162,11 @@ export const mock = {
     labels?: com.atproto.label.defs.Label[]
   }): app.bsky.notification.listNotifications.Notification {
     return {
-      uri: `at://${author.did}/app.bsky.feed.post/fake` as AtUriString,
+      uri: `at://${author.did}/app.bsky.feed.post/fake`,
       cid: FAKE_CID,
       author,
       reason: 'reply',
-      reasonSubject:
-        `at://${author.did}/app.bsky.feed.post/fake-parent` as AtUriString,
+      reasonSubject: `at://${author.did}/app.bsky.feed.post/fake-parent`,
       record,
       isRead: false,
       indexedAt: currentDatetimeString(),
@@ -191,7 +184,7 @@ export const mock = {
     labels?: com.atproto.label.defs.Label[]
   }): app.bsky.notification.listNotifications.Notification {
     return {
-      uri: `at://${author.did}/app.bsky.graph.follow/fake` as AtUriString,
+      uri: `at://${author.did}/app.bsky.graph.follow/fake`,
       cid: FAKE_CID,
       author,
       reason: 'follow',
@@ -212,13 +205,12 @@ export const mock = {
     src,
   }: {
     val: string
-    uri: string
-    src?: string
+    uri: com.atproto.label.defs.Label['uri']
+    src?: com.atproto.label.defs.Label['src']
   }): com.atproto.label.defs.Label {
     return {
-      src: (src ||
-        'did:plc:fake-labeler') as com.atproto.label.defs.Label['src'], // boundary: lex format type
-      uri: uri as com.atproto.label.defs.Label['uri'], // boundary: lex format type
+      src: src || 'did:plc:fake-labeler',
+      uri,
       val,
       cts: currentDatetimeString(),
     }

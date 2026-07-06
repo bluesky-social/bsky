@@ -7,6 +7,7 @@ import { com } from '../lexicons/index.js'
  * Wraps a lex Client as a HandleResolver. Resolves handles using
  * com.atproto.identity.resolveHandle; returns null on resolution failure.
  */
+// @REVIEW implement this as a class
 export function handleResolverFromClient(client: Client): HandleResolver {
   return {
     async resolve(handle: string) {

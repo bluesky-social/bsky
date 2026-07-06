@@ -339,6 +339,7 @@ export class RichText {
    * Detects facets such as links and mentions
    * Note: Overwrites the existing facets with auto-detected facets
    */
+  // @REVIEW is it possible to only treat Client as a type here?  we could duck type Client vs HandleResolver rather than use instanceof.  i want to avoid @atproto/lex-client versioning conflicts.
   async detectFacets(resolverOrClient: HandleResolver | Client): Promise<void> {
     const resolver =
       resolverOrClient instanceof Client

@@ -258,10 +258,18 @@ describe('Moderation', () => {
         },
       },
     )
-    expect((res1.ui('contentList').filters[0] as any).label.val).toBe('!hide')
-    expect((res1.ui('contentList').filters[1] as any).label.val).toBe('porn')
-    expect((res1.ui('contentList').blurs[0] as any).label.val).toBe('!hide')
-    expect((res1.ui('contentMedia').blurs[0] as any).label.val).toBe('porn')
+    expect(res1.ui('contentList').filters[0]).toMatchObject({
+      label: { val: '!hide' },
+    })
+    expect(res1.ui('contentList').filters[1]).toMatchObject({
+      label: { val: 'porn' },
+    })
+    expect(res1.ui('contentList').blurs[0]).toMatchObject({
+      label: { val: '!hide' },
+    })
+    expect(res1.ui('contentMedia').blurs[0]).toMatchObject({
+      label: { val: 'porn' },
+    })
   })
 
   it('Prioritizes custom label definitions', () => {

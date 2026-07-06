@@ -6,14 +6,17 @@ import {
   ModerationBehavior,
 } from './types.js'
 
+function isObject(v: unknown): v is Record<string, unknown> {
+  return v != null && typeof v === 'object'
+}
+
 export function isQuotedPost(
   embed: unknown,
 ): embed is app.bsky.embed.record.View {
   return (
-    typeof embed === 'object' &&
-    embed !== null &&
-    // isTypeOf requires object; guarded by null check and typeof above
-    app.bsky.embed.record.view.isTypeOf(embed as Record<string, unknown>)
+    isObject(embed) &&
+    embed.$type === app.bsky.embed.record.view.$type &&
+    app.bsky.embed.record.view.isTypeOf(embed)
   )
 }
 
@@ -21,12 +24,9 @@ export function isQuotedPostWithMedia(
   embed: unknown,
 ): embed is app.bsky.embed.recordWithMedia.View {
   return (
-    typeof embed === 'object' &&
-    embed !== null &&
-    // isTypeOf requires object; guarded by null check and typeof above
-    app.bsky.embed.recordWithMedia.view.isTypeOf(
-      embed as Record<string, unknown>,
-    )
+    isObject(embed) &&
+    embed.$type === app.bsky.embed.recordWithMedia.view.$type &&
+    app.bsky.embed.recordWithMedia.view.isTypeOf(embed)
   )
 }
 

@@ -44,32 +44,22 @@ function decideEmbed(
 ) {
   if (embed) {
     if (app.bsky.embed.record.view.isTypeOf(embed)) {
-      const recordView = embed as app.bsky.embed.record.View
-      if (app.bsky.embed.record.viewRecord.isTypeOf(recordView.record)) {
+      if (app.bsky.embed.record.viewRecord.isTypeOf(embed.record)) {
         // quote post
-        return decideQuotedPost(recordView.record, opts)
-      } else if (
-        app.bsky.embed.record.viewBlocked.isTypeOf(recordView.record)
-      ) {
+        return decideQuotedPost(embed.record, opts)
+      } else if (app.bsky.embed.record.viewBlocked.isTypeOf(embed.record)) {
         // blocked quote post
-        return decideBlockedQuotedPost(recordView.record, opts)
+        return decideBlockedQuotedPost(embed.record, opts)
       }
     } else if (app.bsky.embed.recordWithMedia.view.isTypeOf(embed)) {
-      const recordWithMediaView = embed as app.bsky.embed.recordWithMedia.View
-      if (
-        app.bsky.embed.record.viewRecord.isTypeOf(
-          recordWithMediaView.record.record,
-        )
-      ) {
+      if (app.bsky.embed.record.viewRecord.isTypeOf(embed.record.record)) {
         // quoted post with media
-        return decideQuotedPost(recordWithMediaView.record.record, opts)
+        return decideQuotedPost(embed.record.record, opts)
       } else if (
-        app.bsky.embed.record.viewBlocked.isTypeOf(
-          recordWithMediaView.record.record,
-        )
+        app.bsky.embed.record.viewBlocked.isTypeOf(embed.record.record)
       ) {
         // blocked quoted post with media
-        return decideBlockedQuotedPost(recordWithMediaView.record.record, opts)
+        return decideBlockedQuotedPost(embed.record.record, opts)
       }
     }
   }
