@@ -25,11 +25,11 @@ export const post: Action<PostInput, CreateOutput> = async (client, input) => {
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
       repo: client.assertDid,
-      collection: 'app.bsky.feed.post' as NsidString,
+      collection: 'app.bsky.feed.post' as NsidString, // wire nsid
       record,
     },
   })
-  return res.body as CreateOutput
+  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -68,11 +68,11 @@ export const like: Action<LikeInput, CreateOutput> = async (
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
       repo: client.assertDid,
-      collection: 'app.bsky.feed.like' as NsidString,
+      collection: 'app.bsky.feed.like' as NsidString, // wire nsid
       record,
     },
   })
-  return res.body as CreateOutput
+  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -111,11 +111,11 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
       repo: client.assertDid,
-      collection: 'app.bsky.feed.repost' as NsidString,
+      collection: 'app.bsky.feed.repost' as NsidString, // wire nsid
       record,
     },
   })
-  return res.body as CreateOutput
+  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -150,11 +150,11 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
     body: {
       repo: client.assertDid,
-      collection: 'app.bsky.graph.follow' as NsidString,
+      collection: 'app.bsky.graph.follow' as NsidString, // wire nsid
       record,
     },
   })
-  return res.body as CreateOutput
+  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -191,7 +191,7 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
       .xrpc(comLexicons.atproto.repo.getRecord.main, {
         params: {
           repo: client.assertDid,
-          collection: 'app.bsky.actor.profile' as NsidString,
+          collection: 'app.bsky.actor.profile' as NsidString, // wire nsid
           rkey: 'self',
         },
       })
@@ -218,7 +218,7 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
       await client.xrpc(comLexicons.atproto.repo.putRecord.main, {
         body: {
           repo: client.assertDid,
-          collection: 'app.bsky.actor.profile' as NsidString,
+          collection: 'app.bsky.actor.profile' as NsidString, // wire nsid
           rkey: 'self',
           record: { $type: 'app.bsky.actor.profile', ...updated },
           swapRecord: existing?.body.cid ?? null,

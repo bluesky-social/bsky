@@ -105,7 +105,9 @@ export const mock = {
     labels?: com.atproto.label.defs.Label[]
   }): app.bsky.actor.defs.ProfileViewBasic {
     return {
+      // test helper: constructing well-formed did:web from handle
       did: `did:web:${handle}` as DidString,
+      // test helper: handle parameter is already valid
       handle: handle as HandleString,
       displayName,
       // @ts-expect-error technically not in ProfileViewBasic but useful in some cases
@@ -136,9 +138,12 @@ export const mock = {
       muted,
       mutedByList,
       blockedBy,
+      // test helper: optional uri string from input
       blocking: blocking as AtUriString | undefined,
       blockingByList,
+      // test helper: optional uri string from input
       following: following as AtUriString | undefined,
+      // test helper: optional uri string from input
       followedBy: followedBy as AtUriString | undefined,
     }
   },

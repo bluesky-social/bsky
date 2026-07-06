@@ -12,6 +12,7 @@ export function isQuotedPost(
   return (
     typeof embed === 'object' &&
     embed !== null &&
+    // isTypeOf requires object; guarded by null check and typeof above
     app.bsky.embed.record.view.isTypeOf(embed as Record<string, unknown>)
   )
 }
@@ -22,6 +23,7 @@ export function isQuotedPostWithMedia(
   return (
     typeof embed === 'object' &&
     embed !== null &&
+    // isTypeOf requires object; guarded by null check and typeof above
     app.bsky.embed.recordWithMedia.view.isTypeOf(
       embed as Record<string, unknown>,
     )
@@ -88,6 +90,7 @@ export function interpretLabelValueDefinition(
 
   let defaultSetting: LabelPreference = 'warn'
   if (def.defaultSetting === 'hide' || def.defaultSetting === 'ignore') {
+    // cast safe: 'hide' | 'ignore' are LabelPreference values; checked by condition
     defaultSetting = def.defaultSetting as LabelPreference
   }
 

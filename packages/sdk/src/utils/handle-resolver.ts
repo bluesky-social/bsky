@@ -12,8 +12,10 @@ export function handleResolverFromClient(client: Client): HandleResolver {
     async resolve(handle: string) {
       try {
         const res = await client.call(com.atproto.identity.resolveHandle, {
+          // caller validates handle format; xrpc will reject invalid
           handle: handle as HandleString,
         })
+        // resolveHandle returns blessed did methods (plc/web) in practice
         return res.did as AtprotoDid
       } catch {
         return null

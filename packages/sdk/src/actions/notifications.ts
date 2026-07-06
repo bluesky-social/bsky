@@ -7,13 +7,13 @@ import { app as appLexicons } from '../lexicons/index.js'
  * Mark notifications as seen up to (and including) the given ISO timestamp.
  * Defaults to the current time if not provided.
  */
-export const updateSeenNotifications: Action<string | undefined, void> = async (
-  client,
-  seenAt,
-) => {
+export const updateSeenNotifications: Action<
+  DatetimeString | undefined,
+  void
+> = async (client, seenAt) => {
   await client.xrpc(appLexicons.bsky.notification.updateSeen.main, {
     body: {
-      seenAt: (seenAt as DatetimeString | undefined) ?? currentDatetimeString(),
+      seenAt: seenAt ?? currentDatetimeString(),
     },
   })
 }

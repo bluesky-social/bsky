@@ -253,6 +253,7 @@ export class ModerationDecision {
   addLabel(target: LabelTarget, label: Label, opts: ModerationOpts) {
     // look up the label definition (LABELS lookup may miss: label.val is an
     // arbitrary string while LABELS is keyed by KnownLabelValue)
+    // cast required for object key indexing; returns undefined if not a known label
     const knownLabelDef: InterpretedLabelValueDefinition | undefined =
       LABELS[label.val as KnownLabelValue]
     const labelDef = CUSTOM_LABEL_VALUE_RE.test(label.val)

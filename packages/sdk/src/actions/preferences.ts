@@ -236,6 +236,7 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
   const labels: Record<string, LabelPreference> = { ...DEFAULT_LABEL_SETTINGS }
   for (const labelPref of labelPrefs) {
     if (labelPref.labelerDid) continue // skip labeler-specific prefs for global map
+    // server may return legacy 'show' value which is remapped to 'ignore' below
     let visibility = labelPref.visibility as LabelPreference | 'show'
     if (visibility === 'show') visibility = 'ignore'
     // remap legacy label names
@@ -876,6 +877,7 @@ export const hidePost: Action<string, void> = async (client, uri) => {
     const existing = prefs.find(hiddenPostsPref.$isTypeOf)
     const currentItems = existing?.items ?? []
 
+    // caller validates uri format; cast safe for array operations
     if (currentItems.includes(uri as AtUriString)) return false
 
     const updated = [...currentItems, uri as AtUriString]

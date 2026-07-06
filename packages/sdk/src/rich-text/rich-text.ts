@@ -356,7 +356,7 @@ export class RichText {
                 .catch(() => null)
                 .then((did) => {
                   if (did) feature.did = did
-                  else feature.did = '' as DidString // @NOTE: unresolved mention — resolver returned null
+                  else feature.did = '' as DidString // unresolved mention — resolver returned null; consumers treat '' as unresolved
                 }),
             )
           }
@@ -399,6 +399,7 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
         features: [
           {
             $type: 'app.bsky.richtext.facet#link',
+            // entity type checked above; value is entity string from input
             uri: ent.value as UriString,
           },
         ],
@@ -413,6 +414,7 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
         features: [
           {
             $type: 'app.bsky.richtext.facet#mention',
+            // entity type checked above; value is entity string from input
             did: ent.value as DidString,
           },
         ],
