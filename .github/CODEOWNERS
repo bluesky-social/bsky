@@ -1,0 +1,8 @@
+# Lexicon governance: changes to published schemas require codeowner review.
+/lexicons/ @devinivy
+
+# The gate protects itself and its enforcement mechanism.
+/.github/CODEOWNERS @devinivy
+/.github/workflows/lexicons.yml @devinivy
+/.github/workflows/lexicons-publish.yml @devinivy
+/.github/scripts/ @devinivy
