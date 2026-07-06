@@ -15,7 +15,10 @@ export function buildReport(kind, findings) {
   for (const finding of findings) {
     // `goat lex breaking --json` output has no file-path, only nsid.
     const key = finding['file-path'] ?? finding.nsid
-    if (!key) throw new Error(`finding missing file-path and nsid: ${JSON.stringify(finding)}`)
+    if (!key)
+      throw new Error(
+        `finding missing file-path and nsid: ${JSON.stringify(finding)}`,
+      )
     if (!byFile.has(key)) byFile.set(key, [])
     byFile.get(key).push(finding)
   }

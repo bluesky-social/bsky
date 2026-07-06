@@ -27,7 +27,10 @@ test('lint findings group by file-path', () => {
   assert.match(report, /### Lexicon lint findings/)
   assert.equal(report.match(/lexicons\/app\/bsky\/feed\/post\.json/g).length, 1)
   assert.match(report, /`unlimited-string` \(warn\): no max length/)
-  assert.match(report, /`missing-primary-description` \(warn\): primary type missing a description/)
+  assert.match(
+    report,
+    /`missing-primary-description` \(warn\): primary type missing a description/,
+  )
 })
 
 test('breaking findings fall back to nsid when file-path is absent', () => {
@@ -42,7 +45,10 @@ test('breaking findings fall back to nsid when file-path is absent', () => {
   const report = buildReport('breaking', findings)
   assert.match(report, /### Lexicon breaking-change findings/)
   assert.match(report, /app\.bsky\.feed\.like/)
-  assert.match(report, /`object-required` \(error\): required fields change \(main\)/)
+  assert.match(
+    report,
+    /`object-required` \(error\): required fields change \(main\)/,
+  )
 })
 
 test('unknown kind throws even with empty findings', () => {
