@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
+  lexicon-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -40,19 +40,31 @@ jobs:
         if: steps.changed.outputs.count != '0'
         run: |
           set +e
+          # xargs maps goat's exit 255 to 124; Enforce only tests nonzero-ness
           xargs goat lex lint --json < changed.txt > findings.jsonl
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           cat findings.jsonl
       - name: Build report
         run: |
           touch findings.jsonl
-          node .github/scripts/lex-report.mjs --kind lint < findings.jsonl > report.md
+          if [ "${{ steps.goat.outputs.exit }}" != "" ] && [ "${{ steps.goat.outputs.exit }}" != "0" ] && [ ! -s findings.jsonl ]; then
+            echo "goat exited nonzero with no findings (operational error); leaving any existing comment untouched"
+            printf '' > report.md
+            touch skip-comment
+          else
+            node .github/scripts/lex-report.mjs --kind lint < findings.jsonl > report.md
+          fi
       - name: Post sticky comment
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node .github/scripts/lex-sticky-comment.mjs --marker lex-lint-report < report.md
+        run: |
+          if [ -f skip-comment ]; then
+            echo "skipping comment upsert due to operational goat failure"
+          else
+            node .github/scripts/lex-sticky-comment.mjs --marker lex-lint-report < report.md
+          fi
       - name: Enforce
         if: steps.goat.outputs.exit != '' && steps.goat.outputs.exit != '0'
         run: |
@@ -63,7 +75,7 @@ jobs:
             exit 1
           fi
 
-  breaking:
+  lexicon-breaking:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -88,19 +100,31 @@ jobs:
         if: steps.changed.outputs.count != '0'
         run: |
           set +e
+          # xargs maps goat's exit 255 to 124; Enforce only tests nonzero-ness
           xargs goat lex breaking --json < changed.txt > findings.jsonl
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           cat findings.jsonl
       - name: Build report
         run: |
           touch findings.jsonl
-          node .github/scripts/lex-report.mjs --kind breaking < findings.jsonl > report.md
+          if [ "${{ steps.goat.outputs.exit }}" != "" ] && [ "${{ steps.goat.outputs.exit }}" != "0" ] && [ ! -s findings.jsonl ]; then
+            echo "goat exited nonzero with no findings (operational error); leaving any existing comment untouched"
+            printf '' > report.md
+            touch skip-comment
+          else
+            node .github/scripts/lex-report.mjs --kind breaking < findings.jsonl > report.md
+          fi
       - name: Post sticky comment
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: node .github/scripts/lex-sticky-comment.mjs --marker lex-breaking-report < report.md
+        run: |
+          if [ -f skip-comment ]; then
+            echo "skipping comment upsert due to operational goat failure"
+          else
+            node .github/scripts/lex-sticky-comment.mjs --marker lex-breaking-report < report.md
+          fi
       - name: Enforce
         if: steps.goat.outputs.exit != '' && steps.goat.outputs.exit != '0'
         run: |

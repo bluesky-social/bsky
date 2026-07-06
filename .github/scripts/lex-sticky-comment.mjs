@@ -23,6 +23,7 @@ async function githubRequest(method, path, payload) {
     headers: {
       authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
       accept: 'application/vnd.github+json',
+      'content-type': 'application/json',
       'x-github-api-version': '2022-11-28',
     },
     body: payload === undefined ? undefined : JSON.stringify(payload),
