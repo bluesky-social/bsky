@@ -1,35 +1,28 @@
 import {
   type Action,
-  type NsidString,
+  type AtIdentifierString,
+  type CidString,
+  type CreateOutput,
+  type DidString,
   XrpcResponseError,
 } from '@atproto/lex-client'
 import type { DatetimeString } from '@atproto/lex-schema'
-import { AtUri, currentDatetimeString } from '@atproto/syntax'
+import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
-import { app as appLexicons, com as comLexicons } from '../lexicons/index.js'
+import { app as appLexicons } from '../lexicons/index.js'
 
 type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
   createdAt?: DatetimeString
 }
-type CreateOutput = { uri: string; cid: string }
 
 /**
  * Create a post record.
  */
 export const post: Action<PostInput, CreateOutput> = async (client, input) => {
-  const record = {
+  return client.create(appLexicons.bsky.feed.post.main, {
     ...input,
-    $type: 'app.bsky.feed.post',
     createdAt: input.createdAt ?? currentDatetimeString(),
-  }
-  const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
-    body: {
-      repo: client.assertDid,
-      collection: 'app.bsky.feed.post' as NsidString, // wire nsid
-      record,
-    },
   })
-  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -37,12 +30,11 @@ export const post: Action<PostInput, CreateOutput> = async (client, input) => {
  */
 export const deletePost: Action<string, void> = async (client, postUri) => {
   const urip = new AtUri(postUri)
-  await client.xrpc(comLexicons.atproto.repo.deleteRecord.main, {
-    body: {
-      repo: urip.hostname,
-      collection: urip.collectionSafe,
-      rkey: urip.rkeySafe,
-    },
+  await client.delete(appLexicons.bsky.feed.post.main, {
+    rkey: urip.rkeySafe,
+    // urip.hostname is a plain string; brand-cast because delete must target
+    // the record's own DID, which may differ from client.assertDid in admin/mod flows.
+    repo: urip.hostname as AtIdentifierString,
   })
 }
 
@@ -59,20 +51,14 @@ export const like: Action<LikeInput, CreateOutput> = async (
   client,
   { uri, cid, via },
 ) => {
-  const record = {
-    $type: 'app.bsky.feed.like',
-    subject: { uri, cid },
+  return client.create(appLexicons.bsky.feed.like.main, {
+    // uri/cid from action callers are plain strings; brand-cast to satisfy schema.
+    subject: { uri: uri as AtUriString, cid: cid as CidString },
     createdAt: currentDatetimeString(),
-    via,
-  }
-  const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
-    body: {
-      repo: client.assertDid,
-      collection: 'app.bsky.feed.like' as NsidString, // wire nsid
-      record,
-    },
+    via: via
+      ? { uri: via.uri as AtUriString, cid: via.cid as CidString }
+      : undefined,
   })
-  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -80,12 +66,10 @@ export const like: Action<LikeInput, CreateOutput> = async (
  */
 export const deleteLike: Action<string, void> = async (client, likeUri) => {
   const urip = new AtUri(likeUri)
-  await client.xrpc(comLexicons.atproto.repo.deleteRecord.main, {
-    body: {
-      repo: urip.hostname,
-      collection: urip.collectionSafe,
-      rkey: urip.rkeySafe,
-    },
+  await client.delete(appLexicons.bsky.feed.like.main, {
+    rkey: urip.rkeySafe,
+    // brand-cast: delete must target the record's own DID.
+    repo: urip.hostname as AtIdentifierString,
   })
 }
 
@@ -102,20 +86,14 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   client,
   { uri, cid, via },
 ) => {
-  const record = {
-    $type: 'app.bsky.feed.repost',
-    subject: { uri, cid },
+  return client.create(appLexicons.bsky.feed.repost.main, {
+    // uri/cid from action callers are plain strings; brand-cast to satisfy schema.
+    subject: { uri: uri as AtUriString, cid: cid as CidString },
     createdAt: currentDatetimeString(),
-    via,
-  }
-  const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
-    body: {
-      repo: client.assertDid,
-      collection: 'app.bsky.feed.repost' as NsidString, // wire nsid
-      record,
-    },
+    via: via
+      ? { uri: via.uri as AtUriString, cid: via.cid as CidString }
+      : undefined,
   })
-  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -123,12 +101,10 @@ export const repost: Action<RepostInput, CreateOutput> = async (
  */
 export const deleteRepost: Action<string, void> = async (client, repostUri) => {
   const urip = new AtUri(repostUri)
-  await client.xrpc(comLexicons.atproto.repo.deleteRecord.main, {
-    body: {
-      repo: urip.hostname,
-      collection: urip.collectionSafe,
-      rkey: urip.rkeySafe,
-    },
+  await client.delete(appLexicons.bsky.feed.repost.main, {
+    rkey: urip.rkeySafe,
+    // brand-cast: delete must target the record's own DID.
+    repo: urip.hostname as AtIdentifierString,
   })
 }
 
@@ -141,20 +117,14 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   client,
   { did, via },
 ) => {
-  const record = {
-    $type: 'app.bsky.graph.follow',
-    subject: did,
+  return client.create(appLexicons.bsky.graph.follow.main, {
+    // did from action callers is a plain string; brand-cast to satisfy schema.
+    subject: did as DidString,
     createdAt: currentDatetimeString(),
-    via,
-  }
-  const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
-    body: {
-      repo: client.assertDid,
-      collection: 'app.bsky.graph.follow' as NsidString, // wire nsid
-      record,
-    },
+    via: via
+      ? { uri: via.uri as AtUriString, cid: via.cid as CidString }
+      : undefined,
   })
-  return res.body as CreateOutput // xrpc response shape
 }
 
 /**
@@ -162,12 +132,10 @@ export const follow: Action<FollowInput, CreateOutput> = async (
  */
 export const deleteFollow: Action<string, void> = async (client, followUri) => {
   const urip = new AtUri(followUri)
-  await client.xrpc(comLexicons.atproto.repo.deleteRecord.main, {
-    body: {
-      repo: urip.hostname,
-      collection: urip.collectionSafe,
-      rkey: urip.rkeySafe,
-    },
+  await client.delete(appLexicons.bsky.graph.follow.main, {
+    rkey: urip.rkeySafe,
+    // brand-cast: delete must target the record's own DID.
+    repo: urip.hostname as AtIdentifierString,
   })
 }
 
@@ -188,18 +156,12 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     // Fetch the current profile record
     const existing = await client
-      .xrpc(comLexicons.atproto.repo.getRecord.main, {
-        params: {
-          repo: client.assertDid,
-          collection: 'app.bsky.actor.profile' as NsidString, // wire nsid
-          rkey: 'self',
-        },
-      })
+      .get(appLexicons.bsky.actor.profile.main)
       .catch(() => undefined)
 
     // Pass undefined to updateFn if the existing record does NOT validate as
     // app.bsky.actor.profile (old agent.ts:465-468: isValidProfile gate).
-    const existingValue = existing?.body.value
+    const existingValue = existing?.value
     const existingRecord: Partial<ProfileRecord> | undefined =
       appLexicons.bsky.actor.profile.main.matches(existingValue)
         ? existingValue
@@ -215,15 +177,14 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
     })
 
     try {
-      await client.xrpc(comLexicons.atproto.repo.putRecord.main, {
-        body: {
-          repo: client.assertDid,
-          collection: 'app.bsky.actor.profile' as NsidString, // wire nsid
-          rkey: 'self',
-          record: { $type: 'app.bsky.actor.profile', ...updated },
-          swapRecord: existing?.body.cid ?? null,
-        },
-      })
+      await client.put(
+        appLexicons.bsky.actor.profile.main,
+        { ...updated },
+        // swapRecord: undefined when no existing cid → no swap check (permissive).
+        // PutRecordOptions does not expose null (assert-not-exists); retry loop
+        // handles InvalidSwap races either way.
+        { swapRecord: existing?.cid },
+      )
       return
     } catch (e) {
       if (attempt === MAX_RETRIES - 1) throw e
