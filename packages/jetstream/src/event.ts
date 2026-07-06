@@ -16,9 +16,19 @@ export interface EventBase {
   timeUs: number
 }
 
-export interface TypedPutCommit<R = unknown> {
+/**
+ * The record shape earned by collection filtering alone (no schema
+ * validation): the server routed the event by collection, and a record's
+ * $type is its collection NSID — we trust that rather than re-checking at
+ * runtime. TType carries the collection literal when the filter provides one.
+ */
+export type UnvalidatedRecord<TType extends string = string> = {
+  $type: TType
+} & Record<string, unknown>
+
+export interface TypedPutCommit<R = unknown, C extends string = string> {
   operation: 'create' | 'update'
-  collection: string
+  collection: C
   rkey: string
   rev: string
   cid: string
@@ -26,9 +36,9 @@ export interface TypedPutCommit<R = unknown> {
   validationError?: Error
 }
 
-export interface DeleteCommit {
+export interface DeleteCommit<C extends string = string> {
   operation: 'delete'
-  collection: string
+  collection: C
   rkey: string
   rev: string
 }

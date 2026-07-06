@@ -3,6 +3,7 @@ import { type JetstreamConsumer } from './consumer.js'
 import { type CollectionFilter, resolveNsids } from './engine/collections.js'
 import { type EventBatch, type RawEventV1, type TypedEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
+import { type TypedEventFor } from './filter-types.js'
 import { batchEvents, liveEvents } from './live/source.js'
 import { type LiveTransport } from './live/transport.js'
 import { JetstreamRunner } from './runner.js'
@@ -12,8 +13,10 @@ export interface JetstreamOpts {
   service: string
 }
 
-export interface LiveOpts {
-  collections?: CollectionFilter[]
+export interface LiveOpts<
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+> {
+  collections?: F
   dids?: string[]
   cursor?: CursorStore
   signal?: AbortSignal
@@ -33,11 +36,13 @@ export class Jetstream {
     this.opts = opts
   }
 
-  live(opts?: LiveOpts & { raw?: false }): AsyncGenerator<TypedEvent>
+  live<const F extends readonly CollectionFilter[] = readonly []>(
+    opts?: LiveOpts<F> & { raw?: false },
+  ): AsyncGenerator<TypedEventFor<F>>
   live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEventV1>
   live(opts: LiveOpts = {}): AsyncGenerator<RawEventV1 | TypedEvent> {
     const { schemasByNsid } = resolveNsids(opts.collections ?? [])
-    return shape(this.liveRawBatches(opts), opts, schemasByNsid)
+    return shape(this.liveRawBatches(opts), opts, schemasByNsid, opts.onError)
   }
 
   runner(consumer: JetstreamConsumer): JetstreamRunner {
