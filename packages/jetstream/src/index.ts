@@ -3,7 +3,10 @@ export { Jetstream } from './jetstream.js'
 export type { JetstreamOpts, LiveOpts } from './jetstream.js'
 export { typedEventFromRaw } from './decode-typed.js'
 export type { LiveTransport } from './live/transport.js'
-export type { CollectionFilter } from './engine/collections.js'
+export type {
+  CollectionFilter,
+  SchemaCollectionFilter,
+} from './engine/collections.js'
 export type {
   Account,
   DeleteCommit,
@@ -15,8 +18,10 @@ export type {
   SeqEvent,
   TypedCommit,
   TypedEvent,
+  UnvalidatedRecord,
 } from './event.js'
 export { eventUri } from './event.js'
+export type { TypedCommitFor, TypedEventFor } from './filter-types.js'
 export { CommitTracker } from './execute/commit-tracker.js'
 export { type CursorStore, MemoryCursorStore } from './execute/cursor-store.js'
 export { LexIndexer } from './lex-indexer.js'
@@ -28,10 +33,10 @@ export type {
   IdentityEvent,
   LexIndexerOpts,
   PutEvent,
-  UnvalidatedRecord,
   ValidationErrorEvent,
 } from './lex-indexer.js'
 export type { Ack, ConsumerContext, JetstreamConsumer } from './consumer.js'
 export { JetstreamRunner } from './runner.js'
 export type { RunnerLiveOpts } from './runner.js'
 export { MalformedError } from './errors.js'
+export { RecordValidationError } from './shape.js'

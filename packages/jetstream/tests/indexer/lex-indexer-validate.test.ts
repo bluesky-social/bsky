@@ -54,7 +54,7 @@ describe('commit validateRecord', () => {
     expect(invalid).toEqual([2])
   })
 
-  it('validateRecord: false: schema-invalid record REACHES put; $type floor still enforced', async () => {
+  it('validateRecord: false: no runtime checks — schema-invalid and $type-less records both reach put', async () => {
     const puts: number[] = []
     const invalid: number[] = []
     const idx = new LexIndexer()
@@ -63,7 +63,9 @@ describe('commit validateRecord', () => {
         validateRecord: false,
         handlers: {
           put: (e) => {
-            expectTypeOf(e.record).toEqualTypeOf<UnvalidatedRecord>()
+            expectTypeOf(e.record).toEqualTypeOf<
+              UnvalidatedRecord<'app.test.like'>
+            >()
             puts.push(e.seq)
           },
         },
@@ -71,13 +73,13 @@ describe('commit validateRecord', () => {
       .onValidationError((e) => invalid.push(e.seq))
     await idx.run(
       oneBatch([
-        putWithRecord(1, { $type: 'app.test.like', subject: 123 }), // schema-invalid: now OK
-        putWithRecord(2, { hello: 'no $type' }), // fails the $type floor
+        putWithRecord(1, { $type: 'app.test.like', subject: 123 }), // schema-invalid: OK
+        putWithRecord(2, { hello: 'no $type' }), // no floor check: also reaches put
       ]),
       { ack: () => {} },
     )
-    expect(puts).toEqual([1])
-    expect(invalid).toEqual([2])
+    expect(puts).toEqual([1, 2])
+    expect(invalid).toEqual([])
   })
 
   it('validateRecord: false still routes ONLY the registered collection', async () => {

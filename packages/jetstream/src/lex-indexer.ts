@@ -8,7 +8,11 @@ import {
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
-import { type EventBatch, type RawEventV1 } from './event.js'
+import {
+  type EventBatch,
+  type RawEventV1,
+  type UnvalidatedRecord,
+} from './event.js'
 import { eventUri } from './event.js'
 
 // Shared per-run context handed to every handler as the second arg. Allocated
@@ -74,12 +78,6 @@ export interface CommitHandlers<R> {
   del?: (e: DelEvent, ctx: HandlerContext) => unknown | Promise<unknown>
 }
 
-// Record shape delivered to `put` when a collection is registered with
-// `validateRecord: false`: schema validation is skipped, so the only guarantee
-// is the `$type` structural floor (an object with a string `$type`) enforced in
-// run(). Everything else is untyped.
-export type UnvalidatedRecord = { $type: string } & Record<string, unknown>
-
 export interface LexIndexerOpts {
   concurrency?: number
   keyOf?: (evt: RawEventV1) => string
@@ -138,11 +136,11 @@ export class LexIndexer implements JetstreamConsumer {
     validateRecord?: true
   }): this
   // Options form, non-validating. The literal `false` selects the
-  // UnvalidatedRecord handler typing: schema validation is skipped and only the
-  // $type floor is guaranteed.
+  // UnvalidatedRecord handler typing: no runtime record checks — the $type
+  // floor is trusted from the server's collection routing, not verified.
   commit<S extends RecordSchema>(opts: {
     collection: Main<S>
-    handlers: CommitHandlers<UnvalidatedRecord>
+    handlers: CommitHandlers<UnvalidatedRecord<S['$type']>>
     validateRecord: false
   }): this
   commit<S extends RecordSchema>(
@@ -350,48 +348,6 @@ export class LexIndexer implements JetstreamConsumer {
           return this.#validationErrorHandler(errEvt, hctx)
         }
         return undefined
-      }
-      // validateRecord: false floor — the promised UnvalidatedRecord type
-      // guarantees an object with a string $type; nothing else checks it when
-      // schema validation is skipped (the collection was omitted from
-      // schemasByNsid). Failures route to onValidationError exactly like a
-      // validation failure (never reach put), or ack-and-skip when no handler
-      // is registered.
-      if (!handlers.validateRecord) {
-        const rec = typed.commit.record as
-          { $type?: unknown } | null | undefined
-        if (
-          rec === null ||
-          typeof rec !== 'object' ||
-          typeof rec.$type !== 'string'
-        ) {
-          if (this.#validationErrorHandler) {
-            const tc = typed.commit
-            const floorError = new Error(
-              `record missing string $type (validateRecord: false floor) for ${tc.collection}`,
-            )
-            // PERF: cid delegates to the commit getter (see note above).
-            const errEvt = {
-              did: typed.did,
-              seq: typed.seq,
-              operation: tc.operation,
-              collection: tc.collection,
-              rkey: tc.rkey,
-              rev: tc.rev,
-              uri: eventUri(typed),
-              error: floorError,
-            } as ValidationErrorEvent
-            Object.defineProperty(errEvt, 'cid', {
-              enumerable: true,
-              configurable: true,
-              get(): string {
-                return tc.cid
-              },
-            })
-            return this.#validationErrorHandler(errEvt, hctx)
-          }
-          return undefined
-        }
       }
       if (handlers.put) {
         const tc = typed.commit
