@@ -1,3 +1,4 @@
+import type { AtUriString } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
 import type { ModerationPrefs } from '../moderation/index.js'
 
@@ -23,8 +24,8 @@ export interface BskyInterestsPreference {
 export interface BskyPreferences {
   /** @deprecated use `savedFeeds` */
   feeds: {
-    saved?: string[]
-    pinned?: string[]
+    saved?: AtUriString[]
+    pinned?: AtUriString[]
   }
   savedFeeds: app.bsky.actor.defs.SavedFeed[]
   feedViewPrefs: Record<string, BskyFeedViewPreference>

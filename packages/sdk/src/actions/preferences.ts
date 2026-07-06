@@ -1,5 +1,5 @@
 import { type Action, Client } from '@atproto/lex-client'
-import type { AtUriString, DatetimeString } from '@atproto/syntax'
+import type { AtUriString, DatetimeString, DidString } from '@atproto/syntax'
 import { AtUri, ensureValidDidRegex, toDatetimeString } from '@atproto/syntax'
 import {
   adultContentPref,
@@ -289,7 +289,7 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
 
   // Build labelers list: app labelers + user's labeler prefs
   // Merge app labelers with user labelers (user labelers override or extend)
-  const allLabelerDids = new Set<string>([
+  const allLabelerDids = new Set<DidString>([
     ...Client.appLabelers,
     ...(labelersP?.labelers ?? []).map((l) => l.did),
   ])
@@ -374,7 +374,7 @@ export const setAdultContentEnabled: Action<boolean, void> = async (
 }
 
 export const setContentLabelPref: Action<
-  { key: string; value: LabelPreference; labelerDid?: string },
+  { key: string; value: LabelPreference; labelerDid?: DidString },
   void
 > = async (client, { key, value, labelerDid }) => {
   // Validate labelerDid if provided (old agent.ts:895-897)
@@ -516,8 +516,7 @@ export const overwriteSavedFeeds: Action<SavedFeed[], void> = async (
  * @deprecated use updateSavedFeeds or removeSavedFeeds
  * (old agent.ts:856-862 addPinnedFeed)
  */
-export const addPinnedFeed: Action<string, void> = async (client, rawUri) => {
-  const uri = rawUri as AtUriString // boundary: lex format type
+export const addPinnedFeed: Action<AtUriString, void> = async (client, uri) => {
   await client.call(updatePreferences, (prefs) => {
     const feedsPref = prefs.find(savedFeedsPref.$isTypeOf)
     const currentSaved = feedsPref?.saved ?? []
@@ -546,7 +545,10 @@ export const addPinnedFeed: Action<string, void> = async (client, rawUri) => {
  * @deprecated use updateSavedFeeds or removeSavedFeeds
  * (old agent.ts:864-870 removePinnedFeed)
  */
-export const removePinnedFeed: Action<string, void> = async (client, uri) => {
+export const removePinnedFeed: Action<AtUriString, void> = async (
+  client,
+  uri,
+) => {
   await client.call(updatePreferences, (prefs) => {
     const feedsPref = prefs.find(savedFeedsPref.$isTypeOf)
     if (!feedsPref) return false
@@ -844,8 +846,7 @@ export const removeMutedWords: Action<
   await Promise.all(words.map((word) => client.call(removeMutedWord, word)))
 }
 
-export const hidePost: Action<string, void> = async (client, rawUri) => {
-  const uri = rawUri as AtUriString // boundary: lex format type
+export const hidePost: Action<AtUriString, void> = async (client, uri) => {
   await client.call(updatePreferences, (prefs) => {
     const existing = prefs.find(hiddenPostsPref.$isTypeOf)
     const currentItems = existing?.items ?? []
@@ -869,7 +870,7 @@ export const hidePost: Action<string, void> = async (client, rawUri) => {
   })
 }
 
-export const unhidePost: Action<string, void> = async (client, uri) => {
+export const unhidePost: Action<AtUriString, void> = async (client, uri) => {
   await client.call(updatePreferences, (prefs) => {
     const existing = prefs.find(hiddenPostsPref.$isTypeOf)
     if (!existing) return false
@@ -881,7 +882,7 @@ export const unhidePost: Action<string, void> = async (client, uri) => {
   })
 }
 
-export const addLabeler: Action<string, void> = async (client, did) => {
+export const addLabeler: Action<DidString, void> = async (client, did) => {
   ensureValidDidRegex(did)
   await client.call(updatePreferences, (prefs) => {
     const existing = prefs.find(labelersPref.$isTypeOf)
@@ -906,7 +907,7 @@ export const addLabeler: Action<string, void> = async (client, did) => {
   })
 }
 
-export const removeLabeler: Action<string, void> = async (client, did) => {
+export const removeLabeler: Action<DidString, void> = async (client, did) => {
   await client.call(updatePreferences, (prefs) => {
     const existing = prefs.find(labelersPref.$isTypeOf)
     if (!existing) return false

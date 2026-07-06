@@ -242,9 +242,11 @@ export class ModerationBehaviorSuiteRunner {
 
   moderationOpts(scenario: ModerationTestSuiteScenario): ModerationOpts {
     return {
+      // undefined = unauthed (the old suite used '' — equivalent, since userDid
+      // is only ever truthy-checked or compared against real DIDs)
       userDid:
         this.configurations[scenario.cfg].authed === false
-          ? ''
+          ? undefined
           : 'did:web:self.test',
       prefs: {
         adultContentEnabled: Boolean(

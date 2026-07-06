@@ -1,6 +1,5 @@
 import {
   type Action,
-  type AtIdentifierString,
   type CidString,
   type CreateOutput,
   type DidString,
@@ -8,8 +7,10 @@ import {
 } from '@atproto/lex-client'
 import type { DatetimeString } from '@atproto/lex-schema'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
-import type { app } from '../lexicons/index.js'
+import type { app, com } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'
+
+type StrongRef = com.atproto.repo.strongRef.Main
 
 type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
   createdAt?: DatetimeString
@@ -28,20 +29,23 @@ export const post: Action<PostInput, CreateOutput> = async (client, input) => {
 /**
  * Delete a post record by URI.
  */
-export const deletePost: Action<string, void> = async (client, postUri) => {
+export const deletePost: Action<AtUriString, void> = async (
+  client,
+  postUri,
+) => {
   const urip = new AtUri(postUri)
   await client.delete(appLexicons.bsky.feed.post.main, {
     rkey: urip.rkeySafe,
-    // urip.hostname is a plain string; brand-cast because delete must target
-    // the record's own DID, which may differ from client.assertDid in admin/mod flows.
-    repo: urip.hostname as AtIdentifierString,
+    // delete must target the record's own DID, which may differ from
+    // client.assertDid in admin/mod flows.
+    repo: urip.hostname,
   })
 }
 
 type LikeInput = {
-  uri: string
-  cid: string
-  via?: { uri: string; cid: string }
+  uri: AtUriString
+  cid: CidString
+  via?: StrongRef
 }
 
 /**
@@ -52,31 +56,31 @@ export const like: Action<LikeInput, CreateOutput> = async (
   { uri, cid, via },
 ) => {
   return client.create(appLexicons.bsky.feed.like.main, {
-    // uri/cid from action callers are plain strings; brand-cast to satisfy schema.
-    subject: { uri: uri as AtUriString, cid: cid as CidString },
+    subject: { uri, cid },
     createdAt: currentDatetimeString(),
-    via: via
-      ? { uri: via.uri as AtUriString, cid: via.cid as CidString }
-      : undefined,
+    via,
   })
 }
 
 /**
  * Delete a like record by URI.
  */
-export const deleteLike: Action<string, void> = async (client, likeUri) => {
+export const deleteLike: Action<AtUriString, void> = async (
+  client,
+  likeUri,
+) => {
   const urip = new AtUri(likeUri)
   await client.delete(appLexicons.bsky.feed.like.main, {
     rkey: urip.rkeySafe,
-    // brand-cast: delete must target the record's own DID.
-    repo: urip.hostname as AtIdentifierString,
+    // delete must target the record's own DID.
+    repo: urip.hostname,
   })
 }
 
 type RepostInput = {
-  uri: string
-  cid: string
-  via?: { uri: string; cid: string }
+  uri: AtUriString
+  cid: CidString
+  via?: StrongRef
 }
 
 /**
@@ -87,28 +91,28 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   { uri, cid, via },
 ) => {
   return client.create(appLexicons.bsky.feed.repost.main, {
-    // uri/cid from action callers are plain strings; brand-cast to satisfy schema.
-    subject: { uri: uri as AtUriString, cid: cid as CidString },
+    subject: { uri, cid },
     createdAt: currentDatetimeString(),
-    via: via
-      ? { uri: via.uri as AtUriString, cid: via.cid as CidString }
-      : undefined,
+    via,
   })
 }
 
 /**
  * Delete a repost record by URI.
  */
-export const deleteRepost: Action<string, void> = async (client, repostUri) => {
+export const deleteRepost: Action<AtUriString, void> = async (
+  client,
+  repostUri,
+) => {
   const urip = new AtUri(repostUri)
   await client.delete(appLexicons.bsky.feed.repost.main, {
     rkey: urip.rkeySafe,
-    // brand-cast: delete must target the record's own DID.
-    repo: urip.hostname as AtIdentifierString,
+    // delete must target the record's own DID.
+    repo: urip.hostname,
   })
 }
 
-type FollowInput = { did: string; via?: { uri: string; cid: string } }
+type FollowInput = { did: DidString; via?: StrongRef }
 
 /**
  * Create a follow record.
@@ -118,24 +122,24 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   { did, via },
 ) => {
   return client.create(appLexicons.bsky.graph.follow.main, {
-    // did from action callers is a plain string; brand-cast to satisfy schema.
-    subject: did as DidString,
+    subject: did,
     createdAt: currentDatetimeString(),
-    via: via
-      ? { uri: via.uri as AtUriString, cid: via.cid as CidString }
-      : undefined,
+    via,
   })
 }
 
 /**
  * Delete a follow record by URI.
  */
-export const deleteFollow: Action<string, void> = async (client, followUri) => {
+export const deleteFollow: Action<AtUriString, void> = async (
+  client,
+  followUri,
+) => {
   const urip = new AtUri(followUri)
   await client.delete(appLexicons.bsky.graph.follow.main, {
     rkey: urip.rkeySafe,
-    // brand-cast: delete must target the record's own DID.
-    repo: urip.hostname as AtIdentifierString,
+    // delete must target the record's own DID.
+    repo: urip.hostname,
   })
 }
 

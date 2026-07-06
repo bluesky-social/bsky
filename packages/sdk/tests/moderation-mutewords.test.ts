@@ -1079,7 +1079,7 @@ describe(`matchMuteWords`, () => {
   })
 
   describe(`actor-based mute words`, () => {
-    const viewer = {
+    const viewer: ModerationOpts = {
       userDid: 'did:web:alice.test',
       prefs: {
         adultContentEnabled: false,

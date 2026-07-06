@@ -1,3 +1,4 @@
+import type { AtUriString, DidString } from '@atproto/syntax'
 import type { app, chat, com } from '../lexicons/index.js'
 import { KnownLabelValue } from './const/labels.js'
 import { MuteWordMatch } from './mutewords.js'
@@ -158,7 +159,7 @@ export type ModerationCause =
     }
 
 export interface ModerationPrefsLabeler {
-  did: string
+  did: DidString
   labels: Record<string, LabelPreference>
 }
 
@@ -167,11 +168,11 @@ export interface ModerationPrefs {
   labels: Record<string, LabelPreference>
   labelers: ModerationPrefsLabeler[]
   mutedWords: app.bsky.actor.defs.MutedWord[]
-  hiddenPosts: string[]
+  hiddenPosts: AtUriString[]
 }
 
 export interface ModerationOpts {
-  userDid: string | undefined
+  userDid: DidString | undefined
   prefs: ModerationPrefs
   /**
    * Map of labeler did -> custom definitions
