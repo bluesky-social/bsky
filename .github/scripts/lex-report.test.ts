@@ -51,6 +51,20 @@ test('breaking findings fall back to nsid when file-path is absent', () => {
   )
 })
 
+test('dns findings render under the dns title', () => {
+  const findings = [
+    {
+      nsid: 'chat.bsky.notification',
+      'lint-level': 'error',
+      'lint-name': 'dns-resolution',
+      message: 'missing DNS: group does not resolve',
+    },
+  ]
+  const report = buildReport('dns', findings)
+  assert.match(report, /### Lexicon DNS findings/)
+  assert.match(report, /chat\.bsky\.notification/)
+})
+
 test('unknown kind throws even with empty findings', () => {
   assert.throws(() => buildReport('bogus', []), /unknown report kind/)
 })

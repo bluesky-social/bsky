@@ -6,3 +6,4 @@
 /.github/workflows/lexicons.yml @devinivy
 /.github/workflows/lexicons-publish.yml @devinivy
 /.github/scripts/ @devinivy
+/.github/lexicons.json @devinivy

@@ -80,6 +80,66 @@ jobs:
             exit 1
           fi
 
+  lexicon-dns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      # Node 24 runs the .ts scripts directly via default type stripping
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '24'
+          cache: pnpm
+      - name: Compute changed lexicons
+        id: changed
+        run: |
+          .github/scripts/lex-changed-files.sh "origin/${{ github.base_ref }}" > changed.txt
+          echo "count=$(grep -c . changed.txt || true)" >> "$GITHUB_OUTPUT"
+          cat changed.txt
+      - name: Install dependencies
+        if: steps.changed.outputs.count != '0'
+        run: pnpm install --frozen-lockfile
+      - name: Check DNS for changed lexicon groups
+        id: dns
+        if: steps.changed.outputs.count != '0'
+        run: |
+          set +e
+          node .github/scripts/lex-check-dns.ts < changed.txt > findings.jsonl
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+      - name: Build report
+        id: report
+        run: |
+          touch findings.jsonl
+          if [ "${{ steps.dns.outputs.exit }}" != "" ] && [ "${{ steps.dns.outputs.exit }}" != "0" ] && [ ! -s findings.jsonl ]; then
+            echo "dns check exited nonzero with no findings (operational error); leaving any existing comment untouched"
+            echo "operational-error=true" >> "$GITHUB_OUTPUT"
+            printf '' > report.md
+          else
+            echo "operational-error=false" >> "$GITHUB_OUTPUT"
+            node .github/scripts/lex-report.ts --kind dns < findings.jsonl > report.md
+          fi
+      - name: Post sticky comment
+        if: steps.report.outputs.operational-error == 'false'
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/lex-sticky-comment.ts --marker lex-dns-report < report.md
+      - name: Enforce
+        if: steps.dns.outputs.exit != '' && steps.dns.outputs.exit != '0'
+        run: |
+          if [ "${{ steps.report.outputs.operational-error }}" = "true" ]; then
+            echo "::error::dns check failed without producing findings (operational error); re-run the check — do not apply an override label for this"
+            exit 1
+          elif [ "${{ contains(github.event.pull_request.labels.*.name, 'lex-dns-override') }}" = "true" ]; then
+            echo "::notice::dns violations present, but the lex-dns-override label is applied"
+          else
+            echo "::error::dns violations for changed lexicon groups (may be transient — try a re-run); fix DNS or have a maintainer apply the lex-dns-override label"
+            exit 1
+          fi
+
   lexicon-breaking:
     runs-on: ubuntu-latest
     steps:

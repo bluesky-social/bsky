@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util'
 const TITLES: Record<string, string> = {
   lint: 'Lexicon lint findings',
   breaking: 'Lexicon breaking-change findings',
+  dns: 'Lexicon DNS findings',
 }
 
 // Shape emitted by goat v0.2.2 `lex lint --json` and `lex breaking --json`.
