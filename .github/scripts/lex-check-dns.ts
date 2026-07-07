@@ -9,7 +9,6 @@
 import { readFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { parseArgs } from 'node:util'
-import { LexResolver } from '@atproto/lex-resolver'
 
 export interface DnsConfig {
   did: string
@@ -31,7 +30,8 @@ export function groupForFile(filePath: string): string {
 }
 
 // Dedupe files to one representative NSID per group; DNS records are
-// per-group, so one resolution per group suffices.
+// per-group, so resolving any one member NSID suffices (the first file
+// seen for each group is used).
 export function planChecks(files: string[]): { group: string; nsid: string }[] {
   const byGroup = new Map<string, string>()
   for (const file of files) {
@@ -87,6 +87,10 @@ async function allLexiconFiles(): Promise<string[]> {
 }
 
 async function main(): Promise<void> {
+  // Dynamic import: the pure functions above are unit-testable without
+  // node_modules; only actually running the check needs the dependency.
+  const { LexResolver, LexResolverError } =
+    await import('@atproto/lex-resolver')
   const { values } = parseArgs({
     options: {
       all: { type: 'boolean', default: false },
@@ -114,9 +118,11 @@ async function main(): Promise<void> {
     try {
       const uri = await resolver.resolve(nsid)
       resolvedDid = uri.host
-    } catch {
+    } catch (err) {
       // resolution failure: no DNS authority for this group (or transient
-      // DNS trouble; the failure message tells the operator to re-run)
+      // DNS trouble; the failure message tells the operator to re-run).
+      // Anything else (e.g. a malformed NSID) is a bug, not a DNS status.
+      if (!(err instanceof LexResolverError)) throw err
     }
     const result = evaluateGroup(group, resolvedDid, config)
     if (result.status === 'violation') {

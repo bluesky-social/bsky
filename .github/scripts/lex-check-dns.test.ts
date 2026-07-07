@@ -65,6 +65,11 @@ test('carveout group with no dns is an intentional skip', () => {
   assert.deepEqual(status, { status: 'carveout' })
 })
 
+test('carveouts match groups exactly, not by prefix', () => {
+  const status = evaluateGroup('app.bsky.unspecced.deep', null, config)
+  assert.equal(status.status, 'violation')
+})
+
 test('carveout group that resolves is a violation', () => {
   const status = evaluateGroup('app.bsky.unspecced', 'did:plc:test123', config)
   assert.equal(status.status, 'violation')
