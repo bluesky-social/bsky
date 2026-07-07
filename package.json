@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/bluesky-social/bsky.git"
   },
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=22.12.0"
   },

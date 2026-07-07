@@ -33,3 +33,14 @@ pnpm verify     # format:check + lint + typecheck + test (what CI runs)
 ## Releases
 
 Versioning and publishing are handled by [changesets](https://github.com/changesets/changesets). Every PR that changes a published package needs a changeset (`pnpm changeset`); merges to `main` open/refresh a "Version packages" PR, and merging that publishes to npm with provenance.
+
+## License
+
+This project is dual-licensed under MIT and Apache 2.0 terms:
+
+- MIT license ([LICENSE-MIT.txt](LICENSE-MIT.txt) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE.txt](LICENSE-APACHE.txt) or http://www.apache.org/licenses/LICENSE-2.0)
+
+Downstream projects and end users may chose either license individually, or both together, at their discretion. The motivation for this dual-licensing is the additional software patent assurance provided by Apache 2.0.
+
+Bluesky Social PBC has committed to a software patent non-aggression pledge. For details see [the original announcement](https://bsky.social/about/blog/10-01-2025-patent-pledge).
