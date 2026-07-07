@@ -17,7 +17,7 @@ import {
 
 export { ModerationUI } from './ui.js'
 export { ModerationDecision } from './decision.js'
-export { hasMutedWord } from './mutewords.js'
+export { hasMutedWord, matchMuteWords } from './mutewords.js'
 export {
   interpretLabelValueDefinition,
   interpretLabelValueDefinitions,

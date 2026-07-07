@@ -150,8 +150,14 @@ function matchAllMuteWords(
 
   const postAuthor = subject.author
 
-  if (app.bsky.feed.post.$isTypeOf(subject.record)) {
-    const post = subject.record as app.bsky.feed.post.Main
+  // $isTypeOf only checks $type; PostView['record'] is an untyped LexMap, so
+  // one boundary cast here (like the old AppBskyFeedPost.isRecord semantics).
+  const subjectPost = app.bsky.feed.post.$isTypeOf(subject.record)
+    ? (subject.record as app.bsky.feed.post.Main)
+    : undefined
+
+  if (subjectPost) {
+    const post = subjectPost
 
     const matches = matchMuteWords({
       mutedWords,
@@ -378,9 +384,7 @@ function matchAllMuteWords(
           const matches = matchMuteWords({
             mutedWords,
             text: image.alt,
-            languages: app.bsky.feed.post.$isTypeOf(subject.record)
-              ? (subject.record as app.bsky.feed.post.Main).langs
-              : [],
+            languages: subjectPost ? subjectPost.langs : [],
             actor: embedAuthor,
           })
           if (matches) {
@@ -396,9 +400,7 @@ function matchAllMuteWords(
             const matches = matchMuteWords({
               mutedWords,
               text: item.alt,
-              languages: app.bsky.feed.post.$isTypeOf(subject.record)
-                ? (subject.record as app.bsky.feed.post.Main).langs
-                : [],
+              languages: subjectPost ? subjectPost.langs : [],
               actor: embedAuthor,
             })
             if (matches) {

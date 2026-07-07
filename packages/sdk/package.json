@@ -63,7 +63,7 @@
     "vitest": "^4.1.9"
   },
   "scripts": {
-    "codegen": "lex build --clear --index-file --out ./src/lexicons",
+    "codegen": "lex build --clear --index-file --out ./src/lexicons --exclude 'app.bsky.unspecced.*' 'tools.ozone.*' 'chat.bsky.convo.exportAccountData'",
     "codegen:labels": "node ./scripts/generate-code.mjs",
     "prebuild": "pnpm run codegen && pnpm run codegen:labels",
     "build": "tsgo --build tsconfig.build.json",

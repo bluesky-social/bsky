@@ -2,9 +2,8 @@ import type { $Typed, AtUriString, BlobRef } from '@atproto/lex-schema'
 import { currentDatetimeString, toDatetimeString } from '@atproto/syntax'
 import { describe, expect, it } from 'vitest'
 import type { app } from '../src/lexicons/index.js' // type-only usage for type annotations
-import { moderatePost } from '../src/moderation/index.js'
+import { matchMuteWords, moderatePost } from '../src/moderation/index.js'
 import { mock } from '../src/moderation/mock.js'
-import { matchMuteWords } from '../src/moderation/mutewords.js'
 import { ModerationOpts } from '../src/moderation/types.js'
 import { RichText } from '../src/rich-text/index.js'
 

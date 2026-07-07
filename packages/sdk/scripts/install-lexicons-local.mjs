@@ -4,8 +4,8 @@
  *
  * Used because some lexicons in the local atproto repo have not been published
  * to the AT Protocol network yet (e.g., app.bsky.embed.gallery,
- * app.bsky.unspecced.*, chat.bsky.embed.*), causing proof verification failures
- * with the network-based `lex install`.
+ * chat.bsky.embed.*), causing proof verification failures with the
+ * network-based `lex install`.
  *
  * Also handles inconsistencies in the local repo (e.g., lxm references to
  * renamed NSIDs like chat.bsky.convo.exportAccountData).
@@ -69,7 +69,6 @@ const AUTHORITY_DIDS = {
   'labeler.bsky.app': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   'notification.bsky.app': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   'richtext.bsky.app': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
-  'unspecced.bsky.app': PLACEHOLDER_DID, // Not yet in DNS
   'video.bsky.app': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   // com.atproto.* authorities
   'admin.atproto.com': 'did:plc:6msi3pj7krzih5qxqtryxlzw',
@@ -80,30 +79,14 @@ const AUTHORITY_DIDS = {
   'repo.atproto.com': 'did:plc:6msi3pj7krzih5qxqtryxlzw',
   'server.atproto.com': 'did:plc:6msi3pj7krzih5qxqtryxlzw',
   'sync.atproto.com': 'did:plc:6msi3pj7krzih5qxqtryxlzw',
-  'temp.atproto.com': PLACEHOLDER_DID, // Not yet in DNS
   // chat.bsky.* authorities
   'actor.bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   'bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   'convo.bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
-  'embed.bsky.chat': PLACEHOLDER_DID, // Not yet in DNS
+  'embed.bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   'moderation.bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
-  'notification.bsky.chat': PLACEHOLDER_DID, // Not yet in DNS
+  'notification.bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
   'group.bsky.chat': 'did:plc:4v4y5r3lwsbtmsxhile2ljac',
-  // tools.ozone.* authorities
-  'communication.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'hosting.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'moderation.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'queue.ozone.tools': PLACEHOLDER_DID, // Not yet in DNS
-  'report.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'safelink.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'server.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'set.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'setting.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'signature.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'team.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  'verification.ozone.tools': 'did:plc:33dt5kftu3jq2h5h4jjlqezt',
-  // com.germnetwork.* authorities
-  'germnetwork.com': 'did:plc:qyqmmncrm6qx33kpy7vqndik',
 }
 
 const LEX_COLLECTION = 'com.atproto.lexicon.schema'
@@ -138,13 +121,10 @@ function walk(dir) {
   return results
 }
 
-const INCLUDED_PREFIXES = [
-  'com.atproto.',
-  'app.bsky.',
-  'chat.bsky.',
-  'tools.ozone.',
-  'com.germnetwork.',
-]
+const INCLUDED_PREFIXES = ['com.atproto.', 'app.bsky.', 'chat.bsky.']
+
+// Namespaces not part of the SDK's supported surface.
+const EXCLUDED_PREFIXES = ['app.bsky.unspecced.', 'com.atproto.temp.']
 
 async function main() {
   // Load dependencies
@@ -169,40 +149,122 @@ async function main() {
         .replace(/\.json$/, '')
         .replaceAll('/', '.'),
     }))
-    .filter(({ nsid }) => INCLUDED_PREFIXES.some((p) => nsid.startsWith(p)))
+    .filter(
+      ({ nsid }) =>
+        INCLUDED_PREFIXES.some((p) => nsid.startsWith(p)) &&
+        !EXCLUDED_PREFIXES.some((p) => nsid.startsWith(p)),
+    )
 
   console.log(`Found ${localFiles.length} local lexicons to process`)
 
   const localNsids = new Set(localFiles.map((f) => f.nsid))
 
-  // Find lxm-referenced NSIDs missing from local set (inconsistencies in repo)
-  const missingLxmRefs = new Map() // nsid → referencing lexicon
-  for (const { srcPath, nsid } of localFiles) {
-    try {
-      const content = JSON.parse(readFileSync(srcPath, 'utf8'))
-      for (const def of Object.values(content.defs || {})) {
-        if (def?.type === 'permission-set') {
-          for (const perm of def.permissions || []) {
-            if (perm?.type === 'permission' && perm.resource === 'rpc') {
-              for (const lxm of perm.lxm || []) {
-                if (typeof lxm === 'string' && !localNsids.has(lxm)) {
-                  missingLxmRefs.set(lxm, nsid)
-                }
-              }
-            }
-          }
+  // Walk NSID references the same way the lex installer does, so the manifest
+  // ends up with the same transitive closure that `lex install --ci` computes.
+  function* defRefs(def) {
+    if (!def || typeof def !== 'object') return
+    switch (def.type) {
+      case 'string':
+        for (const val of def.knownValues || []) {
+          if (typeof val === 'string' && val.includes('#')) yield val
         }
-      }
-    } catch (e) {
-      console.warn(`Warning: error processing ${nsid}: ${e.message}`)
+        return
+      case 'array':
+        yield* defRefs(def.items)
+        return
+      case 'params':
+      case 'object':
+        for (const prop of Object.values(def.properties || {})) {
+          yield* defRefs(prop)
+        }
+        return
+      case 'union':
+        yield* def.refs || []
+        return
+      case 'ref':
+        yield def.ref
+        return
+      case 'record':
+        yield* defRefs(def.record)
+        return
+      case 'procedure':
+        if (def.input?.schema) yield* defRefs(def.input.schema)
+      // fallthrough
+      case 'query':
+        if (def.output?.schema) yield* defRefs(def.output.schema)
+      // fallthrough
+      case 'subscription':
+        if (def.parameters) yield* defRefs(def.parameters)
+        if (def.message?.schema) yield* defRefs(def.message.schema)
+        return
+      case 'permission-set':
+        for (const perm of def.permissions || []) yield* defRefs(perm)
+        return
+      case 'permission':
+        if (def.resource === 'rpc') yield* def.lxm || []
+        else if (def.resource === 'repo') yield* def.collection || []
+        return
+      default:
+        return
     }
   }
 
-  if (missingLxmRefs.size > 0) {
+  function* documentNsidRefs(content) {
+    for (const def of Object.values(content.defs || {})) {
+      for (const ref of defRefs(def)) {
+        if (typeof ref !== 'string') continue
+        const [nsid] = ref.split('#', 1)
+        if (nsid && nsid.includes('.')) yield nsid
+      }
+    }
+  }
+
+  // Find referenced NSIDs outside the included set. Transitive deps that exist
+  // in the local repo get their real files copied (resolutions only, not
+  // manifest roots); truly missing ones get stubs.
+  const transitiveDeps = new Map() // nsid → srcPath
+  const missingRefs = new Map() // nsid → referencing lexicon
+  const queue = localFiles.map(({ srcPath, nsid }) => ({ srcPath, nsid }))
+  const seen = new Set(localNsids)
+  while (queue.length > 0) {
+    const { srcPath, nsid } = queue.shift()
+    let content
+    try {
+      content = JSON.parse(readFileSync(srcPath, 'utf8'))
+    } catch (e) {
+      console.warn(`Warning: error processing ${nsid}: ${e.message}`)
+      continue
+    }
+    for (const ref of documentNsidRefs(content)) {
+      if (seen.has(ref)) continue
+      seen.add(ref)
+      const refPath = join(
+        atprotoLexiconsDir,
+        ref.replaceAll('.', '/') + '.json',
+      )
+      if (existsSync(refPath)) {
+        transitiveDeps.set(ref, refPath)
+        queue.push({ srcPath: refPath, nsid: ref })
+      } else {
+        missingRefs.set(ref, nsid)
+      }
+    }
+  }
+
+  if (transitiveDeps.size > 0) {
     console.log(
-      `Found ${missingLxmRefs.size} lxm-referenced NSID(s) missing from local set:`,
+      `Found ${transitiveDeps.size} transitive dependency NSID(s) outside the included set:`,
     )
-    for (const [ref, from] of missingLxmRefs) {
+    for (const dep of transitiveDeps.keys()) {
+      console.log(`  ${dep}`)
+    }
+  }
+
+  if (missingRefs.size > 0) {
+    console.log(
+      `Found ${missingRefs.size} referenced NSID(s) missing from local set:`,
+    )
+    for (const [ref, from] of missingRefs) {
       console.log(`  ${ref} (referenced in ${from})`)
     }
   }
@@ -238,17 +300,37 @@ async function main() {
     manifest.resolutions[nsid] = { uri, cid: cid.toString() }
   }
 
-  // Add stub resolutions for missing lxm-referenced NSIDs
-  // This prevents the lex installer from making network calls for these
-  // (the stubs won't be in manifest.lexicons — just in resolutions as transitive deps)
-  if (missingLxmRefs.size > 0) {
-    console.log('Adding stubs for missing lxm-referenced NSIDs...')
-    for (const [nsid, referencedIn] of missingLxmRefs) {
+  // Copy transitive dependencies (real content, resolutions only — not
+  // manifest roots). This mirrors how the lex installer records dependencies.
+  if (transitiveDeps.size > 0) {
+    console.log('Copying transitive dependencies...')
+    for (const [nsid, srcPath] of transitiveDeps) {
+      const content = JSON.parse(readFileSync(srcPath, 'utf8'))
+
+      const relPath = nsid.replaceAll('.', '/') + '.json'
+      const destPath = join(targetLexiconsDir, relPath)
+      mkdirSync(dirname(destPath), { recursive: true })
+      writeFileSync(destPath, JSON.stringify(content, null, 2) + '\n')
+
+      const cid = await cidForLex(content)
+      const uri = nsidToAtUri(nsid)
+
+      manifest.resolutions[nsid] = { uri, cid: cid.toString() }
+      console.log(`  Dependency copied: ${nsid}`)
+    }
+  }
+
+  // Add stub resolutions for referenced NSIDs missing from the local repo
+  // (e.g. renamed NSIDs still referenced by lxm fields). This prevents the
+  // lex installer from making network calls for these.
+  if (missingRefs.size > 0) {
+    console.log('Adding stubs for missing referenced NSIDs...')
+    for (const [nsid, referencedIn] of missingRefs) {
       // Create a minimal stub lexicon — a query with the correct id
       const stub = {
         lexicon: 1,
         id: nsid,
-        description: `Stub: ${nsid} is referenced in ${referencedIn} lxm field but the lexicon may have been renamed in the local repo.`,
+        description: `Stub: ${nsid} is referenced in ${referencedIn} but the lexicon may have been renamed in the local repo.`,
         defs: {
           main: {
             type: 'query',
