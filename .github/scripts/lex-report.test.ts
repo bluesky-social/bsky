@@ -25,7 +25,10 @@ test('lint findings group by file-path', () => {
   ]
   const report = buildReport('lint', findings)
   assert.match(report, /### Lexicon lint findings/)
-  assert.equal(report.match(/lexicons\/app\/bsky\/feed\/post\.json/g).length, 1)
+  assert.equal(
+    report.match(/lexicons\/app\/bsky\/feed\/post\.json/g)?.length,
+    1,
+  )
   assert.match(report, /`unlimited-string` \(warn\): no max length/)
   assert.match(
     report,

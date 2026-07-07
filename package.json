@@ -25,7 +25,7 @@
   },
   "scripts": {
     "build": "pnpm --recursive --sort --stream run build",
-    "typecheck": "tsgo --build tsconfig.json",
+    "typecheck": "tsgo --build tsconfig.json && tsgo -p .github/tsconfig.json",
     "dev:ts": "tsgo --build tsconfig.json --preserveWatchOutput --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
