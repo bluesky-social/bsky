@@ -328,15 +328,15 @@ describe('README examples', () => {
       })
     }
     // Public unauthenticated client from URL string
-    const publicClient = new Client(api.app.urlPublic)
+    const publicBskyClient = new Client(api.app.urlPublic)
     expect(typeof makePdsClient).toBe('function')
     expect(typeof makeAppviewClient).toBe('function')
-    expect(publicClient).toBeDefined()
+    expect(publicBskyClient).toBeDefined()
   })
 
   it('post action compiles', () => {
-    async function example(pdsClient: Client) {
-      const result = await pdsClient.call(post, {
+    async function example(accountClient: Client) {
+      const result = await accountClient.call(post, {
         text: 'Hello from @bsky.app/sdk!',
         langs: ['en'],
       })
@@ -348,10 +348,13 @@ describe('README examples', () => {
   })
 
   it('xrpc with params compiles', () => {
-    async function example(publicClient: Client) {
-      const { body } = await publicClient.xrpc(app.bsky.feed.getTimeline.main, {
-        params: { limit: 20 },
-      })
+    async function example(publicBskyClient: Client) {
+      const { body } = await publicBskyClient.xrpc(
+        app.bsky.feed.getTimeline.main,
+        {
+          params: { limit: 20 },
+        },
+      )
       return body
     }
     expect(typeof example).toBe('function')

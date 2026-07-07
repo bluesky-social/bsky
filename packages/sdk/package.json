@@ -1,7 +1,7 @@
 {
   "name": "@bsky.app/sdk",
   "version": "0.0.0",
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "description": "Bluesky SDK for use with @atproto/lex",
   "keywords": [
     "bluesky",

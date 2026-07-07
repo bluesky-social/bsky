@@ -7,8 +7,13 @@
  * chat.bsky.embed.*), causing proof verification failures with the
  * network-based `lex install`.
  *
- * Also handles inconsistencies in the local repo (e.g., lxm references to
- * renamed NSIDs like chat.bsky.convo.exportAccountData).
+ * Also handles inconsistencies in the local repo — e.g. the lxm reference to
+ * chat.bsky.convo.exportAccountData in chat.bsky.authFullChatClient, which
+ * does not exist locally or on the network (the real lexicon is
+ * chat.bsky.actor.exportAccountData). Such dangling references get stub
+ * lexicon files so `lex install --ci` can resolve them offline; the stubs are
+ * then excluded from codegen via the `--exclude` flags in the package.json
+ * `codegen` script so no bogus modules are generated.
  *
  * Strategy:
  * 1. Copy lexicon JSON files from the local atproto repo to lexicons/

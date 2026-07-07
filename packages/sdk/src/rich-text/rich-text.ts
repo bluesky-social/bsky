@@ -95,7 +95,7 @@ import type { Client } from '@atproto/lex-client'
 import type { DidString, UriString } from '@atproto/lex-schema'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { app } from '../lexicons/index.js'
-import { handleResolverFromClient } from '../utils/index.js'
+import { ClientHandleResolver } from '../utils/index.js'
 import { detectFacets } from './detection.js'
 import { sanitizeRichText } from './sanitization.js'
 import { UnicodeString } from './unicode.js'
@@ -344,7 +344,7 @@ export class RichText {
     // avoids runtime coupling to a specific @atproto/lex-client version.
     const resolver = isHandleResolver(resolverOrClient)
       ? resolverOrClient
-      : handleResolverFromClient(resolverOrClient)
+      : new ClientHandleResolver(resolverOrClient)
     this.facets = detectFacets(this.unicodeText)
     if (this.facets) {
       const promises: Promise<void>[] = []

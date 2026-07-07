@@ -15,13 +15,16 @@ npm install @bsky.app/sdk @atproto/lex
 ```typescript
 import { Client } from '@atproto/lex'
 import { PasswordSession } from '@atproto/lex-password-session'
+import { post } from '@bsky.app/sdk'
 
 const session = await PasswordSession.login({
   service: 'https://bsky.social',
-  identifier: 'your.bsky.social',
-  password: 'xxxx-xxxx-xxxx-xxxx',
+  identifier: 'your.bsky.social', // your handle
+  password: 'xxxx-xxxx-xxxx-xxxx', // an app password, generated in the Bluesky app
 })
 const client = new Client(session)
+
+await client.call(post, { text: 'Hello, world!' })
 ```
 
 ## Usage
@@ -54,8 +57,8 @@ import {
 
 const session = await PasswordSession.login({
   service: 'https://bsky.social',
-  identifier: 'your.bsky.social',
-  password: 'xxxx-xxxx-xxxx-xxxx',
+  identifier: 'your.bsky.social', // your handle
+  password: 'xxxx-xxxx-xxxx-xxxx', // an app password, generated in the Bluesky app
   onUpdated: (data: SessionData) => saveToStorage(data),
   onDeleted: (data: SessionData) => clearStorage(data.did),
 })
@@ -108,14 +111,14 @@ Bluesky exposes multiple services. Use the `api.*` constants for addressing:
 import { Client } from '@atproto/lex'
 import { api } from '@bsky.app/sdk'
 
-// PDS (writes, record mutations — requires an authenticated session)
-const pdsClient = new Client(session)
+// The user's account host (writes, record mutations — requires an authenticated session)
+const accountClient = new Client(session)
 
-// App view (authenticated queries proxied through the PDS)
-const appviewClient = new Client(pdsClient, { service: api.app.service })
+// Bluesky API (authenticated queries, proxied through the account host)
+const authedBskyClient = new Client(accountClient, { service: api.app.service })
 
-// App view (unauthenticated public queries)
-const publicClient = new Client(api.app.urlPublic)
+// Bluesky API (unauthenticated public queries)
+const publicBskyClient = new Client(api.app.urlPublic)
 ```
 
 ### API calls
@@ -149,34 +152,34 @@ client.did
 client.assertDid // Throws if the user is not authenticated
 
 // Feeds and content
-await pdsClient.call(post, { text: 'Hello, world!' })
-await pdsClient.call(deletePost, postUri)
-await pdsClient.call(like, { uri, cid })
-await pdsClient.call(deleteLike, likeUri)
-await pdsClient.call(repost, { uri, cid })
-await pdsClient.call(deleteRepost, repostUri)
+await accountClient.call(post, { text: 'Hello, world!' })
+await accountClient.call(deletePost, postUri)
+await accountClient.call(like, { uri, cid })
+await accountClient.call(deleteLike, likeUri)
+await accountClient.call(repost, { uri, cid })
+await accountClient.call(deleteRepost, repostUri)
 
 // Social graph
-await pdsClient.call(follow, { did })
-await pdsClient.call(deleteFollow, followUri)
-await appviewClient.call(muteActor, { actor })
-await appviewClient.call(unmuteActor, { actor })
-await appviewClient.call(muteActorList, { list })
-await appviewClient.call(unmuteActorList, { list })
-await pdsClient.call(blockActorList, { list })
-await pdsClient.call(unblockActorList, { list })
+await accountClient.call(follow, { did })
+await accountClient.call(deleteFollow, followUri)
+await authedBskyClient.call(muteActor, { actor })
+await authedBskyClient.call(unmuteActor, { actor })
+await authedBskyClient.call(muteActorList, { list })
+await authedBskyClient.call(unmuteActorList, { list })
+await accountClient.call(blockActorList, { list })
+await accountClient.call(unblockActorList, { list })
 
 // Actors
-await pdsClient.call(upsertProfile, (existing) => ({
+await accountClient.call(upsertProfile, (existing) => ({
   ...existing,
   displayName: 'Alice',
 }))
 
 // Notifications
-await appviewClient.call(updateSeenNotifications, seenAt)
+await authedBskyClient.call(updateSeenNotifications, seenAt)
 
 // Preferences
-const prefs = await appviewClient.call(getPreferences)
+const prefs = await authedBskyClient.call(getPreferences)
 ```
 
 Queries without a dedicated action are one `xrpc` call away using the generated
@@ -266,7 +269,7 @@ import { moderatePost } from '@bsky.app/sdk/moderation'
 // First get the user's moderation prefs and their label definitions
 // =
 
-const prefs = await appviewClient.call(getPreferences)
+const prefs = await authedBskyClient.call(getPreferences)
 const labelDefs = {
   /* see the Moderation Documentation for gathering labelDefs */
 }
@@ -330,37 +333,56 @@ The actions above are convenience wrappers. They cover most but not all
 available methods.
 
 The AT Protocol identifies methods and records with reverse-DNS names. You can
-call any of them using the generated lexicons and the client's `xrpc` and
+call any of them using the generated lexicons and the client's `call` and
 record helpers:
 
 ```typescript
 import { currentDatetimeString } from '@atproto/lex'
 import { app, com } from '@bsky.app/sdk/lexicons'
 
-const res1 = await pdsClient.createRecord({
+const res1 = await accountClient.createRecord({
   $type: 'app.bsky.feed.post',
   text: 'Hello, world!',
   createdAt: currentDatetimeString(),
 })
-const res2 = await pdsClient.xrpc(com.atproto.repo.listRecords.main, {
-  params: {
-    repo: alice.did,
-    collection: 'app.bsky.feed.post',
-  },
+const res2 = await accountClient.call(com.atproto.repo.listRecords, {
+  repo: alice.did,
+  collection: 'app.bsky.feed.post',
+})
+// or, using the typed record convenience helper:
+const res2b = await accountClient.list(app.bsky.feed.post, {
+  repo: alice.did,
 })
 
-const res3 = await appviewClient.xrpc(app.bsky.feed.getTimeline.main, {
-  params: { limit: 20 },
+const res3 = await authedBskyClient.call(app.bsky.feed.getTimeline, {
+  limit: 20,
 })
-// res3.body: app.bsky.feed.getTimeline.OutputSchema
+// res3: app.bsky.feed.getTimeline.OutputSchema
 ```
 
 Namespace roots exported from `/lexicons`: `app`, `com`, `chat`.
 
-### Non-browser configuration
+### Bring your own fetch
 
-If your environment doesn't have a built-in `fetch` implementation, you'll need
-to provide one. This will typically be done through a polyfill.
+If you want to provide your own `fetch` implementation — for logging, mocking,
+retries, or environments without a built-in `fetch` — pass it when constructing
+the `Client`:
+
+```typescript
+import { Client } from '@atproto/lex'
+
+const myFetch: typeof globalThis.fetch = async (input, init) => {
+  console.log('requesting', input)
+  const response = await globalThis.fetch(input, init)
+  console.log('got response', response)
+  return response
+}
+
+const client = new Client({
+  service: 'https://example.com',
+  fetch: myFetch,
+})
+```
 
 ## Subpaths
 
@@ -378,4 +400,9 @@ See [skills/upgrade-from-atproto-api/SKILL.md](../../skills/upgrade-from-atproto
 
 ## License
 
-MIT
+This project is dual-licensed under MIT and Apache 2.0 terms:
+
+- MIT license ([LICENSE-MIT.txt](https://github.com/bluesky-social/atproto/blob/main/LICENSE-MIT.txt) or http://opensource.org/licenses/MIT)
+- Apache License, Version 2.0, ([LICENSE-APACHE.txt](https://github.com/bluesky-social/atproto/blob/main/LICENSE-APACHE.txt) or http://www.apache.org/licenses/LICENSE-2.0)
+
+Downstream projects and end users may chose either license individually, or both together, at their discretion. The motivation for this dual-licensing is the additional software patent assurance provided by Apache 2.0.

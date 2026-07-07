@@ -161,15 +161,13 @@ import {
 // assume `client` is backed by a signed-in session
 const prefs = await client.call(getPreferences)
 
-const { body } = await client.xrpc(app.bsky.labeler.getServices.main, {
-  params: {
-    dids: prefs.moderationPrefs.labelers.map((labeler) => labeler.did),
-    detailed: true,
-  },
+const services = await client.call(app.bsky.labeler.getServices, {
+  dids: prefs.moderationPrefs.labelers.map((labeler) => labeler.did),
+  detailed: true,
 })
 
 const labelDefs: Record<string, InterpretedLabelValueDefinition[]> = {}
-for (const view of body.views) {
+for (const view of services.views) {
   if (app.bsky.labeler.defs.labelerViewDetailed.isTypeOf(view)) {
     labelDefs[view.creator.did] = interpretLabelValueDefinitions(view)
   }
@@ -277,18 +275,26 @@ Any Labeler is capable of receiving moderation reports. As a result, you need to
 import { Client } from '@atproto/lex'
 import { com } from '@bsky.app/sdk/lexicons'
 
-const labelerClient = new Client(pds, {
+const labelerClient = new Client(accountClient, {
   service: 'did:web:my-labeler.com#atproto_labeler',
 })
 
-await labelerClient.xrpc(com.atproto.moderation.createReport.main, {
-  body: {
-    reasonType: 'com.atproto.moderation.defs#reasonViolation',
-    reason: 'They were being such a jerk to me!',
-    subject: {
-      $type: 'com.atproto.admin.defs#repoRef',
-      did: 'did:web:bob.com',
-    },
+await labelerClient.call(com.atproto.moderation.createReport, {
+  reasonType: 'com.atproto.moderation.defs#reasonViolation',
+  reason: 'They were being such a jerk to me!',
+  subject: {
+    $type: 'com.atproto.admin.defs#repoRef',
+    did: 'did:web:bob.com',
   },
+})
+```
+
+The Bluesky moderation service's address is available via the `api` export from the SDK:
+
+```typescript
+import { api } from '@bsky.app/sdk'
+
+const bskyModerationClient = new Client(accountClient, {
+  service: api.moderation.service, // did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler
 })
 ```

@@ -27,10 +27,3 @@ export class ClientHandleResolver implements HandleResolver {
     }
   }
 }
-
-/**
- * Convenience factory for {@link ClientHandleResolver}.
- */
-export function handleResolverFromClient(client: Client): HandleResolver {
-  return new ClientHandleResolver(client)
-}

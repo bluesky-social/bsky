@@ -20,7 +20,7 @@ import { PasswordSession } from '@atproto/lex-password-session'
 import { api } from '@bsky.app/sdk'
 import { app } from '@bsky.app/sdk/lexicons'
 
-// --- Pattern 1: PDS client (authenticated, talks directly to the user's PDS) ---
+// --- Pattern 1: Account client (authenticated, talks directly to the user's account host) ---
 // This is the client to use for record writes and session operations.
 const session = await PasswordSession.login({
   service: 'https://bsky.social',
@@ -29,18 +29,19 @@ const session = await PasswordSession.login({
   onUpdated: (data) => saveToStorage(data),
   onDeleted: (data) => clearStorage(data.did),
 })
-const pdsClient = new Client(session)
+const accountClient = new Client(session)
 
-// --- Pattern 2: Appview-proxied client (authenticated, routed through appview) ---
-// Use for reading Bluesky social graph, feeds, profiles. The PDS proxies the
-// request to api.bsky.app on your behalf and signs it with your identity.
-const appviewClient = new Client(session, {
+// --- Pattern 2: Bluesky API client (authenticated, proxied through the account host) ---
+// Use for reading Bluesky social graph, feeds, profiles. The account host
+// proxies the request to api.bsky.app on your behalf and signs it with your
+// identity.
+const authedBskyClient = new Client(session, {
   service: api.app.service, // 'did:web:api.bsky.app#bsky_appview'
 })
 
-// --- Pattern 3: Public appview client (unauthenticated read-only) ---
+// --- Pattern 3: Public Bluesky API client (unauthenticated read-only) ---
 // Use for reading public data without authentication.
-const publicClient = new Client(api.app.urlPublic) // 'https://public.api.bsky.app'
+const publicBskyClient = new Client(api.app.urlPublic) // 'https://public.api.bsky.app'
 ```
 
 **`api` constants reference:**
@@ -57,7 +58,7 @@ const publicClient = new Client(api.app.urlPublic) // 'https://public.api.bsky.a
 | `api.moderation.did`     | `'did:plc:ar7c4by46qjdydhdevvrndac'`                 |
 | `api.moderation.service` | `'did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler'` |
 
-**Labeler caveat:** The `atproto-accept-labelers` header works by replacement, not addition. Sending _any_ custom labelers header replaces the appview's server-side default (which includes the Bluesky labeler). If you configure custom labelers, always include `api.moderation.did` to keep the Bluesky labeler active:
+**Labeler caveat:** The `atproto-accept-labelers` header works by replacement, not addition. Sending _any_ custom labelers header replaces the Bluesky API's server-side default (which includes the Bluesky labeler). If you configure custom labelers, always include `api.moderation.did` to keep the Bluesky labeler active:
 
 ```typescript
 import { Client } from '@atproto/lex-client'
@@ -170,7 +171,7 @@ const client = new Client(session, {
 ```typescript
 // Usage with a Client (resolves via com.atproto.identity.resolveHandle):
 const rt = new RichText({ text: 'Hello @alice.bsky.social!' })
-await rt.detectFacets(pdsClient)
+await rt.detectFacets(accountClient)
 
 // Or bring your own HandleResolver:
 await rt.detectFacets(myHandleResolver)
@@ -181,7 +182,7 @@ The `Client`-backed resolver is also exported directly for standalone use:
 ```typescript
 import { ClientHandleResolver } from '@bsky.app/sdk/utils'
 
-const resolver = new ClientHandleResolver(pdsClient)
+const resolver = new ClientHandleResolver(accountClient)
 const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 ```
 
@@ -284,7 +285,7 @@ These agent methods now correspond to named action functions called via `client.
 | ---------------------------------------- | ----------------------------------------------------------- |
 | `agent.countUnreadNotifications(params)` | `client.call(app.bsky.notification.getUnreadCount, params)` |
 
-### Appview passthrough methods (17 total)
+### Bluesky API passthrough methods (17 total)
 
 These agent shortcuts now map directly to `client.call(schema, params)` with the schema imported from `@bsky.app/sdk/lexicons`:
 
@@ -521,34 +522,34 @@ const session = await PasswordSession.login({
 })
 
 // --- 2. Three clients ---
-const pdsClient = new Client(session)
+const accountClient = new Client(session)
 
-const appviewClient = new Client(session, {
+const authedBskyClient = new Client(session, {
   service: api.app.service,
   labelers: [
     api.moderation.did, // include Bluesky's default labeler
   ],
 })
 
-const publicClient = new Client(api.app.urlPublic)
+const publicBskyClient = new Client(api.app.urlPublic)
 
 // --- 3. Post with rich text ---
 const rt = new RichText({ text: 'Hello @bob.bsky.social — check this out!' })
-await rt.detectFacets(pdsClient) // resolves mentions via the client
+await rt.detectFacets(accountClient) // resolves mentions via the client
 
-const { uri, cid } = await pdsClient.call(post, {
+const { uri, cid } = await accountClient.call(post, {
   text: rt.text,
   facets: rt.facets,
 })
 console.log('Posted:', uri, cid)
 
 // --- 4. Read the timeline ---
-const timeline = await appviewClient.call(app.bsky.feed.getTimeline, {
+const timeline = await authedBskyClient.call(app.bsky.feed.getTimeline, {
   limit: 20,
 })
 
 // --- 5. Moderate a post for display ---
-const prefs = await appviewClient.call(app.bsky.actor.getPreferences, {})
+const prefs = await authedBskyClient.call(app.bsky.actor.getPreferences, {})
 const moderationOpts: ModerationOpts = {
   userDid: session.did,
   prefs: {
