@@ -1,4 +1,3 @@
-// src/run-tracker.ts
 import { type Ack } from './consumer.js'
 import { type EventBatch, type SeqEvent } from './event.js'
 import { CommitTracker } from './execute/commit-tracker.js'

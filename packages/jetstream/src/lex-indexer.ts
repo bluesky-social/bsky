@@ -1,4 +1,3 @@
-// src/lex-indexer.ts
 import {
   type InferOutput,
   type Main,
@@ -82,6 +81,11 @@ export interface LexIndexerOpts {
   concurrency?: number
   keyOf?: (evt: RawEventV1) => string
 }
+
+const isThenable = (v: unknown): v is PromiseLike<unknown> =>
+  v !== null &&
+  (typeof v === 'object' || typeof v === 'function') &&
+  typeof (v as { then?: unknown }).then === 'function'
 
 // Internal, type-erased handler record stored per commit-collection NSID.
 // Retains the resolved schema so run() can build the schemasByNsid map needed
@@ -373,11 +377,6 @@ export class LexIndexer implements JetstreamConsumer {
       }
       return undefined
     }
-
-    const isThenable = (v: unknown): v is PromiseLike<unknown> =>
-      v !== null &&
-      (typeof v === 'object' || typeof v === 'function') &&
-      typeof (v as { then?: unknown }).then === 'function'
 
     // Centralized settle: on success (err === undefined && !skipAck) ack the
     // event; on error record firstError once and set stopped (never ack); a

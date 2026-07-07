@@ -21,7 +21,7 @@ function isOptsFilter(f: CollectionFilter): f is SchemaCollectionFilter {
   )
 }
 
-export function resolveNsids(filters: readonly CollectionFilter[]): {
+export function parseCollectionFilters(filters: readonly CollectionFilter[]): {
   nsids: string[]
   schemasByNsid: Map<string, RecordSchema>
 } {

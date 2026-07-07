@@ -1,7 +1,6 @@
-// tests/shape.test.ts
 import { l, record } from '@atproto/lex-schema'
 import { describe, expect, it, test } from 'vitest'
-import { resolveNsids } from '../src/engine/collections.js'
+import { parseCollectionFilters } from '../src/engine/collections.js'
 import {
   type EventBatch,
   type RawEventV1,
@@ -95,7 +94,7 @@ describe('shape', () => {
 })
 
 test('typed path skips schema-invalid records and reports RecordValidationError', async () => {
-  const { schemasByNsid } = resolveNsids([likeSchema])
+  const { schemasByNsid } = parseCollectionFilters([likeSchema])
   const errors: Error[] = []
   const out: TypedEvent[] = []
   for await (const ev of shape(
@@ -136,7 +135,7 @@ test('unregistered collections are never skipped and never reported', async () =
 })
 
 test('raw paths never skip', async () => {
-  const { schemasByNsid } = resolveNsids([likeSchema])
+  const { schemasByNsid } = parseCollectionFilters([likeSchema])
   const out: unknown[] = []
   for await (const ev of shape(
     oneBatch([putEvent(1, { $type: 'app.test.like', subject: 123 })]),

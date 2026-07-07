@@ -1,4 +1,3 @@
-// src/consumer.ts
 import { type CollectionFilter } from './engine/collections.js'
 import { type EventBatch, type RawEventV1, type SeqEvent } from './event.js'
 

@@ -1,4 +1,3 @@
-// src/runner.ts
 import { type JetstreamConsumer } from './consumer.js'
 import { type EventBatch, type RawEventV1 } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
