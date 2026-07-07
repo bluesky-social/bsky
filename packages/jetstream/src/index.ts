@@ -19,7 +19,6 @@ export type {
   TypedEvent,
   UnvalidatedRecord,
 } from './event.js'
-export { eventUri } from './event.js'
 export type { TypedCommitFor, TypedEventFor } from './filter-types.js'
 export { CommitTracker } from './execute/commit-tracker.js'
 export { type CursorStore, MemoryCursorStore } from './execute/cursor-store.js'
