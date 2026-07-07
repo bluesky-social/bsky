@@ -131,6 +131,27 @@ describe('LexIndexer.run', () => {
     expect(acked).toEqual([5]) // acked despite no handler
   })
 
+  it('a keyOf failure throws hard out of run (implementer bug, not a settled handler error)', async () => {
+    const acked: number[] = []
+    const ix = new LexIndexer({
+      keyOf: (evt) => {
+        if (evt.seq === 2) throw new Error('bad key')
+        return String(evt.seq)
+      },
+    }).commit(likeSchema, { put: () => {} })
+    await expect(
+      ix.run(
+        batches({
+          events: [rawPut(1, 'ok'), rawPut(2, 'ok'), rawPut(3, 'ok')],
+          lastCursor: 3,
+        }),
+        { ack: (evt) => acked.push(evt.seq), signal: SIG() },
+      ),
+    ).rejects.toThrow('bad key')
+    expect(acked).toContain(1)
+    expect(acked).not.toContain(2) // failed event never acked: watermark holds
+  })
+
   it('fails fast: first handler error rejects run and the failed event is not acked', async () => {
     const acked: number[] = []
     const ix = new LexIndexer({ concurrency: 1 }).commit(likeSchema, {

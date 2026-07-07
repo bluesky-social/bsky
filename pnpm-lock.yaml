@@ -272,6 +272,9 @@ importers:
       '@atproto/lex-schema':
         specifier: ^0.1.4
         version: 0.1.6
+      '@atproto/syntax':
+        specifier: ^0.6.4
+        version: 0.6.4
       '@atproto/ws-client':
         specifier: ^0.1.1
         version: 0.1.8

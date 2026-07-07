@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@atproto/lex-schema": "^0.1.4",
+    "@atproto/syntax": "^0.6.4",
     "@atproto/ws-client": "^0.1.1"
   },
   "scripts": {

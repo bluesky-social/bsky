@@ -4,6 +4,7 @@ import {
   type RecordSchema,
   getMain,
 } from '@atproto/lex-schema'
+import { AtUri } from '@atproto/syntax'
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
@@ -86,6 +87,29 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
   v !== null &&
   (typeof v === 'object' || typeof v === 'function') &&
   typeof (v as { then?: unknown }).then === 'function'
+
+// Cache slot for the lazily-computed event uri. A symbol keeps it out of the
+// event's declared type (and out of JSON/spread/Object.keys).
+const kUri = Symbol('jetstream.uri')
+
+// Lazily builds and caches the validated at:// URI of a commit event. PERF:
+// most handlers never read `uri`; AtUri.make validates (and can throw on
+// mangled wire components), so the cost — and the throw — happen only on
+// first read, inside the handler's guarded execution. `self` is the event
+// object (`this` inside its getter); the cast adds the symbol slot the event
+// types deliberately don't declare.
+function lazyUri(
+  self: object,
+  did: string,
+  commit: { collection: string; rkey: string },
+): string {
+  const cache = self as { [kUri]?: string }
+  return (cache[kUri] ??= AtUri.make(
+    did,
+    commit.collection,
+    commit.rkey,
+  ).toString())
+}
 
 // Internal, type-erased handler record stored per commit-collection NSID.
 // Retains the resolved schema so run() can build the schemasByNsid map needed
@@ -302,15 +326,19 @@ export class LexIndexer implements JetstreamConsumer {
       if (!handlers) return undefined // unregistered collection: skip
       if (evt.commit.operation === 'delete') {
         if (handlers.del) {
+          const did = evt.did
+          const c = evt.commit
           return handlers.del(
             {
-              did: evt.did,
+              did,
               seq: evt.seq,
               operation: 'delete',
-              collection: evt.commit.collection,
-              rkey: evt.commit.rkey,
-              rev: evt.commit.rev,
-              uri: eventUri(evt),
+              collection: c.collection,
+              rkey: c.rkey,
+              rev: c.rev,
+              get uri(): string {
+                return lazyUri(this, did, c)
+              },
             },
             hctx,
           )
@@ -327,52 +355,50 @@ export class LexIndexer implements JetstreamConsumer {
         // Invalid record: fails schema-validation. Never reaches put; route to
         // the optional handler, otherwise ack-and-skip.
         if (this.#validationErrorHandler) {
+          const did = typed.did
           const tc = typed.commit
+          const error = typed.commit.validationError
           // PERF: cid delegates to the commit getter — do not inline
           // `cid: tc.cid` here; the source package's v2 path computes it
-          // lazily and the delegation keeps both ports identical. Cast is
-          // local because the object is completed by defineProperty below.
-          const errEvt = {
-            did: typed.did,
+          // lazily and the delegation keeps both ports identical.
+          const errEvt: ValidationErrorEvent = {
+            did,
             seq: typed.seq,
             operation: tc.operation,
             collection: tc.collection,
             rkey: tc.rkey,
             rev: tc.rev,
-            uri: eventUri(typed),
-            error: tc.validationError,
-          } as ValidationErrorEvent
-          Object.defineProperty(errEvt, 'cid', {
-            enumerable: true,
-            configurable: true,
-            get(): string {
+            get uri(): string {
+              return lazyUri(this, did, tc)
+            },
+            get cid(): string {
               return tc.cid
             },
-          })
+            error,
+          }
           return this.#validationErrorHandler(errEvt, hctx)
         }
         return undefined
       }
       if (handlers.put) {
+        const did = typed.did
         const tc = typed.commit
         // PERF: cid delegates to the commit getter (see note above).
-        const putEvt = {
-          did: typed.did,
+        const putEvt: PutEvent<never> = {
+          did,
           seq: typed.seq,
           operation: tc.operation,
           collection: tc.collection,
           rkey: tc.rkey,
           rev: tc.rev,
-          uri: eventUri(typed),
-          record: tc.record,
-        } as PutEvent<never>
-        Object.defineProperty(putEvt, 'cid', {
-          enumerable: true,
-          configurable: true,
-          get(): string {
+          get uri(): string {
+            return lazyUri(this, did, tc)
+          },
+          get cid(): string {
             return tc.cid
           },
-        })
+          record: tc.record as never,
+        }
         return handlers.put(putEvt, hctx)
       }
       return undefined
@@ -402,6 +428,10 @@ export class LexIndexer implements JetstreamConsumer {
     // dispatched event), fail-fast without acking the failed event. The async
     // fallback below is the original chain semantics.
     const dispatch = (evt: RawEventV1): void => {
+      // NOTE: keyOf is deliberately NOT guarded — a key-computation failure is
+      // an implementer bug (broken custom keyOf) and should throw hard out of
+      // run() rather than be settled like a handler error. The default
+      // (eventUri) is plain string concatenation and cannot throw.
       const key = keyOf(evt)
       const prev = keyTails.get(key)
       if (prev === undefined) {
