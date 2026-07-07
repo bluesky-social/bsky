@@ -191,7 +191,7 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
     const newPrefs: Preferences = [
       ...prefs.filter((p) => !savedFeedsPref.$isTypeOf(p)),
       {
-        $type: 'app.bsky.actor.defs#savedFeedsPrefV2',
+        $type: savedFeedsPrefV2.$type,
         items: v2Items,
       },
     ]
@@ -210,7 +210,7 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
     const newPrefs: Preferences = [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#savedFeedsPrefV2',
+        $type: savedFeedsPrefV2.$type,
         items: [defaultTimeline],
       },
     ]
@@ -366,7 +366,7 @@ export const setAdultContentEnabled: Action<boolean, void> = async (
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#adultContentPref',
+        $type: adultContentPref.$type,
         enabled,
       },
     ]
@@ -392,7 +392,7 @@ export const setContentLabelPref: Action<
     const newPrefs: Preferences = [
       ...filtered,
       {
-        $type: 'app.bsky.actor.defs#contentLabelPref',
+        $type: contentLabelPref.$type,
         label: key,
         labelerDid,
         visibility: value,
@@ -412,7 +412,7 @@ export const setContentLabelPref: Action<
         newPrefs.length = 0
         newPrefs.push(...withoutAlias)
         newPrefs.push({
-          $type: 'app.bsky.actor.defs#contentLabelPref',
+          $type: contentLabelPref.$type,
           label: alias,
           labelerDid: undefined,
           visibility: value,
@@ -444,7 +444,7 @@ export const addSavedFeeds: Action<
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#savedFeedsPrefV2',
+        $type: savedFeedsPrefV2.$type,
         items: updatedItems,
       },
     ]
@@ -505,7 +505,7 @@ export const overwriteSavedFeeds: Action<SavedFeed[], void> = async (
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#savedFeedsPrefV2',
+        $type: savedFeedsPrefV2.$type,
         items: feeds,
       },
     ]
@@ -533,7 +533,7 @@ export const addPinnedFeed: Action<AtUriString, void> = async (client, uri) => {
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#savedFeedsPref',
+        $type: savedFeedsPref.$type,
         saved: newSaved,
         pinned: newPinned,
       },
@@ -574,7 +574,7 @@ export const setFeedViewPrefs: Action<
     const updated = {
       ...current,
       ...updates,
-      $type: 'app.bsky.actor.defs#feedViewPref' as const,
+      $type: feedViewPref.$type,
     }
 
     if (existing) {
@@ -605,7 +605,7 @@ export const setThreadViewPrefs: Action<
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#threadViewPref',
+        $type: threadViewPref.$type,
         ...updated,
       },
     ]
@@ -631,7 +631,7 @@ export const setPersonalDetails: Action<
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#personalDetailsPref',
+        $type: personalDetailsPref.$type,
         birthDate: birthDateStr,
       },
     ]
@@ -651,7 +651,7 @@ export const setInterestsPref: Action<{ tags: string[] }, void> = async (
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#interestsPref',
+        $type: interestsPref.$type,
         tags,
       },
     ]
@@ -716,7 +716,7 @@ export const addMutedWord: Action<
       )
     } else {
       mutedWordsPrefEntry = {
-        $type: 'app.bsky.actor.defs#mutedWordsPref',
+        $type: mutedWordsPref.$type,
         items: [newMutedWord],
       }
     }
@@ -725,7 +725,7 @@ export const addMutedWord: Action<
       .filter((p) => p.$type !== mutedWordsPref.$type)
       .concat({
         ...mutedWordsPrefEntry,
-        $type: 'app.bsky.actor.defs#mutedWordsPref',
+        $type: mutedWordsPref.$type,
       })
   })
 }
@@ -795,7 +795,7 @@ export const updateMutedWord: Action<
         .filter((p) => p.$type !== mutedWordsPref.$type)
         .concat({
           ...mutedWordsPrefEntry,
-          $type: 'app.bsky.actor.defs#mutedWordsPref',
+          $type: mutedWordsPref.$type,
         })
     }
 
@@ -831,7 +831,7 @@ export const removeMutedWord: Action<
       .filter((p) => p.$type !== mutedWordsPref.$type)
       .concat({
         ...mutedWordsPrefEntry,
-        $type: 'app.bsky.actor.defs#mutedWordsPref',
+        $type: mutedWordsPref.$type,
       })
   })
 }
@@ -863,7 +863,7 @@ export const hidePost: Action<AtUriString, void> = async (client, uri) => {
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#hiddenPostsPref',
+        $type: hiddenPostsPref.$type,
         items: updated,
       },
     ]
@@ -900,7 +900,7 @@ export const addLabeler: Action<DidString, void> = async (client, did) => {
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#labelersPref',
+        $type: labelersPref.$type,
         labelers: updated,
       },
     ]
@@ -934,7 +934,7 @@ export const queueNudges: Action<string[], void> = async (client, nudges) => {
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#bskyAppStatePref',
+        $type: bskyAppStatePref.$type,
         queuedNudges: updated,
       },
     ]
@@ -972,7 +972,7 @@ export const setActiveProgressGuide: Action<
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#bskyAppStatePref',
+        $type: bskyAppStatePref.$type,
         activeProgressGuide: guide,
       },
     ]
@@ -1004,7 +1004,7 @@ export const upsertNux: Action<app.bsky.actor.defs.Nux, void> = async (
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#bskyAppStatePref',
+        $type: bskyAppStatePref.$type,
         nuxs: updatedNuxs,
       },
     ]
@@ -1038,7 +1038,7 @@ export const setVerificationPrefs: Action<
     return [
       ...prefs,
       {
-        $type: 'app.bsky.actor.defs#verificationPrefs',
+        $type: verificationPrefs.$type,
         ...updates,
       },
     ]
@@ -1056,7 +1056,7 @@ export const setPostInteractionSettings: Action<
     // "undefined" means "everyone" - do not merge, replace
     const pref = {
       ...existing,
-      $type: 'app.bsky.actor.defs#postInteractionSettingsPref' as const,
+      $type: postInteractionSettingsPref.$type,
       threadgateAllowRules: settings.threadgateAllowRules,
       postgateEmbeddingRules: settings.postgateEmbeddingRules,
     }
@@ -1096,7 +1096,7 @@ export const updateLiveEventPreferences: Action<
 
     const pref = {
       ...existing,
-      $type: 'app.bsky.actor.defs#liveEventPreferences' as const,
+      $type: liveEventPreferences.$type,
       hiddenFeedIds: [...hiddenFeedIds],
       hideAllFeeds,
     }

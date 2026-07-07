@@ -1,7 +1,4 @@
 import type { DidString, UriString } from '@atproto/lex-schema'
-// The `tlds` dependency stays (rather than bundling a copy): the TLD list is
-// a living dataset (IANA adds/removes TLDs), so a bundled copy would go stale
-// unless manually regenerated, and the package is tiny with no runtime deps.
 import TLDs from 'tlds' with { type: 'json' }
 import { app } from '../lexicons/index.js'
 import { UnicodeString } from './unicode.js'

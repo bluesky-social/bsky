@@ -10,6 +10,10 @@ import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import type { app, com } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'
 
+// NOTE record actions use the raw client.createRecord()/deleteRecord()
+// helpers with type-only lexicon imports, rather than client.create()/delete()
+// with runtime schemas — this keeps record lexicons out of the bundle.
+
 type StrongRef = com.atproto.repo.strongRef.Main
 
 type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
@@ -20,10 +24,12 @@ type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
  * Create a post record.
  */
 export const post: Action<PostInput, CreateOutput> = async (client, input) => {
-  return client.create(appLexicons.bsky.feed.post.main, {
+  const res = await client.createRecord({
     ...input,
+    $type: 'app.bsky.feed.post',
     createdAt: input.createdAt ?? currentDatetimeString(),
-  })
+  } satisfies app.bsky.feed.post.Main)
+  return res.body
 }
 
 /**
@@ -34,8 +40,7 @@ export const deletePost: Action<AtUriString, void> = async (
   postUri,
 ) => {
   const urip = new AtUri(postUri)
-  await client.delete(appLexicons.bsky.feed.post.main, {
-    rkey: urip.rkeySafe,
+  await client.deleteRecord('app.bsky.feed.post', urip.rkeySafe, {
     // delete must target the record's own DID, which may differ from
     // client.assertDid in admin/mod flows.
     repo: urip.hostname,
@@ -55,11 +60,13 @@ export const like: Action<LikeInput, CreateOutput> = async (
   client,
   { uri, cid, via },
 ) => {
-  return client.create(appLexicons.bsky.feed.like.main, {
+  const res = await client.createRecord({
+    $type: 'app.bsky.feed.like',
     subject: { uri, cid },
     createdAt: currentDatetimeString(),
     via,
-  })
+  } satisfies app.bsky.feed.like.Main)
+  return res.body
 }
 
 /**
@@ -70,8 +77,7 @@ export const deleteLike: Action<AtUriString, void> = async (
   likeUri,
 ) => {
   const urip = new AtUri(likeUri)
-  await client.delete(appLexicons.bsky.feed.like.main, {
-    rkey: urip.rkeySafe,
+  await client.deleteRecord('app.bsky.feed.like', urip.rkeySafe, {
     // delete must target the record's own DID.
     repo: urip.hostname,
   })
@@ -90,11 +96,13 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   client,
   { uri, cid, via },
 ) => {
-  return client.create(appLexicons.bsky.feed.repost.main, {
+  const res = await client.createRecord({
+    $type: 'app.bsky.feed.repost',
     subject: { uri, cid },
     createdAt: currentDatetimeString(),
     via,
-  })
+  } satisfies app.bsky.feed.repost.Main)
+  return res.body
 }
 
 /**
@@ -105,8 +113,7 @@ export const deleteRepost: Action<AtUriString, void> = async (
   repostUri,
 ) => {
   const urip = new AtUri(repostUri)
-  await client.delete(appLexicons.bsky.feed.repost.main, {
-    rkey: urip.rkeySafe,
+  await client.deleteRecord('app.bsky.feed.repost', urip.rkeySafe, {
     // delete must target the record's own DID.
     repo: urip.hostname,
   })
@@ -121,11 +128,13 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   client,
   { did, via },
 ) => {
-  return client.create(appLexicons.bsky.graph.follow.main, {
+  const res = await client.createRecord({
+    $type: 'app.bsky.graph.follow',
     subject: did,
     createdAt: currentDatetimeString(),
     via,
-  })
+  } satisfies app.bsky.graph.follow.Main)
+  return res.body
 }
 
 /**
@@ -136,8 +145,7 @@ export const deleteFollow: Action<AtUriString, void> = async (
   followUri,
 ) => {
   const urip = new AtUri(followUri)
-  await client.delete(appLexicons.bsky.graph.follow.main, {
-    rkey: urip.rkeySafe,
+  await client.deleteRecord('app.bsky.graph.follow', urip.rkeySafe, {
     // delete must target the record's own DID.
     repo: urip.hostname,
   })
@@ -151,6 +159,10 @@ type UpsertProfileInput = (
 /**
  * Upsert (create or update) the authenticated user's profile record.
  * Retries up to 5 times on InvalidSwap to handle concurrent writes.
+ *
+ * NOTE unlike the other record actions, this one uses the runtime profile
+ * schema (and the client.get()/put() sugar): its validation gates are
+ * preserved behavior from the old agent and require the schema at runtime.
  */
 export const upsertProfile: Action<UpsertProfileInput, void> = async (
   client,

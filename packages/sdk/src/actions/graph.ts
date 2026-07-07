@@ -1,8 +1,11 @@
-import { type Action, type AtIdentifierString } from '@atproto/lex-client'
+import {
+  type Action,
+  type AtIdentifierString,
+  type CreateOutput,
+} from '@atproto/lex-client'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
-import { app as appLexicons, com as comLexicons } from '../lexicons/index.js'
-
-type CreateOutput = { uri: string; cid: string }
+import type { app } from '../lexicons/index.js'
+import { app as appLexicons } from '../lexicons/index.js'
 
 /**
  * Mute an actor (user).
@@ -59,17 +62,11 @@ export const blockActorList: Action<
   { list: AtUriString },
   CreateOutput
 > = async (client, { list }) => {
-  const res = await client.xrpc(comLexicons.atproto.repo.createRecord.main, {
-    body: {
-      repo: client.assertDid,
-      collection: 'app.bsky.graph.listblock',
-      record: {
-        $type: 'app.bsky.graph.listblock',
-        subject: list,
-        createdAt: currentDatetimeString(),
-      },
-    },
-  })
+  const res = await client.createRecord({
+    $type: 'app.bsky.graph.listblock',
+    subject: list,
+    createdAt: currentDatetimeString(),
+  } satisfies app.bsky.graph.listblock.Main)
   return res.body
 }
 
@@ -87,12 +84,6 @@ export const unblockActorList: Action<{ list: AtUriString }, void> = async (
   const blocked = listRes.body.list.viewer?.blocked
   if (blocked) {
     const urip = new AtUri(blocked)
-    await client.xrpc(comLexicons.atproto.repo.deleteRecord.main, {
-      body: {
-        repo: client.assertDid,
-        collection: 'app.bsky.graph.listblock',
-        rkey: urip.rkey,
-      },
-    })
+    await client.deleteRecord('app.bsky.graph.listblock', urip.rkey)
   }
 }

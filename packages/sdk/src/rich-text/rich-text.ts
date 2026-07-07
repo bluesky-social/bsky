@@ -91,7 +91,7 @@ F: 0 1 2 3 4 5 6 7 8 910   // string indices
    ^-------^               // target slice {start: 0, end: 5}
  */
 
-import { Client } from '@atproto/lex-client'
+import type { Client } from '@atproto/lex-client'
 import type { DidString, UriString } from '@atproto/lex-schema'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { app } from '../lexicons/index.js'
@@ -339,12 +339,12 @@ export class RichText {
    * Detects facets such as links and mentions
    * Note: Overwrites the existing facets with auto-detected facets
    */
-  // @REVIEW is it possible to only treat Client as a type here?  we could duck type Client vs HandleResolver rather than use instanceof.  i want to avoid @atproto/lex-client versioning conflicts.
   async detectFacets(resolverOrClient: HandleResolver | Client): Promise<void> {
-    const resolver =
-      resolverOrClient instanceof Client
-        ? handleResolverFromClient(resolverOrClient)
-        : resolverOrClient
+    // Duck-type rather than instanceof so Client is a type-only import —
+    // avoids runtime coupling to a specific @atproto/lex-client version.
+    const resolver = isHandleResolver(resolverOrClient)
+      ? resolverOrClient
+      : handleResolverFromClient(resolverOrClient)
     this.facets = detectFacets(this.unicodeText)
     if (this.facets) {
       const promises: Promise<void>[] = []
@@ -356,6 +356,8 @@ export class RichText {
                 .resolve(feature.did)
                 .catch(() => null)
                 .then((did) => {
+                  // TODO consider stripping out the facet when the mention
+                  // could not be resolved, rather than setting an empty did.
                   if (did) feature.did = did
                   else feature.did = '' as DidString // unresolved mention — resolver returned null; consumers treat '' as unresolved
                 }),
@@ -379,6 +381,12 @@ export class RichText {
       this.facets.sort(facetSort)
     }
   }
+}
+
+function isHandleResolver(
+  value: HandleResolver | Client,
+): value is HandleResolver {
+  return typeof (value as HandleResolver).resolve === 'function'
 }
 
 const facetSort = (a: Facet, b: Facet) => a.index.byteStart - b.index.byteStart
