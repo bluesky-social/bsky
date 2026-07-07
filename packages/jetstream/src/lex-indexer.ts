@@ -1,10 +1,12 @@
 import {
+  type AtIdentifierString,
   type InferOutput,
   type Main,
+  type NsidString,
   type RecordSchema,
+  atUri,
   getMain,
 } from '@atproto/lex-schema'
-import { AtUri } from '@atproto/syntax'
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
@@ -93,22 +95,23 @@ const isThenable = (v: unknown): v is PromiseLike<unknown> =>
 const kUri = Symbol('jetstream.uri')
 
 // Lazily builds and caches the validated at:// URI of a commit event. PERF:
-// most handlers never read `uri`; AtUri.make validates (and can throw on
-// mangled wire components), so the cost — and the throw — happen only on
-// first read, inside the handler's guarded execution. `self` is the event
-// object (`this` inside its getter); the cast adds the symbol slot the event
-// types deliberately don't declare.
+// most handlers never read `uri`; atUri validates (and can throw on mangled
+// wire components), so the cost — and the throw — happen only on first read,
+// inside the handler's guarded execution. The wire carries plain strings; the
+// runtime assertions inside atUri are what make the branded casts honest.
+// `self` is the event object (`this` inside its getter); the cast adds the
+// symbol slot the event types deliberately don't declare.
 function lazyUri(
   self: object,
   did: string,
   commit: { collection: string; rkey: string },
 ): string {
   const cache = self as { [kUri]?: string }
-  return (cache[kUri] ??= AtUri.make(
-    did,
-    commit.collection,
+  return (cache[kUri] ??= atUri(
+    did as AtIdentifierString,
+    commit.collection as NsidString,
     commit.rkey,
-  ).toString())
+  ))
 }
 
 // Internal, type-erased handler record stored per commit-collection NSID.
@@ -383,8 +386,12 @@ export class LexIndexer implements JetstreamConsumer {
       if (handlers.put) {
         const did = typed.did
         const tc = typed.commit
-        // PERF: cid delegates to the commit getter (see note above).
-        const putEvt: PutEvent<never> = {
+        // PERF: cid delegates to the commit getter (see note above). The
+        // record is defined here — its static type is unknown at this
+        // type-erased site (handlers are stored as PutEvent<unknown>); the
+        // commit() overloads guarantee the runtime shape matches what the
+        // registered handler expects.
+        const putEvt: PutEvent<unknown> = {
           did,
           seq: typed.seq,
           operation: tc.operation,
@@ -397,7 +404,7 @@ export class LexIndexer implements JetstreamConsumer {
           get cid(): string {
             return tc.cid
           },
-          record: tc.record as never,
+          record: tc.record,
         }
         return handlers.put(putEvt, hctx)
       }
