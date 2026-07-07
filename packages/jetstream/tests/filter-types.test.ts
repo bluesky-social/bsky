@@ -1,4 +1,9 @@
-import { type InferOutput, l, record } from '@atproto/lex-schema'
+import {
+  type InferOutput,
+  type NsidString,
+  l,
+  record,
+} from '@atproto/lex-schema'
 import { expectTypeOf, test } from 'vitest'
 import {
   type DeleteCommit,
@@ -61,10 +66,12 @@ test('wildcard filter maps to a template-literal collection', () => {
   >()
 })
 
-test('non-literal string filter degrades to string/UnvalidatedRecord', () => {
-  type Commit = TypedCommitFor<string>
-  expectTypeOf<Commit['collection']>().toEqualTypeOf<string>()
-  expectTypeOf<PutOf<Commit>['record']>().toEqualTypeOf<UnvalidatedRecord>()
+test('a bare NsidString filter (no literal) floor-types with the brand', () => {
+  type Commit = TypedCommitFor<NsidString>
+  expectTypeOf<Commit['collection']>().toEqualTypeOf<NsidString>()
+  expectTypeOf<PutOf<Commit>['record']>().toEqualTypeOf<
+    UnvalidatedRecord<NsidString>
+  >()
 })
 
 test('empty filter tuple falls back to plain TypedEvent', () => {

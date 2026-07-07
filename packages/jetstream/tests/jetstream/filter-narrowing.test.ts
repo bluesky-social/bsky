@@ -1,4 +1,10 @@
-import { type InferOutput, l, record } from '@atproto/lex-schema'
+import {
+  type DidString,
+  type InferOutput,
+  type NsidString,
+  l,
+  record,
+} from '@atproto/lex-schema'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { Jetstream, type UnvalidatedRecord } from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'
@@ -50,7 +56,7 @@ describe('live() filter narrowing (public API)', () => {
       ]),
     })) {
       // collection narrows across the whole union
-      expectTypeOf(ev.did).toEqualTypeOf<string>()
+      expectTypeOf(ev.did).toEqualTypeOf<DidString>()
       if (ev.kind === 'commit' && ev.commit.operation !== 'delete') {
         if (ev.commit.collection === 'app.test.like') {
           expectTypeOf(ev.commit.record).toEqualTypeOf<Like>()
@@ -77,7 +83,7 @@ describe('live() filter narrowing (public API)', () => {
     })) {
       if (ev.kind === 'commit' && ev.commit.operation !== 'delete') {
         expectTypeOf(ev.commit.record).toEqualTypeOf<unknown>()
-        expectTypeOf(ev.commit.collection).toEqualTypeOf<string>()
+        expectTypeOf(ev.commit.collection).toEqualTypeOf<NsidString>()
       }
     }
   })

@@ -1,4 +1,9 @@
-import { type Main, type RecordSchema, getMain } from '@atproto/lex-schema'
+import {
+  type Main,
+  type NsidString,
+  type RecordSchema,
+  getMain,
+} from '@atproto/lex-schema'
 
 export interface SchemaCollectionFilter {
   collection: Main<RecordSchema>
@@ -6,7 +11,7 @@ export interface SchemaCollectionFilter {
 }
 
 export type CollectionFilter =
-  string | Main<RecordSchema> | SchemaCollectionFilter
+  NsidString | `${string}.*` | Main<RecordSchema> | SchemaCollectionFilter
 
 // Discriminate the options form from schema shapes: a SchemaCollectionFilter
 // has `collection` and never `main` (namespace form) or `$type` (bare
