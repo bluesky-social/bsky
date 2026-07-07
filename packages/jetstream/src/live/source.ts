@@ -1,4 +1,4 @@
-import { type EventBatch, type RawEventV1, type SeqEvent } from '../event.js'
+import { type RawEventV1 } from '../event.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
 import { SKIP_FRAME } from './decode.js'
 import { type LiveTransport, wsKeepAliveTransport } from './transport.js'
@@ -60,21 +60,4 @@ export async function* liveEvents(
     lastSeq = ev.seq
     yield ev
   }
-}
-
-export async function* batchEvents<E extends SeqEvent>(
-  src: AsyncGenerator<E>,
-  batchSize: number,
-): AsyncGenerator<EventBatch<E>> {
-  let events: E[] = []
-  let lastCursor = 0
-  for await (const ev of src) {
-    events.push(ev)
-    if (ev.seq > lastCursor) lastCursor = ev.seq
-    if (events.length >= batchSize) {
-      yield { events, lastCursor }
-      events = []
-    }
-  }
-  if (events.length > 0) yield { events, lastCursor }
 }

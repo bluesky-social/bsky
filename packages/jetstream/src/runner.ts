@@ -11,7 +11,6 @@ export interface RunnerLiveOpts {
   signal?: AbortSignal
   onError?: (err: Error) => void
   liveTransport?: LiveTransport
-  liveBatchSize?: number
 }
 
 /**

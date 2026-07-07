@@ -4,7 +4,7 @@ import { type CollectionFilter, resolveNsids } from './engine/collections.js'
 import { type EventBatch, type RawEventV1, type TypedEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventFor } from './filter-types.js'
-import { batchEvents, liveEvents } from './live/source.js'
+import { liveEvents } from './live/source.js'
 import { type LiveTransport } from './live/transport.js'
 import { JetstreamRunner } from './runner.js'
 import { shape } from './shape.js'
@@ -22,7 +22,6 @@ export interface LiveOpts<
   signal?: AbortSignal
   onError?: (err: Error) => void
   liveTransport?: LiveTransport
-  liveBatchSize?: number
   raw?: boolean
 }
 
@@ -49,28 +48,28 @@ export class Jetstream {
     return new JetstreamRunner(this, consumer)
   }
 
-  // The raw batch stream underlying live(); the runner drives it directly
-  // (the source package reached it through live()'s batched mode, which is
-  // not part of this package's public surface).
+  // The raw batch stream underlying live(); the runner drives it directly.
+  // Each event is wrapped in a trivial single-event "batch" with NO extra
+  // buffering — live delivery stays realtime. EventBatch is used only as the
+  // standard internal interface, looking ahead to v2 modes (snapshot/replay)
+  // where batches carry real grouping.
   async *liveRawBatches(
     opts: LiveOpts,
   ): AsyncGenerator<EventBatch<RawEventV1>> {
     const host = this.service
     const { nsids } = resolveNsids(opts.collections ?? [])
-    const batchSize = opts.liveBatchSize ?? 64
     const start = await opts.cursor?.load()
-    yield* batchEvents(
-      liveEvents({
-        host,
-        collections: nsids,
-        dids: opts.dids,
-        cursor: start,
-        dedupFloor: start, // a resume cursor is also the dedup floor
-        transport: opts.liveTransport,
-        signal: opts.signal,
-        onError: opts.onError,
-      }),
-      batchSize,
-    )
+    for await (const ev of liveEvents({
+      host,
+      collections: nsids,
+      dids: opts.dids,
+      cursor: start,
+      dedupFloor: start, // a resume cursor is also the dedup floor
+      transport: opts.liveTransport,
+      signal: opts.signal,
+      onError: opts.onError,
+    })) {
+      yield { events: [ev], lastCursor: ev.seq }
+    }
   }
 }
