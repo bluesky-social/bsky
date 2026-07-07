@@ -1,3 +1,9 @@
+import {
+  type AtIdentifierString,
+  type NsidString,
+  atUri,
+} from '@atproto/lex-schema'
+
 export type Operation = 'create' | 'update' | 'delete'
 export type Kind = 'commit' | 'identity' | 'account'
 
@@ -84,7 +90,9 @@ export type RawEventV1 =
 /**
  * The at:// URI of a commit event (at://did/collection/rkey), or the bare DID
  * for non-commit kinds. Used as the default per-key serialization key for
- * concurrent indexers.
+ * concurrent indexers. atUri validates the components, so a commit event
+ * carrying a malformed did/collection/rkey throws rather than yielding a
+ * garbage URI.
  */
 export function eventUri(ev: {
   kind: string
@@ -92,7 +100,13 @@ export function eventUri(ev: {
   commit?: { collection: string; rkey: string }
 }): string {
   if (ev.kind === 'commit' && ev.commit) {
-    return `at://${ev.did}/${ev.commit.collection}/${ev.commit.rkey}`
+    // The wire carries plain strings; atUri asserts the formats at runtime,
+    // which is what makes these compile-time casts honest.
+    return atUri(
+      ev.did as AtIdentifierString,
+      ev.commit.collection as NsidString,
+      ev.commit.rkey,
+    )
   }
   return ev.did
 }

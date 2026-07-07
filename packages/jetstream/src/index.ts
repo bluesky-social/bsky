@@ -1,4 +1,3 @@
-export { PACKAGE_NAME } from './version.js'
 export { Jetstream } from './jetstream.js'
 export type { JetstreamOpts, LiveOpts } from './jetstream.js'
 export { typedEventFromRaw } from './decode-typed.js'

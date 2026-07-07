@@ -1,4 +1,3 @@
-// tests/run/run-tracker.test.ts
 import { describe, expect, it } from 'vitest'
 import { type EventBatch, type RawEventV1 } from '../../src/event.js'
 import { type CursorStore } from '../../src/execute/cursor-store.js'

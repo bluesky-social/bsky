@@ -1,4 +1,3 @@
-// tests/integration/lex-indexer-run.test.ts
 import { l, record } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import { Jetstream, LexIndexer, MemoryCursorStore } from '../../src/index.js'

@@ -1,6 +1,8 @@
-// src/jetstream.ts
 import { type JetstreamConsumer } from './consumer.js'
-import { type CollectionFilter, resolveNsids } from './engine/collections.js'
+import {
+  type CollectionFilter,
+  parseCollectionFilters,
+} from './engine/collections.js'
 import { type EventBatch, type RawEventV1, type TypedEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventFor } from './filter-types.js'
@@ -40,7 +42,7 @@ export class Jetstream {
   ): AsyncGenerator<TypedEventFor<F>>
   live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEventV1>
   live(opts: LiveOpts = {}): AsyncGenerator<RawEventV1 | TypedEvent> {
-    const { schemasByNsid } = resolveNsids(opts.collections ?? [])
+    const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
     return shape(this.liveRawBatches(opts), opts, schemasByNsid, opts.onError)
   }
 
@@ -57,7 +59,7 @@ export class Jetstream {
     opts: LiveOpts,
   ): AsyncGenerator<EventBatch<RawEventV1>> {
     const host = this.service
-    const { nsids } = resolveNsids(opts.collections ?? [])
+    const { nsids } = parseCollectionFilters(opts.collections ?? [])
     const start = await opts.cursor?.load()
     for await (const ev of liveEvents({
       host,

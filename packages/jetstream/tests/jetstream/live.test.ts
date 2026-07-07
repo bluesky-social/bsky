@@ -1,4 +1,3 @@
-// tests/jetstream/live.test.ts
 import { describe, expect, it } from 'vitest'
 import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
 import { Jetstream } from '../../src/jetstream.js'

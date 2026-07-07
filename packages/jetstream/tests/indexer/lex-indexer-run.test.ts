@@ -1,3 +1,4 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import { l, record } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
 import { type EventBatch, type RawEventV1 } from '../../src/event.js'
@@ -322,7 +323,7 @@ describe('LexIndexer.run', () => {
     const ix = new LexIndexer({ keyOf: () => 'same-key' }).commit(likeSchema, {
       put: async (e) => {
         if (e.seq === 1) {
-          await new Promise((r) => setTimeout(r, 10))
+          await delay(10)
           order.push('slow-1')
         } else {
           order.push(`fast-${e.seq}`) // enqueued behind seq 1's pending tail
@@ -367,7 +368,7 @@ describe('LexIndexer.run', () => {
         { ack: () => {}, signal: SIG() },
       )
       // Let both handlers start before either completes.
-      await new Promise((r) => setTimeout(r, 0))
+      await delay(0)
       expect(started.sort()).toEqual([
         'at://did:plc:a/app.test.like/r1',
         'at://did:plc:a/app.test.like/r2',
@@ -410,10 +411,10 @@ describe('LexIndexer.run', () => {
         batches({ events: [sameKey(1), sameKey(2)], lastCursor: 2 }),
         { ack: () => {}, signal: SIG() },
       )
-      await new Promise((r) => setTimeout(r, 0))
+      await delay(0)
       expect(started).toEqual([1]) // second blocked until first resolves
       gates[1].resolve()
-      await new Promise((r) => setTimeout(r, 0))
+      await delay(0)
       expect(started).toEqual([1, 2]) // second starts only after first completed
       expect(completed).toEqual([1])
       gates[2].resolve()

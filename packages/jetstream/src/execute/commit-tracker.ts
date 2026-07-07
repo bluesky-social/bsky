@@ -4,10 +4,8 @@ export class CommitTracker {
   private readonly store: CursorStore | undefined
   private readonly tracked: number[] = []
   private readonly doneSet = new Set<number>()
-  private cursor = 0 // index into tracked of the next not-yet-confirmed seq
   private mark = 0
   private savePromise: Promise<void> | undefined
-  private pendingSave = false
 
   constructor(store?: CursorStore) {
     this.store = store
@@ -20,20 +18,20 @@ export class CommitTracker {
 
   done(seq: number): void {
     this.doneSet.add(seq)
+    let cursor = 0 // index into tracked of the next not-yet-confirmed seq
     while (
-      this.cursor < this.tracked.length &&
-      this.doneSet.has(this.tracked[this.cursor])
+      cursor < this.tracked.length &&
+      this.doneSet.has(this.tracked[cursor])
     ) {
-      this.mark = this.tracked[this.cursor]
-      this.doneSet.delete(this.tracked[this.cursor])
-      this.cursor++
+      this.mark = this.tracked[cursor]
+      this.doneSet.delete(this.tracked[cursor])
+      cursor++
     }
     // Trim consumed prefix to bound memory usage
-    if (this.cursor > 0) {
-      this.tracked.splice(0, this.cursor)
-      this.cursor = 0
+    if (cursor > 0) {
+      this.tracked.splice(0, cursor)
     }
-    void this.scheduleSave()
+    this.scheduleSave()
   }
 
   watermark(): number {
@@ -43,18 +41,15 @@ export class CommitTracker {
   async flush(): Promise<void> {
     if (!this.store) return
     // Ensure a save covering the current mark is scheduled, then wait for drain.
-    this.pendingSave = true
-    if (!this.savePromise) {
-      this.savePromise = this.runSaveLoop()
-    }
+    this.scheduleSave()
     await this.savePromise
   }
 
-  // Coalesced save: at most one in-flight store.save; a request during a save
-  // triggers exactly one more save afterward with the latest watermark.
+  // Coalesced save: at most one in-flight store.save; the loop re-saves until
+  // the saved value catches up with the latest watermark, so saves requested
+  // during an in-flight save collapse into exactly one more.
   private scheduleSave(): void {
     if (!this.store) return
-    this.pendingSave = true
     if (!this.savePromise) {
       this.savePromise = this.runSaveLoop()
     }
@@ -62,10 +57,11 @@ export class CommitTracker {
 
   private async runSaveLoop(): Promise<void> {
     try {
+      let saved: number
       do {
-        this.pendingSave = false
-        await this.store!.save(this.mark)
-      } while (this.pendingSave)
+        saved = this.mark
+        await this.store!.save(saved)
+      } while (saved !== this.mark)
     } finally {
       this.savePromise = undefined
     }

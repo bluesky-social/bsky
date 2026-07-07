@@ -1,6 +1,6 @@
 import { l, record } from '@atproto/lex-schema'
 import { describe, expect, it } from 'vitest'
-import { resolveNsids } from '../../src/engine/collections.js'
+import { parseCollectionFilters } from '../../src/engine/collections.js'
 import { RecordValidationError } from '../../src/shape.js'
 
 const likeSchema = record(
@@ -9,15 +9,17 @@ const likeSchema = record(
   l.object({ subject: l.string() }),
 )
 
-describe('resolveNsids options form', () => {
+describe('parseCollectionFilters options form', () => {
   it('options form resolves the NSID and registers the schema by default', () => {
-    const { nsids, schemasByNsid } = resolveNsids([{ collection: likeSchema }])
+    const { nsids, schemasByNsid } = parseCollectionFilters([
+      { collection: likeSchema },
+    ])
     expect(nsids).toEqual(['app.test.like'])
     expect(schemasByNsid.has('app.test.like')).toBe(true)
   })
 
   it('validateRecord: false contributes the NSID but omits the schema', () => {
-    const { nsids, schemasByNsid } = resolveNsids([
+    const { nsids, schemasByNsid } = parseCollectionFilters([
       { collection: likeSchema, validateRecord: false },
     ])
     expect(nsids).toEqual(['app.test.like'])
@@ -25,7 +27,7 @@ describe('resolveNsids options form', () => {
   })
 
   it('mixed filter forms resolve together', () => {
-    const { nsids, schemasByNsid } = resolveNsids([
+    const { nsids, schemasByNsid } = parseCollectionFilters([
       likeSchema,
       'app.test.post',
       { collection: likeSchema, validateRecord: false },
