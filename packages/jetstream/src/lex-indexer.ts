@@ -1,9 +1,15 @@
 import {
-  type AtIdentifierString,
+  type AtUriString,
+  type CidString,
+  type DatetimeString,
+  type DidString,
+  type HandleString,
   type InferOutput,
   type Main,
   type NsidString,
+  type RecordKeyString,
   type RecordSchema,
+  type TidString,
   atUri,
   getMain,
 } from '@atproto/lex-schema'
@@ -28,50 +34,50 @@ export interface HandlerContext {
 }
 
 export type PutEvent<R> = {
-  did: string
+  did: DidString
   seq: number
   operation: 'create' | 'update'
-  collection: string
-  rkey: string
-  rev: string
-  cid: string
-  uri: string
+  collection: NsidString
+  rkey: RecordKeyString
+  rev: TidString
+  cid: CidString
+  uri: AtUriString
   record: R
 }
 export type DelEvent = {
-  did: string
+  did: DidString
   seq: number
   operation: 'delete'
-  collection: string
-  rkey: string
-  rev: string
-  uri: string
+  collection: NsidString
+  rkey: RecordKeyString
+  rev: TidString
+  uri: AtUriString
 }
 // Same flat shape as PutEvent but carries the decode/validation `error` instead
 // of a decoded `record`. Routed here (not to `put`) when a create/update record
 // fails to schema-validate, so `put`'s `record` is always a valid decoded R.
 export type ValidationErrorEvent = {
-  did: string
+  did: DidString
   seq: number
   operation: 'create' | 'update'
-  collection: string
-  rkey: string
-  rev: string
-  cid: string
-  uri: string
+  collection: NsidString
+  rkey: RecordKeyString
+  rev: TidString
+  cid: CidString
+  uri: AtUriString
   error: Error
 }
 export type IdentityEvent = {
-  did: string
-  handle?: string
-  time?: string
+  did: DidString
+  handle?: HandleString
+  time?: DatetimeString
   seq: number
 }
 export type AccountEvent = {
-  did: string
+  did: DidString
   active: boolean
   status?: string
-  time?: string
+  time?: DatetimeString
   seq: number
 }
 
@@ -97,21 +103,18 @@ const kUri = Symbol('jetstream.uri')
 // Lazily builds and caches the validated at:// URI of a commit event. PERF:
 // most handlers never read `uri`; atUri validates (and can throw on mangled
 // wire components), so the cost — and the throw — happen only on first read,
-// inside the handler's guarded execution. The wire carries plain strings; the
-// runtime assertions inside atUri are what make the branded casts honest.
+// inside the handler's guarded execution. The wire carries branded values
+// earned at the decode boundary; atUri's runtime assertions guard against
+// mangled wire data.
 // `self` is the event object (`this` inside its getter); the cast adds the
 // symbol slot the event types deliberately don't declare.
 function lazyUri(
   self: object,
-  did: string,
-  commit: { collection: string; rkey: string },
-): string {
-  const cache = self as { [kUri]?: string }
-  return (cache[kUri] ??= atUri(
-    did as AtIdentifierString,
-    commit.collection as NsidString,
-    commit.rkey,
-  ))
+  did: DidString,
+  commit: { collection: NsidString; rkey: RecordKeyString },
+): AtUriString {
+  const cache = self as { [kUri]?: AtUriString }
+  return (cache[kUri] ??= atUri(did, commit.collection, commit.rkey))
 }
 
 // Internal, type-erased handler record stored per commit-collection NSID.
@@ -130,7 +133,7 @@ interface AnyCommitHandlers {
 export class LexIndexer implements JetstreamConsumer {
   readonly concurrency: number
   readonly #keyOf: ((evt: RawEventV1) => string) | undefined
-  readonly #collections = new Map<string, AnyCommitHandlers>()
+  readonly #collections = new Map<NsidString, AnyCommitHandlers>()
   #identityHandler:
     | ((e: IdentityEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
     | undefined
@@ -339,7 +342,7 @@ export class LexIndexer implements JetstreamConsumer {
               collection: c.collection,
               rkey: c.rkey,
               rev: c.rev,
-              get uri(): string {
+              get uri(): AtUriString {
                 return lazyUri(this, did, c)
               },
             },
@@ -371,7 +374,7 @@ export class LexIndexer implements JetstreamConsumer {
             collection: tc.collection,
             rkey: tc.rkey,
             rev: tc.rev,
-            get uri(): string {
+            get uri(): AtUriString {
               return lazyUri(this, did, tc)
             },
             get cid(): string {
@@ -398,7 +401,7 @@ export class LexIndexer implements JetstreamConsumer {
           collection: tc.collection,
           rkey: tc.rkey,
           rev: tc.rev,
-          get uri(): string {
+          get uri(): AtUriString {
             return lazyUri(this, did, tc)
           },
           get cid(): string {

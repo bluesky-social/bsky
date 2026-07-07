@@ -1,3 +1,4 @@
+import { type DidString } from '@atproto/lex-schema'
 import { type RawEventV1 } from '../event.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
 import { SKIP_FRAME } from './decode.js'
@@ -8,12 +9,13 @@ export { type LiveTransport } from './transport.js'
 export interface LiveEventsOpts {
   host: string
   collections?: string[]
-  dids?: string[]
+  dids?: DidString[]
   cursor?: number // undefined = live from tip; 0 = replay from start
   dedupFloor?: number // undefined = nothing delivered (seq 0 passes); else drop seq <= floor
   transport?: LiveTransport
   signal?: AbortSignal
   onError?: (err: Error) => void
+  validateWire?: boolean // strict wire validation: throws MalformedError (fatal), never routed to onError
 }
 
 function wsScheme(host: string): string {
@@ -45,13 +47,22 @@ export async function* liveEvents(
     return u.toString()
   }
 
+  const te = new TextEncoder()
+
   for await (const chunk of transport.stream(getUrl, signal)) {
+    // NOTE: wsKeepAliveTransport yields strings for websocket text frames even
+    // though the type declares Uint8Array. Coerce here so the decoder stays
+    // Uint8Array-only.
+    const bytes = typeof chunk === 'string' ? te.encode(chunk as string) : chunk
     let ev: RawEventV1 | typeof SKIP_FRAME
     try {
-      ev = decodeLiveFrameV1(chunk)
+      ev = decodeLiveFrameV1(bytes, opts.validateWire)
     } catch (err) {
+      // Strict-mode violations are fatal by contract (the flag asserts the
+      // data source) — rethrow past the malformed-frame skip.
+      if (opts.validateWire) throw err
       opts.onError?.(err instanceof Error ? err : new Error(String(err)))
-      continue // skip malformed / error frames; never fatal
+      continue // skip malformed / error frames; never fatal in default mode
     }
     if (ev === SKIP_FRAME) continue
     // v1 note: seq is time_us from v1's monotonic clock (strictly increasing,

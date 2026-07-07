@@ -1,9 +1,18 @@
+import { type DidString } from '@atproto/lex-schema'
 import { type JetstreamConsumer } from './consumer.js'
 import {
   type CollectionFilter,
   parseCollectionFilters,
 } from './engine/collections.js'
-import { type EventBatch, type RawEventV1, type TypedEvent } from './event.js'
+import {
+  type Account,
+  type DeleteCommit,
+  type EventBase,
+  type EventBatch,
+  type Identity,
+  type RawEventV1,
+  type TypedPutCommit,
+} from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventFor } from './filter-types.js'
 import { liveEvents } from './live/source.js'
@@ -13,19 +22,38 @@ import { shape } from './shape.js'
 
 export interface JetstreamOpts {
   service: string
+  /**
+   * Strict wire validation. By default the branded string types on events are
+   * optimistic — "the server said so." With validateWire: true, every decode
+   * boundary checks its wire schema (lex-schema format validators); any
+   * violation — including otherwise-skipped malformed frames — throws
+   * MalformedError, fatal in every mode.
+   */
+  validateWire?: boolean
 }
 
 export interface LiveOpts<
   F extends readonly CollectionFilter[] = readonly CollectionFilter[],
 > {
   collections?: F
-  dids?: string[]
+  dids?: DidString[]
   cursor?: CursorStore
   signal?: AbortSignal
   onError?: (err: Error) => void
   liveTransport?: LiveTransport
   raw?: boolean
 }
+
+// Widest typed event accepted by the impl signature: collection is `string`
+// (not narrowed to NsidString) so TypedEventFor<F> is assignable here for any
+// CollectionFilter tuple F. record: unknown covers validated and unvalidated.
+type WideTypedEvent =
+  | (EventBase & {
+      kind: 'commit'
+      commit: TypedPutCommit<unknown, string> | DeleteCommit<string>
+    })
+  | (EventBase & { kind: 'identity'; identity: Identity })
+  | (EventBase & { kind: 'account'; account: Account })
 
 export class Jetstream {
   readonly service: string
@@ -41,7 +69,7 @@ export class Jetstream {
     opts?: LiveOpts<F> & { raw?: false },
   ): AsyncGenerator<TypedEventFor<F>>
   live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEventV1>
-  live(opts: LiveOpts = {}): AsyncGenerator<RawEventV1 | TypedEvent> {
+  live(opts: LiveOpts = {}): AsyncGenerator<RawEventV1 | WideTypedEvent> {
     const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
     return shape(this.liveRawBatches(opts), opts, schemasByNsid, opts.onError)
   }
@@ -70,6 +98,7 @@ export class Jetstream {
       transport: opts.liveTransport,
       signal: opts.signal,
       onError: opts.onError,
+      validateWire: this.opts.validateWire,
     })) {
       yield { events: [ev], lastCursor: ev.seq }
     }

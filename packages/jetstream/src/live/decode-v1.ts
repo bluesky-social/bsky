@@ -1,3 +1,4 @@
+import { type InferOutput, l } from '@atproto/lex-schema'
 import { MalformedError } from '../errors.js'
 import { type Account, type Identity, type RawEventV1 } from '../event.js'
 import { SKIP_FRAME } from './decode.js'
@@ -10,59 +11,116 @@ import { SKIP_FRAME } from './decode.js'
 // monotonic.Clock guarantees now > last), so it maps directly onto seq.
 // Prototype-era short codes (type: "com", commit.type: "c") are not deployed
 // and not supported — such frames fall out as unknown kinds (SKIP_FRAME).
-interface WireV1Commit {
-  rev?: string
-  operation?: string
-  collection?: string
-  rkey?: string
-  record?: unknown
-  cid?: string
+// The schema below is the single wire contract: WireV1Frame is inferred from
+// it, the `as WireV1Frame` cast is the single optimistic boundary, and
+// validateWire strict mode safeValidates the SAME schema.
+const wireV1Envelope = {
+  did: l.string({ format: 'did' }),
+  // time_us IS the v1 cursor (strictly monotonic, unique) — required.
+  time_us: l.integer(),
 }
-interface WireV1Frame {
-  did?: string
-  time_us?: number
+const wireV1CommitFrame = l.object({
+  ...wireV1Envelope,
+  kind: l.literal('commit'),
+  commit: l.union([
+    l.object({
+      operation: l.union([l.literal('create'), l.literal('update')]),
+      collection: l.string({ format: 'nsid' }),
+      rkey: l.string({ format: 'record-key' }),
+      rev: l.string({ format: 'tid' }),
+      cid: l.string({ format: 'cid' }), // the v1 wire cid IS checked
+      record: l.unknown(), // parsed JSON body — never format-checked
+    }),
+    l.object({
+      operation: l.literal('delete'),
+      collection: l.string({ format: 'nsid' }),
+      rkey: l.string({ format: 'record-key' }),
+      rev: l.string({ format: 'tid' }),
+    }),
+  ]),
+})
+const wireV1IdentityFrame = l.object({
+  ...wireV1Envelope,
+  kind: l.literal('identity'),
+  identity: l.object({
+    did: l.string({ format: 'did' }),
+    handle: l.optional(l.string({ format: 'handle' })),
+    time: l.optional(l.string({ format: 'datetime' })),
+  }),
+})
+const wireV1AccountFrame = l.object({
+  ...wireV1Envelope,
+  kind: l.literal('account'),
+  account: l.object({
+    did: l.string({ format: 'did' }),
+    active: l.optional(l.boolean()),
+    status: l.optional(l.string()),
+    time: l.optional(l.string({ format: 'datetime' })),
+  }),
+})
+const wireV1Frame = l.union([
+  wireV1CommitFrame,
+  wireV1IdentityFrame,
+  wireV1AccountFrame,
+])
+type WireV1Frame = InferOutput<typeof wireV1Frame>
+
+// Pre-discrimination peek: error frames and unknown/control kinds are handled
+// before the WireV1Frame cast (l.union rejects unknown discriminants by design).
+interface PeekFrame {
   kind?: string
-  commit?: WireV1Commit
-  identity?: { did?: string; handle?: string; time?: string }
-  account?: { did?: string; active?: boolean; status?: string; time?: string }
   error?: string
   message?: string
 }
 
 const td = new TextDecoder()
 
-const KINDS = new Set(['commit', 'identity', 'account'])
-const OPS = new Set(['create', 'update', 'delete'])
-
 export function decodeLiveFrameV1(
-  data: Uint8Array | string,
+  data: Uint8Array,
+  validateWire?: boolean,
 ): RawEventV1 | typeof SKIP_FRAME {
-  const text = typeof data === 'string' ? data : td.decode(data)
-  let f: WireV1Frame
+  const text = td.decode(data)
+  let parsed: unknown
   try {
-    f = JSON.parse(text) as WireV1Frame
+    parsed = JSON.parse(text)
   } catch (err) {
     throw new MalformedError(`decode v1 live frame: ${(err as Error).message}`)
   }
-  if (f.error) {
+  const peek = parsed as PeekFrame
+  if (peek.error) {
     throw new MalformedError(
-      `v1 live error frame: ${f.error}: ${f.message ?? ''}`,
+      `v1 live error frame: ${peek.error}: ${peek.message ?? ''}`,
     )
   }
-  const kind = f.kind
-  if (!kind || !KINDS.has(kind)) return SKIP_FRAME
-
-  const seq = f.time_us ?? 0
-  const did = f.did ?? ''
+  if (
+    peek.kind !== 'commit' &&
+    peek.kind !== 'identity' &&
+    peek.kind !== 'account'
+  ) {
+    // Unknown or control kind (prototype short codes, etc.): skip.
+    return SKIP_FRAME
+  }
+  // PERF: strict mode only — one predictable branch on the hot path.
+  if (validateWire) {
+    const result = wireV1Frame.safeValidate(parsed)
+    if (!result.success) {
+      throw new MalformedError(
+        `wire validation failed: ${String(result.reason)}`,
+      )
+    }
+  }
+  const f = parsed as WireV1Frame // the single optimistic boundary
+  const seq = f.time_us
+  const did = f.did
   const base = { did, seq, timeUs: seq }
 
-  switch (kind) {
+  switch (f.kind) {
     case 'commit': {
       const c = f.commit
       if (!c)
         throw new MalformedError(`v1 commit frame missing payload (seq=${seq})`)
       const op = c.operation
-      if (!op || !OPS.has(op))
+      if (op !== 'create' && op !== 'update' && op !== 'delete')
         throw new MalformedError(`v1 commit unknown operation (seq=${seq})`)
       if (op === 'delete') {
         return {
@@ -70,9 +128,9 @@ export function decodeLiveFrameV1(
           kind: 'commit',
           commit: {
             operation: 'delete',
-            collection: c.collection ?? '',
-            rkey: c.rkey ?? '',
-            rev: c.rev ?? '',
+            collection: c.collection,
+            rkey: c.rkey,
+            rev: c.rev,
           },
         }
       }
@@ -85,10 +143,10 @@ export function decodeLiveFrameV1(
         ...base,
         kind: 'commit',
         commit: {
-          operation: op as 'create' | 'update',
-          collection: c.collection ?? '',
-          rkey: c.rkey ?? '',
-          rev: c.rev ?? '',
+          operation: op,
+          collection: c.collection,
+          rkey: c.rkey,
+          rev: c.rev,
           cid: c.cid,
           record: c.record,
         },
@@ -119,7 +177,5 @@ export function decodeLiveFrameV1(
       }
       return { ...base, kind: 'account', account }
     }
-    default:
-      return SKIP_FRAME
   }
 }

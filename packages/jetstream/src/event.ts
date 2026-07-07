@@ -1,3 +1,13 @@
+import {
+  type CidString,
+  type DatetimeString,
+  type DidString,
+  type HandleString,
+  type NsidString,
+  type RecordKeyString,
+  type TidString,
+} from '@atproto/lex-schema'
+
 export type Operation = 'create' | 'update' | 'delete'
 export type Kind = 'commit' | 'identity' | 'account'
 
@@ -11,7 +21,7 @@ export interface SeqEvent {
 }
 
 export interface EventBase {
-  did: string
+  did: DidString
   seq: number
   timeUs: number
 }
@@ -26,35 +36,35 @@ export type UnvalidatedRecord<TType extends string = string> = {
   $type: TType
 } & Record<string, unknown>
 
-export interface TypedPutCommit<R = unknown, C extends string = string> {
+export interface TypedPutCommit<R = unknown, C extends string = NsidString> {
   operation: 'create' | 'update'
   collection: C
-  rkey: string
-  rev: string
-  cid: string
+  rkey: RecordKeyString
+  rev: TidString
+  cid: CidString
   record: R
   validationError?: Error
 }
 
-export interface DeleteCommit<C extends string = string> {
+export interface DeleteCommit<C extends string = NsidString> {
   operation: 'delete'
   collection: C
-  rkey: string
-  rev: string
+  rkey: RecordKeyString
+  rev: TidString
 }
 
 export type TypedCommit<R = unknown> = TypedPutCommit<R> | DeleteCommit
 
 export interface Identity {
-  did: string
-  handle?: string
-  time?: string
+  did: DidString
+  handle?: HandleString
+  time?: DatetimeString
 }
 export interface Account {
-  did: string
+  did: DidString
   active: boolean
   status?: string
-  time?: string
+  time?: DatetimeString
 }
 
 export type TypedEvent<R = unknown> =
@@ -69,10 +79,10 @@ export interface EventBatch<E> {
 
 export interface RawPutCommitV1 {
   operation: 'create' | 'update'
-  collection: string
-  rkey: string
-  rev: string
-  cid: string
+  collection: NsidString
+  rkey: RecordKeyString
+  rev: TidString
+  cid: CidString
   record: unknown // v1 wire carries parsed JSON; no canonical CBOR exists
 }
 export type RawCommitV1 = RawPutCommitV1 | DeleteCommit

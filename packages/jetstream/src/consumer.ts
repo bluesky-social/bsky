@@ -1,3 +1,4 @@
+import { type DidString } from '@atproto/lex-schema'
 import { type CollectionFilter } from './engine/collections.js'
 import { type EventBatch, type RawEventV1, type SeqEvent } from './event.js'
 
@@ -33,7 +34,7 @@ export interface ConsumerContext {
  */
 export interface JetstreamConsumer {
   collections?: CollectionFilter[]
-  dids?: string[]
+  dids?: DidString[]
   run(
     stream: AsyncIterable<EventBatch<RawEventV1>>,
     ctx: ConsumerContext,

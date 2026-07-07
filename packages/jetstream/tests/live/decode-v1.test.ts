@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { MalformedError } from '../../src/errors.js'
 import { decodeLiveFrameV1 } from '../../src/live/decode-v1.js'
 import { SKIP_FRAME } from '../../src/live/decode.js'
 
 const enc = (o: unknown) => new TextEncoder().encode(JSON.stringify(o))
+// string-first encoder for pre-serialized fixtures
+const encStr = (s: string): Uint8Array => new TextEncoder().encode(s)
 
 describe('decodeLiveFrameV1', () => {
   it('decodes a long-form commit create (deployed spelling)', () => {
@@ -147,4 +149,67 @@ describe('decodeLiveFrameV1', () => {
       ),
     ).toThrow(MalformedError)
   })
+})
+
+// --- validateWire strict mode tests (v1) ---
+
+const TID = '3jzfcijpj2z2a'
+const DID = 'did:plc:ewvi7nxzyoun6zhxrhs64oiz'
+const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
+
+const v1Put = (over: Record<string, unknown> = {}) =>
+  JSON.stringify({
+    did: DID,
+    time_us: 9,
+    kind: 'commit',
+    commit: {
+      operation: 'create',
+      collection: 'app.bsky.feed.like',
+      rkey: TID,
+      rev: TID,
+      cid: CID,
+      record: { $type: 'app.bsky.feed.like' },
+      ...over,
+    },
+  })
+
+test('validateWire accepts a well-formed v1 put', () => {
+  expect(decodeLiveFrameV1(encStr(v1Put()), true)).not.toBe(SKIP_FRAME)
+})
+
+test('validateWire checks the v1 wire cid format', () => {
+  expect(() =>
+    decodeLiveFrameV1(encStr(v1Put({ cid: 'garbage' })), true),
+  ).toThrow(MalformedError)
+})
+
+test('validateWire throws on missing required time_us (the v1 cursor)', () => {
+  const frame = JSON.parse(v1Put()) as Record<string, unknown>
+  delete frame.time_us
+  expect(() => decodeLiveFrameV1(encStr(JSON.stringify(frame)), true)).toThrow(
+    MalformedError,
+  )
+})
+
+test('default mode passes a mangled v1 did through untouched', () => {
+  const ev = decodeLiveFrameV1(encStr(v1Put()), undefined)
+  expect(ev).not.toBe(SKIP_FRAME)
+  const bad = decodeLiveFrameV1(encStr(v1Put().replace(DID, 'not-a-did')))
+  expect(bad).not.toBe(SKIP_FRAME)
+})
+
+test('unknown v1 commit operation throws MalformedError in default mode', () => {
+  // Pins existing behavior: dispatch check throws before any record access.
+  const frame = JSON.stringify({
+    did: DID,
+    time_us: 9,
+    kind: 'commit',
+    commit: {
+      operation: 'frobnicate',
+      collection: 'app.bsky.feed.like',
+      rkey: TID,
+      rev: TID,
+    },
+  })
+  expect(() => decodeLiveFrameV1(encStr(frame))).toThrow(MalformedError)
 })
