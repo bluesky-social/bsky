@@ -10,7 +10,6 @@
 import { jsonToLex, lexParse, lexStringify, lexToJson } from '@atproto/lex'
 import {
   type DidString,
-  type HandleString,
   asAtUriString,
   asStringFormat,
   isAtUriString,
@@ -22,7 +21,7 @@ import {
   PasswordSession,
   type SessionData,
 } from '@atproto/lex-password-session'
-import type { AtprotoDid, HandleResolver } from '@atproto-labs/handle-resolver'
+import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { describe, expect, it } from 'vitest'
 import { api } from '../src/api.js'
 import {
@@ -88,6 +87,7 @@ import {
   URL_REGEX,
   sanitizeRichText,
 } from '../src/rich-text/index.js'
+import { ClientHandleResolver } from '../src/utils/index.js'
 
 // ── Anchor test ───────────────────────────────────────────────────────────────
 
@@ -282,24 +282,14 @@ describe('skill-examples', () => {
   })
 
   // § 6 — Worked example (type-level, no network calls)
-  it('handleResolver adapter compiles', () => {
-    // Verify the adapter type checks without instantiating a real client
-    function resolverFromClient(client: Client): HandleResolver {
-      return {
-        resolve: async (handle: string) => {
-          try {
-            const res = await client.call(com.atproto.identity.resolveHandle, {
-              handle: handle as HandleString,
-            })
-            return res.did as AtprotoDid
-          } catch {
-            return null
-          }
-        },
-      }
+  it('ClientHandleResolver satisfies HandleResolver', () => {
+    // detectFacets accepts a Client directly; ClientHandleResolver is the
+    // standalone adapter exported from utils
+    function makeResolver(client: Client): HandleResolver {
+      return new ClientHandleResolver(client)
     }
-    // The function itself compiles; that's what we're checking
-    expect(typeof resolverFromClient).toBe('function')
+    expect(typeof makeResolver).toBe('function')
+    expect(typeof ClientHandleResolver.prototype.resolve).toBe('function')
   })
 
   it('ModerationOpts type is constructable', () => {

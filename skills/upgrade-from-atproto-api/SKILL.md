@@ -152,6 +152,7 @@ const client = new Client(session, {
 | `interpretLabelValueDefinition`  | `interpretLabelValueDefinition`  | `@bsky.app/sdk/moderation` |
 | `interpretLabelValueDefinitions` | `interpretLabelValueDefinitions` | `@bsky.app/sdk/moderation` |
 | `hasMutedWord`                   | `hasMutedWord`                   | `@bsky.app/sdk/moderation` |
+| `matchMuteWords`                 | `matchMuteWords`                 | `@bsky.app/sdk/moderation` |
 | `LABELS`                         | `LABELS`                         | `@bsky.app/sdk/moderation` |
 
 ### Rich text
@@ -164,31 +165,24 @@ const client = new Client(session, {
 | `UnicodeString`                    | `UnicodeString`                        | `@bsky.app/sdk/richtext` |
 | `MENTION_REGEX`, `URL_REGEX`, etc. | same names                             | `@bsky.app/sdk/richtext` |
 
-**`detectFacets` resolver change:** The method now takes a `HandleResolver` from `@atproto-labs/handle-resolver` instead of an agent. If you have a `Client` and need a resolver, build a simple adapter:
+**`detectFacets` resolver change:** The method now takes either a `Client` or a `HandleResolver` from `@atproto-labs/handle-resolver` instead of an agent. Passing a `Client` resolves handles via `com.atproto.identity.resolveHandle`:
 
 ```typescript
-import type { HandleResolver, AtprotoDid } from '@atproto-labs/handle-resolver'
-import { Client } from '@atproto/lex-client'
-import { com } from '@bsky.app/sdk/lexicons'
-
-function resolverFromClient(client: Client): HandleResolver {
-  return {
-    resolve: async (handle: string) => {
-      try {
-        const res = await client.call(com.atproto.identity.resolveHandle, {
-          handle,
-        })
-        return res.did as AtprotoDid
-      } catch {
-        return null
-      }
-    },
-  }
-}
-
-// Usage:
+// Usage with a Client (resolves via com.atproto.identity.resolveHandle):
 const rt = new RichText({ text: 'Hello @alice.bsky.social!' })
-await rt.detectFacets(resolverFromClient(pdsClient))
+await rt.detectFacets(pdsClient)
+
+// Or bring your own HandleResolver:
+await rt.detectFacets(myHandleResolver)
+```
+
+The `Client`-backed resolver is also exported directly for standalone use:
+
+```typescript
+import { ClientHandleResolver } from '@bsky.app/sdk/utils'
+
+const resolver = new ClientHandleResolver(pdsClient)
+const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 ```
 
 ### Utils
@@ -208,7 +202,6 @@ await rt.detectFacets(resolverFromClient(pdsClient))
 | `isDid` / `asDid` / `assertDid`         | use `isStringFormat(v, 'did')` / `asStringFormat(v, 'did')` from `@atproto/lex` |
 | `AtUri`                                 | `AtUri` from `@atproto/syntax` (still a direct dependency)                      |
 | `lexicons` export (Lexicons instance)   | use generated schema objects from `@bsky.app/sdk/lexicons`                      |
-| `matchMuteWords`                        | internal only; use `hasMutedWord()` for common use cases                        |
 | `getSavedFeedType`                      | internal only; moved to preference actions                                      |
 | `validateSavedFeed`                     | internal only; moved to preference actions                                      |
 
@@ -243,6 +236,8 @@ These agent methods now correspond to named action functions called via `client.
 | `agent.blockModList(uri)`               | `client.call(blockActorList, { list: uri })`   | `@bsky.app/sdk` |
 | `agent.unblockModList(uri)`             | `client.call(unblockActorList, { list: uri })` | `@bsky.app/sdk` |
 | `agent.updateSeenNotifications(seenAt)` | `client.call(updateSeenNotifications, seenAt)` | `@bsky.app/sdk` |
+
+**Branded input types:** Unlike the old agent methods, action inputs use the lex string format types — URIs are `AtUriString`, DIDs are `DidString`, etc. Values read from API responses already carry these types; for plain strings from your own storage, validate at the boundary with `asStringFormat(v, 'at-uri')` / `asStringFormat(v, 'did')` (see § 5).
 
 ### Preferences methods
 
@@ -514,8 +509,7 @@ import {
 import { api, post } from '@bsky.app/sdk'
 import { moderatePost, type ModerationOpts } from '@bsky.app/sdk/moderation'
 import { RichText } from '@bsky.app/sdk/richtext'
-import { app, com } from '@bsky.app/sdk/lexicons'
-import type { HandleResolver, AtprotoDid } from '@atproto-labs/handle-resolver'
+import { app } from '@bsky.app/sdk/lexicons'
 
 // --- 1. Login ---
 const session = await PasswordSession.login({
@@ -539,24 +533,8 @@ const appviewClient = new Client(session, {
 const publicClient = new Client(api.app.urlPublic)
 
 // --- 3. Post with rich text ---
-// Build a HandleResolver adapter from the PDS client
-function resolverFromClient(client: Client): HandleResolver {
-  return {
-    resolve: async (handle: string) => {
-      try {
-        const res = await client.call(com.atproto.identity.resolveHandle, {
-          handle,
-        })
-        return res.did as AtprotoDid
-      } catch {
-        return null
-      }
-    },
-  }
-}
-
 const rt = new RichText({ text: 'Hello @bob.bsky.social — check this out!' })
-await rt.detectFacets(resolverFromClient(pdsClient))
+await rt.detectFacets(pdsClient) // resolves mentions via the client
 
 const { uri, cid } = await pdsClient.call(post, {
   text: rt.text,
