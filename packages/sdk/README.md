@@ -10,9 +10,99 @@ npm install @bsky.app/sdk @atproto/lex
 
 `@atproto/lex` provides the `Client` class that powers all API calls. `@bsky.app/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
 
-## Quick start: three-client pattern
+## Getting started
 
-Bluesky exposes three services. Use `api.*` constants for addressing:
+```typescript
+import { Client } from '@atproto/lex'
+import { PasswordSession } from '@atproto/lex-password-session'
+
+const session = await PasswordSession.login({
+  service: 'https://bsky.social',
+  identifier: 'your.bsky.social',
+  password: 'xxxx-xxxx-xxxx-xxxx',
+})
+const client = new Client(session)
+```
+
+## Usage
+
+### Session management
+
+You'll need an authenticated session for most API calls. There are two ways to
+manage sessions:
+
+1. [App password based session management](#app-password-based-session-management)
+2. [OAuth based session management](#oauth-based-session-management)
+
+#### App password based session management
+
+Username / password based authentication can be performed using the
+`PasswordSession` class from `@atproto/lex-password-session`.
+
+> [!CAUTION]
+>
+> This method is deprecated in favor of OAuth based session management. It is
+> recommended to use OAuth based session management (through the
+> `@atproto/oauth-client-*` packages).
+
+```typescript
+import { Client } from '@atproto/lex'
+import {
+  PasswordSession,
+  type SessionData,
+} from '@atproto/lex-password-session'
+
+const session = await PasswordSession.login({
+  service: 'https://bsky.social',
+  identifier: 'your.bsky.social',
+  password: 'xxxx-xxxx-xxxx-xxxx',
+  onUpdated: (data: SessionData) => saveToStorage(data),
+  onDeleted: (data: SessionData) => clearStorage(data.did),
+})
+const client = new Client(session)
+console.log(`Authenticated as: ${client.assertDid}`)
+
+// Next time, resume with the persisted session data to avoid storing
+// user credentials:
+const resumed = await PasswordSession.resume(loadFromStorage(), {
+  onUpdated: (data: SessionData) => saveToStorage(data),
+  onDeleted: (data: SessionData) => clearStorage(data.did),
+})
+```
+
+#### OAuth based session management
+
+Depending on the environment used by your application, different OAuth clients
+are available:
+
+- [@atproto/oauth-client-browser](https://www.npmjs.com/package/@atproto/oauth-client-browser):
+  for the browser.
+- [@atproto/oauth-client-node](https://www.npmjs.com/package/@atproto/oauth-client-node): for
+  Node.js.
+- [@atproto/oauth-client](https://www.npmjs.com/package/@atproto/oauth-client):
+  Lower level; compatible with most JS engines.
+
+Every `@atproto/oauth-client-*` implementation has a different way to obtain an
+OAuth session instance that can be used to instantiate a `Client`. Here is an
+example restoring a previously saved session:
+
+```typescript
+import { Client } from '@atproto/lex'
+import { OAuthClient } from '@atproto/oauth-client'
+
+const oauthClient = new OAuthClient({
+  // ...
+})
+
+const oauthSession = await oauthClient.restore('did:plc:123')
+
+// Instantiate the lex Client using an OAuth session
+const client = new Client(oauthSession)
+```
+
+### The three-client pattern
+
+Bluesky exposes multiple services. Use the `api.*` constants for addressing:
 
 ```typescript
 import { Client } from '@atproto/lex'
@@ -22,79 +112,262 @@ import { api } from '@bsky.app/sdk'
 const pdsClient = new Client(session)
 
 // App view (authenticated queries proxied through the PDS)
-const appviewClient = new Client(pds, { service: api.app.service })
+const appviewClient = new Client(pdsClient, { service: api.app.service })
 
 // App view (unauthenticated public queries)
 const publicClient = new Client(api.app.urlPublic)
 ```
 
-## Actions
+### API calls
 
-Actions are typed helpers that wrap common Bluesky operations:
+The SDK exports actions for many common operations. Invoke an action against a
+client with `client.call(action, input)`:
 
 ```typescript
-import { post } from '@bsky.app/sdk'
+import {
+  blockActorList,
+  deleteFollow,
+  deleteLike,
+  deletePost,
+  deleteRepost,
+  follow,
+  getPreferences,
+  like,
+  muteActor,
+  muteActorList,
+  post,
+  repost,
+  unblockActorList,
+  unmuteActor,
+  unmuteActorList,
+  updateSeenNotifications,
+  upsertProfile,
+} from '@bsky.app/sdk'
 
-// client.call(action, input) invokes an action against that client
-const result = await pdsClient.call(post, {
-  text: 'Hello from @bsky.app/sdk!',
-  langs: ['en'],
-})
-// result: { uri: string; cid: string }
+// The DID of the user currently authenticated (or undefined)
+client.did
+client.assertDid // Throws if the user is not authenticated
+
+// Feeds and content
+await pdsClient.call(post, { text: 'Hello, world!' })
+await pdsClient.call(deletePost, postUri)
+await pdsClient.call(like, { uri, cid })
+await pdsClient.call(deleteLike, likeUri)
+await pdsClient.call(repost, { uri, cid })
+await pdsClient.call(deleteRepost, repostUri)
+
+// Social graph
+await pdsClient.call(follow, { did })
+await pdsClient.call(deleteFollow, followUri)
+await appviewClient.call(muteActor, { actor })
+await appviewClient.call(unmuteActor, { actor })
+await appviewClient.call(muteActorList, { list })
+await appviewClient.call(unmuteActorList, { list })
+await pdsClient.call(blockActorList, { list })
+await pdsClient.call(unblockActorList, { list })
+
+// Actors
+await pdsClient.call(upsertProfile, (existing) => ({
+  ...existing,
+  displayName: 'Alice',
+}))
+
+// Notifications
+await appviewClient.call(updateSeenNotifications, seenAt)
+
+// Preferences
+const prefs = await appviewClient.call(getPreferences)
 ```
 
-Other exported actions: `deletePost`, `like`, `deleteLike`, `repost`, `deleteRepost`, `follow`, `deleteFollow`, `blockActorList`, `unblockActorList`, `muteActor`, `unmuteActor`, `muteActorList`, `unmuteActorList`, `upsertProfile`, `updateSeenNotifications`, `getPreferences`, `updatePreferences`.
+Queries without a dedicated action are one `xrpc` call away using the generated
+lexicons — see [Advanced API calls](#advanced-api-calls).
 
-## Lexicons
+### Validation and types
 
-Generated lexicon definitions are available from the `/lexicons` subpath. Use them to call any AT Protocol method directly:
+The lexicons include a complete types system with validation and type-guards.
+For example, to validate a post record:
 
 ```typescript
-import { Client } from '@atproto/lex'
 import { app } from '@bsky.app/sdk/lexicons'
 
-const publicClient = new Client('https://public.api.bsky.app')
-
-const { body } = await publicClient.xrpc(app.bsky.feed.getTimeline.main, {
-  params: { limit: 20 },
-})
-// body: app.bsky.feed.getTimeline.OutputSchema
+const post = { ... }
+if (app.bsky.feed.post.$isTypeOf(post)) {
+  // typescript now recognizes `post` may be an app.bsky.feed.post.Main
+  // however -- we still need to validate it
+  const res = app.bsky.feed.post.main.safeValidate(post)
+  if (res.success) {
+    // a valid record
+  } else {
+    // something is wrong
+    console.log(res.error)
+  }
+}
 ```
 
-Namespace roots exported from `/lexicons`: `app`, `com`, `chat`, `tools`.
+### Rich text
 
-## Moderation
+Some records (ie posts) use the `app.bsky.richtext` lexicon. At the moment richtext is only used for links and mentions, but it will be extended over time to include bold, italic, and so on.
+
+ℹ️ It is **strongly** recommended to use this package's `RichText` library. Javascript encodes strings in utf16 while the protocol (and most other programming environments) use utf8. Converting between the two is challenging, but `RichText` handles that for you.
 
 ```typescript
-import { moderatePost, type ModerationOpts } from '@bsky.app/sdk/moderation'
+import { currentDatetimeString } from '@atproto/lex'
+import { RichText } from '@bsky.app/sdk/richtext'
 
-const opts: ModerationOpts = {
-  userDid: 'did:plc:...',
-  prefs: {
-    adultContentEnabled: false,
-    labels: { porn: 'hide' },
-    labelers: [],
-    mutedWords: [],
-    hiddenPosts: [],
-  },
+// creating richtext
+const rt = new RichText({
+  text: 'Hello @alice.com, check out this link: https://example.com',
+})
+await rt.detectFacets(client) // automatically detects mentions and links
+const postRecord = {
+  $type: 'app.bsky.feed.post',
+  text: rt.text,
+  facets: rt.facets,
+  createdAt: currentDatetimeString(),
 }
 
-const decision = moderatePost(postView, opts)
-
-if (decision.ui('contentList').filter) {
-  // omit from feed
+// rendering as markdown
+let markdown = ''
+for (const segment of rt.segments()) {
+  if (segment.isLink()) {
+    markdown += `[${segment.text}](${segment.link?.uri})`
+  } else if (segment.isMention()) {
+    markdown += `[${segment.text}](https://my-bsky-app.com/user/${segment.mention?.did})`
+  } else {
+    markdown += segment.text
+  }
 }
-if (decision.ui('contentList').blur) {
-  // show behind a content warning
+
+// calculating string lengths
+const rt2 = new RichText({ text: 'Hello' })
+console.log(rt2.length) // => 5
+console.log(rt2.graphemeLength) // => 5
+const rt3 = new RichText({ text: '👨‍👩‍👧‍👧' })
+console.log(rt3.length) // => 25
+console.log(rt3.graphemeLength) // => 1
+```
+
+### Moderation
+
+Applying the moderation system is a challenging task, but we've done our best to simplify it for you. The Moderation API helps handle a wide range of tasks, including:
+
+- Moderator labeling
+- User muting (including mutelists)
+- User blocking
+- Mutewords
+- Hidden posts
+
+For more information, see the [Moderation Documentation](./docs/moderation.md).
+
+```typescript
+import { getPreferences } from '@bsky.app/sdk'
+import { moderatePost } from '@bsky.app/sdk/moderation'
+
+// First get the user's moderation prefs and their label definitions
+// =
+
+const prefs = await appviewClient.call(getPreferences)
+const labelDefs = {
+  /* see the Moderation Documentation for gathering labelDefs */
+}
+
+// We call the appropriate moderation function for the content
+// =
+
+const postMod = moderatePost(postView, {
+  userDid: client.assertDid,
+  prefs: prefs.moderationPrefs,
+  labelDefs,
+})
+
+// We then use the output to decide how to affect rendering
+// =
+
+// in feeds
+if (postMod.ui('contentList').filter) {
+  // don't include in feeds
+}
+if (postMod.ui('contentList').blur) {
+  // render the whole object behind a cover (use postMod.ui('contentList').blurs to explain)
+  if (postMod.ui('contentList').noOverride) {
+    // do not allow the cover the be removed
+  }
+}
+if (postMod.ui('contentList').alert || postMod.ui('contentList').inform) {
+  // render warnings on the post
+  // find the warnings in postMod.ui('contentList').alerts and postMod.ui('contentList').informs
+}
+
+// viewed directly
+if (postMod.ui('contentView').filter) {
+  // don't render the view
+}
+if (postMod.ui('contentView').blur) {
+  // render the whole object behind a cover (use postMod.ui('contentView').blurs to explain)
+  if (postMod.ui('contentView').noOverride) {
+    // do not allow the cover the be removed
+  }
+}
+if (postMod.ui('contentView').alert || postMod.ui('contentView').inform) {
+  // render warnings on the post
+  // find the warnings in postMod.ui('contentView').alerts and postMod.ui('contentView').informs
+}
+
+// post embeds in all contexts
+if (postMod.ui('contentMedia').blur) {
+  // render the whole object behind a cover (use postMod.ui('contentMedia').blurs to explain)
+  if (postMod.ui('contentMedia').noOverride) {
+    // do not allow the cover the be removed
+  }
 }
 ```
+
+## Advanced
+
+### Advanced API calls
+
+The actions above are convenience wrappers. They cover most but not all
+available methods.
+
+The AT Protocol identifies methods and records with reverse-DNS names. You can
+call any of them using the generated lexicons and the client's `xrpc` and
+record helpers:
+
+```typescript
+import { currentDatetimeString } from '@atproto/lex'
+import { app, com } from '@bsky.app/sdk/lexicons'
+
+const res1 = await pdsClient.createRecord({
+  $type: 'app.bsky.feed.post',
+  text: 'Hello, world!',
+  createdAt: currentDatetimeString(),
+})
+const res2 = await pdsClient.xrpc(com.atproto.repo.listRecords.main, {
+  params: {
+    repo: alice.did,
+    collection: 'app.bsky.feed.post',
+  },
+})
+
+const res3 = await appviewClient.xrpc(app.bsky.feed.getTimeline.main, {
+  params: { limit: 20 },
+})
+// res3.body: app.bsky.feed.getTimeline.OutputSchema
+```
+
+Namespace roots exported from `/lexicons`: `app`, `com`, `chat`.
+
+### Non-browser configuration
+
+If your environment doesn't have a built-in `fetch` implementation, you'll need
+to provide one. This will typically be done through a polyfill.
 
 ## Subpaths
 
 | Import                     | Contents                                                                             |
 | -------------------------- | ------------------------------------------------------------------------------------ |
 | `@bsky.app/sdk`            | `api` constants, actions, `DEFAULT_LABEL_SETTINGS`                                   |
-| `@bsky.app/sdk/lexicons`   | Generated lexicon definitions (`app`, `com`, `chat`, `tools`)                        |
+| `@bsky.app/sdk/lexicons`   | Generated lexicon definitions (`app`, `com`, `chat`)                                 |
 | `@bsky.app/sdk/moderation` | `moderatePost`, `moderateProfile`, and friends; `ModerationDecision`, `ModerationUI` |
 | `@bsky.app/sdk/richtext`   | `RichText` builder                                                                   |
 | `@bsky.app/sdk/utils`      | Age assurance helpers, `sanitizeMutedWordValue`, nux validation                      |
