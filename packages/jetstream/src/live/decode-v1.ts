@@ -76,10 +76,10 @@ interface PeekFrame {
 const td = new TextDecoder()
 
 export function decodeLiveFrameV1(
-  data: Uint8Array,
+  data: Uint8Array | string,
   validateWire?: boolean,
 ): RawEventV1 | typeof SKIP_FRAME {
-  const text = td.decode(data)
+  const text = typeof data === 'string' ? data : td.decode(data)
   let parsed: unknown
   try {
     parsed = JSON.parse(text)

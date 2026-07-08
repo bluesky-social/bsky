@@ -47,16 +47,10 @@ export async function* liveEvents(
     return u.toString()
   }
 
-  const te = new TextEncoder()
-
   for await (const chunk of transport.stream(getUrl, signal)) {
-    // NOTE: wsKeepAliveTransport yields strings for websocket text frames even
-    // though the type declares Uint8Array. Coerce here so the decoder stays
-    // Uint8Array-only.
-    const bytes = typeof chunk === 'string' ? te.encode(chunk as string) : chunk
     let ev: RawEventV1 | typeof SKIP_FRAME
     try {
-      ev = decodeLiveFrameV1(bytes, opts.validateWire)
+      ev = decodeLiveFrameV1(chunk, opts.validateWire)
     } catch (err) {
       // Strict-mode violations are fatal by contract (the flag asserts the
       // data source) — rethrow past the malformed-frame skip.

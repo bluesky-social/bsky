@@ -10,8 +10,8 @@ export interface LiveTransport {
 
 // NOTE: WebSocketKeepAlive declares AsyncGenerator<Uint8Array> but actually
 // yields strings for websocket text frames — and jetstream sends JSON as
-// text. source.ts coerces those strings to Uint8Array before the decoder,
-// which is Uint8Array-only.
+// text. This is why the decoder accepts Uint8Array | string; once ws-client
+// fixes its frame typing this can tighten to Uint8Array-only.
 // tests/live/transport.test.ts pins the behavior over a real websocket.
 export const wsKeepAliveTransport: LiveTransport = {
   stream(getUrl, signal) {
