@@ -142,9 +142,13 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
   const res = await client.xrpc(appLexicons.bsky.actor.getPreferences.main, {
     params: {},
   })
-  let prefs = res.body.preferences
+  const prefs = res.body.preferences
 
-  // Migrate v1 saved feeds to v2 if needed
+  // Migrate v1 saved feeds to v2 if needed. The migrated feeds are used for
+  // this call's result directly; the write happens via overwriteSavedFeeds
+  // (serialized, validated) so the migration doesn't re-occur.
+  // (old agent.ts:687-746)
+  let migratedSavedFeeds: SavedFeed[] | undefined
   const hasV2 = prefs.some(savedFeedsPrefV2.$isTypeOf)
   const v1 = prefs.find(savedFeedsPref.$isTypeOf)
 
@@ -187,37 +191,22 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
       }
     }
 
-    const v2Items = Array.from(uniqueMigratedSavedFeeds.values())
-    const newPrefs: Preferences = [
-      ...prefs.filter((p) => !savedFeedsPref.$isTypeOf(p)),
-      {
-        $type: savedFeedsPrefV2.$type,
-        items: v2Items,
-      },
-    ]
-    await client.xrpc(appLexicons.bsky.actor.putPreferences.main, {
-      body: { preferences: newPrefs },
-    })
-    prefs = newPrefs
+    migratedSavedFeeds = Array.from(uniqueMigratedSavedFeeds.values())
+    // Save so this migration doesn't re-occur (old agent.ts:744-745). Routed
+    // through overwriteSavedFeeds so the write is serialized with other
+    // preference mutations, validated, and double-written to the v1 pref.
+    await client.call(overwriteSavedFeeds, migratedSavedFeeds)
   } else if (!hasV2) {
     // No v1 either, add a default timeline feed
-    const defaultTimeline: SavedFeed = {
-      id: nextTid(),
-      type: 'timeline',
-      value: 'following',
-      pinned: true,
-    }
-    const newPrefs: Preferences = [
-      ...prefs,
+    migratedSavedFeeds = [
       {
-        $type: savedFeedsPrefV2.$type,
-        items: [defaultTimeline],
+        id: nextTid(),
+        type: 'timeline',
+        value: 'following',
+        pinned: true,
       },
     ]
-    await client.xrpc(appLexicons.bsky.actor.putPreferences.main, {
-      body: { preferences: newPrefs },
-    })
-    prefs = newPrefs
+    await client.call(overwriteSavedFeeds, migratedSavedFeeds)
   }
 
   // Parse out each pref type
@@ -236,9 +225,10 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
   const verificationP = prefs.find(verificationPrefs.$isTypeOf)
   const liveEventP = prefs.find(liveEventPreferences.$isTypeOf)
 
-  // v2 saved feeds
+  // v2 saved feeds — when a migration just ran, use its result directly
+  // rather than re-reading from the server (old agent.ts:732-741)
   const v2Pref = prefs.find(savedFeedsPrefV2.$isTypeOf)
-  const savedFeeds: SavedFeed[] = v2Pref?.items ?? []
+  const savedFeeds: SavedFeed[] = migratedSavedFeeds ?? v2Pref?.items ?? []
 
   // Legacy v1 arrays (deprecated)
   const v1Pref = prefs.find(savedFeedsPref.$isTypeOf)
@@ -424,44 +414,108 @@ export const setContentLabelPref: Action<
   })
 }
 
+/**
+ * v1-compat uri arrays from v2 saved feeds (old util.ts savedFeedsToUriArrays).
+ * Callers must pass only 'feed'/'list' type feeds, whose values are AT URIs
+ * (enforced at write time by validateSavedFeed) — hence the boundary cast.
+ */
+function savedFeedsToUriArrays(savedFeeds: SavedFeed[]): {
+  pinned: AtUriString[]
+  saved: AtUriString[]
+} {
+  const pinned: AtUriString[] = []
+  const saved: AtUriString[] = []
+  for (const feed of savedFeeds) {
+    const value = feed.value as AtUriString // boundary: see doc comment
+    if (feed.pinned) {
+      pinned.push(value)
+      // saved in v1 includes pinned
+      saved.push(value)
+    } else {
+      saved.push(value)
+    }
+  }
+  return { pinned, saved }
+}
+
+/**
+ * Shared read-modify-write for the v2 saved feeds pref (old agent.ts
+ * updateSavedFeedsV2Preferences, :1516-1567). Applies the callback to the
+ * current v2 items, enforces pinned-first ordering, and — during the v1→v2
+ * transition — double-writes the v2 uris back into an existing v1 pref
+ * (but NOT the other way around).
+ */
+async function updateSavedFeedsV2Prefs(
+  client: Client,
+  cb: (items: SavedFeed[]) => SavedFeed[],
+): Promise<SavedFeed[]> {
+  let maybeMutatedSavedFeeds: SavedFeed[] = []
+
+  await client.call(updatePreferences, (prefs) => {
+    const existingV2Pref = prefs.find(savedFeedsPrefV2.$isTypeOf) ?? {
+      $type: savedFeedsPrefV2.$type,
+      items: [],
+    }
+
+    const newSavedFeeds = cb(existingV2Pref.items)
+    maybeMutatedSavedFeeds = newSavedFeeds
+
+    // enforce ordering: pinned first, then saved
+    // @NOTE: sort is stable, preserving order of items with the same pinned status
+    const sortedItems = [...newSavedFeeds].sort((a, b) =>
+      a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1,
+    )
+
+    let updatedPrefs: Preferences = prefs
+      .filter((p) => !savedFeedsPrefV2.$isTypeOf(p))
+      .concat({
+        ...existingV2Pref,
+        $type: savedFeedsPrefV2.$type,
+        items: sortedItems,
+      })
+
+    /*
+     * If there's a v1 pref present, this account was migrated from v1 to v2.
+     * During the transition period, we double write v2 prefs back to v1,
+     * but NOT the other way around. (old agent.ts:1546-1563)
+     */
+    const existingV1Pref = prefs.find(savedFeedsPref.$isTypeOf)
+    if (existingV1Pref) {
+      const { saved, pinned } = existingV1Pref
+      const v2Compat = savedFeedsToUriArrays(
+        // v1 only supports feeds and lists
+        sortedItems.filter((i) => ['feed', 'list'].includes(i.type)),
+      )
+      updatedPrefs = updatedPrefs
+        .filter((p) => !savedFeedsPref.$isTypeOf(p))
+        .concat({
+          ...existingV1Pref,
+          $type: savedFeedsPref.$type,
+          saved: [...new Set([...saved, ...v2Compat.saved])],
+          pinned: [...new Set([...pinned, ...v2Compat.pinned])],
+        })
+    }
+
+    return updatedPrefs
+  })
+
+  return maybeMutatedSavedFeeds
+}
+
 export const addSavedFeeds: Action<
   Pick<SavedFeed, 'type' | 'value' | 'pinned'>[],
   SavedFeed[]
 > = async (client, feeds) => {
   const newFeeds: SavedFeed[] = feeds.map((f) => ({ ...f, id: nextTid() }))
   newFeeds.forEach(validateSavedFeed)
-
-  await client.call(updatePreferences, (prefs) => {
-    const v2 = prefs.find(savedFeedsPrefV2.$isTypeOf)
-    const currentItems = v2?.items ?? []
-    const updatedItems = [...currentItems, ...newFeeds]
-
-    if (v2) {
-      return prefs.map((p) =>
-        savedFeedsPrefV2.$isTypeOf(p) ? { ...p, items: updatedItems } : p,
-      )
-    }
-    return [
-      ...prefs,
-      {
-        $type: savedFeedsPrefV2.$type,
-        items: updatedItems,
-      },
-    ]
-  })
-
+  await updateSavedFeedsV2Prefs(client, (items) => [...items, ...newFeeds])
   return newFeeds
 }
 
 export const removeSavedFeeds: Action<string[], void> = async (client, ids) => {
-  await client.call(updatePreferences, (prefs) => {
-    const v2 = prefs.find(savedFeedsPrefV2.$isTypeOf)
-    if (!v2) return false
-    const updatedItems = v2.items.filter((f) => !ids.includes(f.id))
-    return prefs.map((p) =>
-      savedFeedsPrefV2.$isTypeOf(p) ? { ...p, items: updatedItems } : p,
-    )
-  })
+  await updateSavedFeedsV2Prefs(client, (items) =>
+    items.filter((feed) => !ids.includes(feed.id)),
+  )
 }
 
 export const updateSavedFeeds: Action<SavedFeed[], void> = async (
@@ -469,10 +523,8 @@ export const updateSavedFeeds: Action<SavedFeed[], void> = async (
   savedFeedsToUpdate,
 ) => {
   savedFeedsToUpdate.forEach(validateSavedFeed)
-  await client.call(updatePreferences, (prefs) => {
-    const v2 = prefs.find(savedFeedsPrefV2.$isTypeOf)
-    if (!v2) return false
-    const updatedItems = v2.items.map((savedFeed) => {
+  await updateSavedFeedsV2Prefs(client, (items) =>
+    items.map((savedFeed) => {
       const updatedVersion = savedFeedsToUpdate.find(
         (updated) => savedFeed.id === updated.id,
       )
@@ -484,32 +536,27 @@ export const updateSavedFeeds: Action<SavedFeed[], void> = async (
         }
       }
       return savedFeed
-    })
-    return prefs.map((p) =>
-      savedFeedsPrefV2.$isTypeOf(p) ? { ...p, items: updatedItems } : p,
-    )
-  })
+    }),
+  )
 }
 
 export const overwriteSavedFeeds: Action<SavedFeed[], void> = async (
   client,
   feeds,
 ) => {
-  await client.call(updatePreferences, (prefs) => {
-    const hasV2 = prefs.some(savedFeedsPrefV2.$isTypeOf)
-    if (hasV2) {
-      return prefs.map((p) =>
-        savedFeedsPrefV2.$isTypeOf(p) ? { ...p, items: feeds } : p,
-      )
+  feeds.forEach(validateSavedFeed)
+  // dedupe by id, preserving the position of the last occurrence
+  // (old agent.ts:772-785)
+  const uniqueSavedFeeds = new Map<string, SavedFeed>()
+  for (const feed of feeds) {
+    if (uniqueSavedFeeds.has(feed.id)) {
+      uniqueSavedFeeds.delete(feed.id)
     }
-    return [
-      ...prefs,
-      {
-        $type: savedFeedsPrefV2.$type,
-        items: feeds,
-      },
-    ]
-  })
+    uniqueSavedFeeds.set(feed.id, feed)
+  }
+  await updateSavedFeedsV2Prefs(client, () =>
+    Array.from(uniqueSavedFeeds.values()),
+  )
 }
 
 /**

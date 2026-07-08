@@ -128,7 +128,13 @@ function walk(dir) {
 
 const INCLUDED_PREFIXES = ['com.atproto.', 'app.bsky.', 'chat.bsky.']
 
-// Namespaces not part of the SDK's supported surface.
+// Namespaces not part of the SDK's supported surface. These are excluded as
+// top-level roots only: any lexicon referenced transitively by an included
+// schema (e.g. tools.ozone.report.defs via com.atproto.moderation.defs
+// knownValues, or app.bsky.unspecced.* via permission-set lxm lists) is
+// deliberately still installed with its real content, since it is needed to
+// complete the types of the schemas we do want. Codegen `--exclude` flags in
+// package.json keep those dependencies out of the generated build.
 const EXCLUDED_PREFIXES = ['app.bsky.unspecced.', 'com.atproto.temp.']
 
 async function main() {

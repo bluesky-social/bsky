@@ -5,6 +5,7 @@ import {
   addLabeler,
   addSavedFeeds,
   getPreferences,
+  overwriteSavedFeeds,
   removeLabeler,
   setAdultContentEnabled,
   setContentLabelPref,
@@ -93,6 +94,53 @@ describe('getPreferences', () => {
       (f) => f.value === 'at://did:plc:x/app.bsky.feed.generator/cool',
     )
     expect(hasFeed).toBe(true)
+
+    // the migration write retains the v1 pref (v2→v1 double-write, not removal)
+    const v1After = stored.find(
+      (p) =>
+        (p as { $type?: string }).$type ===
+        'app.bsky.actor.defs#savedFeedsPref',
+    )
+    expect(v1After).toBeDefined()
+  })
+
+  it('migration write is serialized with concurrent preference mutations', async () => {
+    // Resolvable-later getPreferences responses simulate a slow server so the
+    // migration and a concurrent mutation would interleave without the lock.
+    let stored: unknown[] = [
+      {
+        $type: 'app.bsky.actor.defs#savedFeedsPref',
+        saved: ['at://did:plc:x/app.bsky.feed.generator/cool'],
+        pinned: ['at://did:plc:x/app.bsky.feed.generator/cool'],
+      },
+    ]
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+
+    // Fire the migrating read and a mutation concurrently
+    await Promise.all([
+      client.call(getPreferences),
+      client.call(setAdultContentEnabled, true),
+    ])
+
+    // Both effects must survive: v2 feeds pref from migration AND adult pref
+    const hasV2 = stored.some(
+      (p) =>
+        (p as { $type?: string }).$type ===
+        'app.bsky.actor.defs#savedFeedsPrefV2',
+    )
+    const adult = stored.find(
+      (p) =>
+        (p as { $type?: string }).$type ===
+        'app.bsky.actor.defs#adultContentPref',
+    ) as { enabled?: boolean } | undefined
+    expect(hasV2).toBe(true)
+    expect(adult?.enabled).toBe(true)
   })
 
   it('migrates legacy contentLabelPref "show" to "ignore" on all labels', async () => {
@@ -393,6 +441,143 @@ describe('updatePreferences serialization', () => {
     )
     expect(values).toContain('at://did:plc:x/app.bsky.feed.generator/feed-a')
     expect(values).toContain('at://did:plc:x/app.bsky.feed.generator/feed-b')
+  })
+})
+
+describe('saved feeds v2 write behaviors (ported from old updateSavedFeedsV2Preferences)', () => {
+  const feed = (rkey: string, pinned: boolean, id = `id-${rkey}`) => ({
+    id,
+    type: 'feed' as const,
+    value: `at://did:plc:x/app.bsky.feed.generator/${rkey}`,
+    pinned,
+  })
+
+  function storedV2(stored: unknown[]) {
+    const v2 = (stored as { $type: string; items?: unknown[] }[]).find(
+      (p) => p.$type === 'app.bsky.actor.defs#savedFeedsPrefV2',
+    )
+    return (v2?.items ?? []) as {
+      id: string
+      value: string
+      pinned: boolean
+    }[]
+  }
+
+  it('orders pinned feeds before saved feeds on write', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    await client.call(overwriteSavedFeeds, [
+      feed('a', false),
+      feed('b', true),
+      feed('c', false),
+      feed('d', true),
+    ])
+    expect(storedV2(stored).map((f) => [f.id, f.pinned])).toEqual([
+      ['id-b', true],
+      ['id-d', true],
+      ['id-a', false],
+      ['id-c', false],
+    ])
+  })
+
+  it('overwriteSavedFeeds dedupes by id, keeping the last occurrence position', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    await client.call(overwriteSavedFeeds, [
+      feed('a', true, 'dup'),
+      feed('b', true),
+      feed('c', true, 'dup'),
+    ])
+    const ids = storedV2(stored).map((f) => f.id)
+    expect(ids).toEqual(['id-b', 'dup'])
+    // last occurrence wins
+    expect(storedV2(stored).find((f) => f.id === 'dup')?.value).toContain('/c')
+  })
+
+  it('overwriteSavedFeeds validates feeds and throws on type/uri mismatch', async () => {
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: [] }),
+      'app.bsky.actor.putPreferences': () => ({}),
+    })
+    await expect(
+      client.call(overwriteSavedFeeds, [
+        {
+          id: 'x',
+          type: 'feed',
+          value: 'at://did:plc:x/app.bsky.graph.list/not-a-feed',
+          pinned: true,
+        },
+      ]),
+    ).rejects.toThrow(/must be a feed/)
+  })
+
+  it('double-writes v2 feed/list uris into an existing v1 pref', async () => {
+    let stored: unknown[] = [
+      {
+        $type: 'app.bsky.actor.defs#savedFeedsPref',
+        saved: ['at://did:plc:x/app.bsky.feed.generator/old'],
+        pinned: ['at://did:plc:x/app.bsky.feed.generator/old'],
+      },
+      {
+        $type: 'app.bsky.actor.defs#savedFeedsPrefV2',
+        items: [],
+      },
+    ]
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    await client.call(addSavedFeeds, [
+      {
+        type: 'feed',
+        value: 'at://did:plc:x/app.bsky.feed.generator/new',
+        pinned: true,
+      },
+      // timeline feeds are not v1-compatible and must not be double-written
+      { type: 'timeline', value: 'following', pinned: true },
+    ])
+    const v1 = stored.find(
+      (p) =>
+        (p as { $type?: string }).$type ===
+        'app.bsky.actor.defs#savedFeedsPref',
+    ) as { saved: string[]; pinned: string[] }
+    expect(v1.saved).toContain('at://did:plc:x/app.bsky.feed.generator/old')
+    expect(v1.saved).toContain('at://did:plc:x/app.bsky.feed.generator/new')
+    expect(v1.pinned).toContain('at://did:plc:x/app.bsky.feed.generator/new')
+    expect(v1.saved).not.toContain('following')
+  })
+
+  it('does not create a v1 pref when none exists (no v1←v2 backfill)', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    await client.call(addSavedFeeds, [feed('a', true)])
+    const hasV1 = stored.some(
+      (p) =>
+        (p as { $type?: string }).$type ===
+        'app.bsky.actor.defs#savedFeedsPref',
+    )
+    expect(hasV1).toBe(false)
   })
 })
 
