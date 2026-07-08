@@ -377,7 +377,7 @@ export class LexIndexer implements JetstreamConsumer {
             get uri(): AtUriString {
               return lazyUri(this, did, tc)
             },
-            get cid(): string {
+            get cid(): CidString {
               return tc.cid
             },
             error,
@@ -404,7 +404,7 @@ export class LexIndexer implements JetstreamConsumer {
           get uri(): AtUriString {
             return lazyUri(this, did, tc)
           },
-          get cid(): string {
+          get cid(): CidString {
             return tc.cid
           },
           record: tc.record,
