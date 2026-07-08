@@ -28,6 +28,7 @@ import type {
 import { DEFAULT_LABEL_SETTINGS } from '../moderation/index.js'
 import { nextTid } from '../tid.js'
 import { sanitizeMutedWordValue, validateNux } from '../utils/index.js'
+import { isTypeOf } from '../utils/types.js'
 import type {
   BskyFeedViewPreference,
   BskyPreferences,
@@ -149,8 +150,8 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
   // (serialized, validated) so the migration doesn't re-occur.
   // (old agent.ts:687-746)
   let migratedSavedFeeds: SavedFeed[] | undefined
-  const hasV2 = prefs.some(savedFeedsPrefV2.$isTypeOf)
-  const v1 = prefs.find(savedFeedsPref.$isTypeOf)
+  const hasV2 = prefs.some((p) => isTypeOf(savedFeedsPrefV2, p))
+  const v1 = prefs.find((p) => isTypeOf(savedFeedsPref, p))
 
   if (!hasV2 && v1) {
     // Migrate: convert v1 to v2
@@ -208,30 +209,31 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
     ]
     await client.call(overwriteSavedFeeds, migratedSavedFeeds)
   }
-
   // Parse out each pref type
-  const adultContent = prefs.find(adultContentPref.$isTypeOf)
-  const personalDetails = prefs.find(personalDetailsPref.$isTypeOf)
-  const declaredAge = prefs.find(declaredAgePref.$isTypeOf)
-  const labelPrefs = prefs.filter(contentLabelPref.$isTypeOf)
-  const feedViewPrefsArr = prefs.filter(feedViewPref.$isTypeOf)
-  const threadView = prefs.find(threadViewPref.$isTypeOf)
-  const interests = prefs.find(interestsPref.$isTypeOf)
-  const mutedWords = prefs.find(mutedWordsPref.$isTypeOf)
-  const hiddenPosts = prefs.find(hiddenPostsPref.$isTypeOf)
-  const labelersP = prefs.find(labelersPref.$isTypeOf)
-  const bskyAppState = prefs.find(bskyAppStatePref.$isTypeOf)
-  const postInteraction = prefs.find(postInteractionSettingsPref.$isTypeOf)
-  const verificationP = prefs.find(verificationPrefs.$isTypeOf)
-  const liveEventP = prefs.find(liveEventPreferences.$isTypeOf)
+  const adultContent = prefs.find((p) => isTypeOf(adultContentPref, p))
+  const personalDetails = prefs.find((p) => isTypeOf(personalDetailsPref, p))
+  const declaredAge = prefs.find((p) => isTypeOf(declaredAgePref, p))
+  const labelPrefs = prefs.filter((p) => isTypeOf(contentLabelPref, p))
+  const feedViewPrefsArr = prefs.filter((p) => isTypeOf(feedViewPref, p))
+  const threadView = prefs.find((p) => isTypeOf(threadViewPref, p))
+  const interests = prefs.find((p) => isTypeOf(interestsPref, p))
+  const mutedWords = prefs.find((p) => isTypeOf(mutedWordsPref, p))
+  const hiddenPosts = prefs.find((p) => isTypeOf(hiddenPostsPref, p))
+  const labelersP = prefs.find((p) => isTypeOf(labelersPref, p))
+  const bskyAppState = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
+  const postInteraction = prefs.find((p) =>
+    isTypeOf(postInteractionSettingsPref, p),
+  )
+  const verificationP = prefs.find((p) => isTypeOf(verificationPrefs, p))
+  const liveEventP = prefs.find((p) => isTypeOf(liveEventPreferences, p))
 
   // v2 saved feeds — when a migration just ran, use its result directly
   // rather than re-reading from the server (old agent.ts:732-741)
-  const v2Pref = prefs.find(savedFeedsPrefV2.$isTypeOf)
+  const v2Pref = prefs.find((p) => isTypeOf(savedFeedsPrefV2, p))
   const savedFeeds: SavedFeed[] = migratedSavedFeeds ?? v2Pref?.items ?? []
 
   // Legacy v1 arrays (deprecated)
-  const v1Pref = prefs.find(savedFeedsPref.$isTypeOf)
+  const v1Pref = prefs.find((p) => isTypeOf(savedFeedsPref, p))
   const legacyFeeds = {
     saved: v1Pref?.saved,
     pinned: v1Pref?.pinned,
@@ -347,10 +349,10 @@ export const setAdultContentEnabled: Action<boolean, void> = async (
   enabled,
 ) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(adultContentPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(adultContentPref, p))
     if (existing) {
       return prefs.map((p) =>
-        adultContentPref.$isTypeOf(p) ? { ...p, enabled } : p,
+        isTypeOf(adultContentPref, p) ? { ...p, enabled } : p,
       )
     }
     return [
@@ -374,7 +376,7 @@ export const setContentLabelPref: Action<
   await client.call(updatePreferences, (prefs) => {
     // Remove existing pref for this key+labelerDid combo
     const filtered = prefs.filter((p) => {
-      if (!contentLabelPref.$isTypeOf(p)) return true
+      if (!isTypeOf(contentLabelPref, p)) return true
       return !(p.label === key && p.labelerDid === labelerDid)
     })
 
@@ -396,7 +398,7 @@ export const setContentLabelPref: Action<
       for (const alias of legacyAliases) {
         // Remove existing legacy alias pref
         const withoutAlias = newPrefs.filter((p) => {
-          if (!contentLabelPref.$isTypeOf(p)) return true
+          if (!isTypeOf(contentLabelPref, p)) return true
           return !(p.label === alias && p.labelerDid === undefined)
         })
         newPrefs.length = 0
@@ -452,7 +454,7 @@ async function updateSavedFeedsV2Prefs(
   let maybeMutatedSavedFeeds: SavedFeed[] = []
 
   await client.call(updatePreferences, (prefs) => {
-    const existingV2Pref = prefs.find(savedFeedsPrefV2.$isTypeOf) ?? {
+    const existingV2Pref = prefs.find((p) => isTypeOf(savedFeedsPrefV2, p)) ?? {
       $type: savedFeedsPrefV2.$type,
       items: [],
     }
@@ -467,7 +469,7 @@ async function updateSavedFeedsV2Prefs(
     )
 
     let updatedPrefs: Preferences = prefs
-      .filter((p) => !savedFeedsPrefV2.$isTypeOf(p))
+      .filter((p) => !isTypeOf(savedFeedsPrefV2, p))
       .concat({
         ...existingV2Pref,
         $type: savedFeedsPrefV2.$type,
@@ -479,7 +481,7 @@ async function updateSavedFeedsV2Prefs(
      * During the transition period, we double write v2 prefs back to v1,
      * but NOT the other way around. (old agent.ts:1546-1563)
      */
-    const existingV1Pref = prefs.find(savedFeedsPref.$isTypeOf)
+    const existingV1Pref = prefs.find((p) => isTypeOf(savedFeedsPref, p))
     if (existingV1Pref) {
       const { saved, pinned } = existingV1Pref
       const v2Compat = savedFeedsToUriArrays(
@@ -487,7 +489,7 @@ async function updateSavedFeedsV2Prefs(
         sortedItems.filter((i) => ['feed', 'list'].includes(i.type)),
       )
       updatedPrefs = updatedPrefs
-        .filter((p) => !savedFeedsPref.$isTypeOf(p))
+        .filter((p) => !isTypeOf(savedFeedsPref, p))
         .concat({
           ...existingV1Pref,
           $type: savedFeedsPref.$type,
@@ -565,14 +567,14 @@ export const overwriteSavedFeeds: Action<SavedFeed[], void> = async (
  */
 export const addPinnedFeed: Action<AtUriString, void> = async (client, uri) => {
   await client.call(updatePreferences, (prefs) => {
-    const feedsPref = prefs.find(savedFeedsPref.$isTypeOf)
+    const feedsPref = prefs.find((p) => isTypeOf(savedFeedsPref, p))
     const currentSaved = feedsPref?.saved ?? []
     const currentPinned = feedsPref?.pinned ?? []
     const newSaved = [...currentSaved.filter((u) => u !== uri), uri]
     const newPinned = [...currentPinned.filter((u) => u !== uri), uri]
     if (feedsPref) {
       return prefs.map((p) =>
-        savedFeedsPref.$isTypeOf(p)
+        isTypeOf(savedFeedsPref, p)
           ? { ...p, saved: newSaved, pinned: newPinned }
           : p,
       )
@@ -597,11 +599,11 @@ export const removePinnedFeed: Action<AtUriString, void> = async (
   uri,
 ) => {
   await client.call(updatePreferences, (prefs) => {
-    const feedsPref = prefs.find(savedFeedsPref.$isTypeOf)
+    const feedsPref = prefs.find((p) => isTypeOf(savedFeedsPref, p))
     if (!feedsPref) return false
     const newPinned = feedsPref.pinned.filter((u) => u !== uri)
     return prefs.map((p) =>
-      savedFeedsPref.$isTypeOf(p) ? { ...p, pinned: newPinned } : p,
+      isTypeOf(savedFeedsPref, p) ? { ...p, pinned: newPinned } : p,
     )
   })
 }
@@ -612,7 +614,7 @@ export const setFeedViewPrefs: Action<
 > = async (client, { feed, ...updates }) => {
   await client.call(updatePreferences, (prefs) => {
     const existing = prefs
-      .filter(feedViewPref.$isTypeOf)
+      .filter((p) => isTypeOf(feedViewPref, p))
       .find((p) => p.feed === feed)
 
     const current: app.bsky.actor.defs.FeedViewPref = existing ?? {
@@ -626,7 +628,7 @@ export const setFeedViewPrefs: Action<
 
     if (existing) {
       return prefs.map((p) => {
-        if (!feedViewPref.$isTypeOf(p)) return p
+        if (!isTypeOf(feedViewPref, p)) return p
         if (p.feed === feed) return updated
         return p
       })
@@ -640,13 +642,13 @@ export const setThreadViewPrefs: Action<
   void
 > = async (client, updates) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(threadViewPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(threadViewPref, p))
 
     const updated = { ...(existing ?? {}), ...updates }
 
     if (existing) {
       return prefs.map((p) =>
-        threadViewPref.$isTypeOf(p) ? { ...p, ...updated } : p,
+        isTypeOf(threadViewPref, p) ? { ...p, ...updated } : p,
       )
     }
     return [
@@ -666,11 +668,11 @@ export const setPersonalDetails: Action<
   const birthDateStr =
     birthDate instanceof Date ? toDatetimeString(birthDate) : birthDate
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(personalDetailsPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(personalDetailsPref, p))
 
     if (existing) {
       return prefs.map((p) =>
-        personalDetailsPref.$isTypeOf(p)
+        isTypeOf(personalDetailsPref, p)
           ? { ...p, birthDate: birthDateStr }
           : p,
       )
@@ -690,10 +692,10 @@ export const setInterestsPref: Action<{ tags: string[] }, void> = async (
   { tags },
 ) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(interestsPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(interestsPref, p))
 
     if (existing) {
-      return prefs.map((p) => (interestsPref.$isTypeOf(p) ? { ...p, tags } : p))
+      return prefs.map((p) => (isTypeOf(interestsPref, p) ? { ...p, tags } : p))
     }
     return [
       ...prefs,
@@ -745,7 +747,7 @@ export const addMutedWord: Action<
   if (!sanitizedValue) return
 
   await client.call(updatePreferences, (prefs) => {
-    let mutedWordsPrefEntry = prefs.find(mutedWordsPref.$isTypeOf)
+    let mutedWordsPrefEntry = prefs.find((p) => isTypeOf(mutedWordsPref, p))
 
     const newMutedWord: app.bsky.actor.defs.MutedWord = {
       id: nextTid(),
@@ -808,7 +810,7 @@ export const updateMutedWord: Action<
   void
 > = async (client, mutedWord) => {
   await client.call(updatePreferences, (prefs) => {
-    const mutedWordsPrefEntry = prefs.find(mutedWordsPref.$isTypeOf)
+    const mutedWordsPrefEntry = prefs.find((p) => isTypeOf(mutedWordsPref, p))
 
     if (mutedWordsPrefEntry) {
       mutedWordsPrefEntry.items = mutedWordsPrefEntry.items.map(
@@ -858,7 +860,7 @@ export const removeMutedWord: Action<
   void
 > = async (client, mutedWord) => {
   await client.call(updatePreferences, (prefs) => {
-    const mutedWordsPrefEntry = prefs.find(mutedWordsPref.$isTypeOf)
+    const mutedWordsPrefEntry = prefs.find((p) => isTypeOf(mutedWordsPref, p))
     if (!mutedWordsPrefEntry) return prefs
 
     for (let i = 0; i < mutedWordsPrefEntry.items.length; i++) {
@@ -895,7 +897,7 @@ export const removeMutedWords: Action<
 
 export const hidePost: Action<AtUriString, void> = async (client, uri) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(hiddenPostsPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(hiddenPostsPref, p))
     const currentItems = existing?.items ?? []
 
     if (currentItems.includes(uri)) return false
@@ -904,7 +906,7 @@ export const hidePost: Action<AtUriString, void> = async (client, uri) => {
 
     if (existing) {
       return prefs.map((p) =>
-        hiddenPostsPref.$isTypeOf(p) ? { ...p, items: updated } : p,
+        isTypeOf(hiddenPostsPref, p) ? { ...p, items: updated } : p,
       )
     }
     return [
@@ -919,12 +921,12 @@ export const hidePost: Action<AtUriString, void> = async (client, uri) => {
 
 export const unhidePost: Action<AtUriString, void> = async (client, uri) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(hiddenPostsPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(hiddenPostsPref, p))
     if (!existing) return false
 
     const updated = existing.items.filter((u) => u !== uri)
     return prefs.map((p) =>
-      hiddenPostsPref.$isTypeOf(p) ? { ...p, items: updated } : p,
+      isTypeOf(hiddenPostsPref, p) ? { ...p, items: updated } : p,
     )
   })
 }
@@ -932,7 +934,7 @@ export const unhidePost: Action<AtUriString, void> = async (client, uri) => {
 export const addLabeler: Action<DidString, void> = async (client, did) => {
   ensureValidDidRegex(did)
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(labelersPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(labelersPref, p))
     const currentLabelers = existing?.labelers ?? []
 
     if (currentLabelers.some((l) => l.did === did)) return false
@@ -941,7 +943,7 @@ export const addLabeler: Action<DidString, void> = async (client, did) => {
 
     if (existing) {
       return prefs.map((p) =>
-        labelersPref.$isTypeOf(p) ? { ...p, labelers: updated } : p,
+        isTypeOf(labelersPref, p) ? { ...p, labelers: updated } : p,
       )
     }
     return [
@@ -956,26 +958,26 @@ export const addLabeler: Action<DidString, void> = async (client, did) => {
 
 export const removeLabeler: Action<DidString, void> = async (client, did) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(labelersPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(labelersPref, p))
     if (!existing) return false
 
     const updated = existing.labelers.filter((l) => l.did !== did)
     return prefs.map((p) =>
-      labelersPref.$isTypeOf(p) ? { ...p, labelers: updated } : p,
+      isTypeOf(labelersPref, p) ? { ...p, labelers: updated } : p,
     )
   })
 }
 
 export const queueNudges: Action<string[], void> = async (client, nudges) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(bskyAppStatePref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
     const currentNudges = existing?.queuedNudges ?? []
     const toAdd = nudges.filter((n) => !currentNudges.includes(n))
     const updated = [...currentNudges, ...toAdd]
 
     if (existing) {
       return prefs.map((p) =>
-        bskyAppStatePref.$isTypeOf(p) ? { ...p, queuedNudges: updated } : p,
+        isTypeOf(bskyAppStatePref, p) ? { ...p, queuedNudges: updated } : p,
       )
     }
     return [
@@ -990,14 +992,14 @@ export const queueNudges: Action<string[], void> = async (client, nudges) => {
 
 export const dismissNudges: Action<string[], void> = async (client, nudges) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(bskyAppStatePref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
     if (!existing) return false
 
     const updated = (existing.queuedNudges ?? []).filter(
       (n) => !nudges.includes(n),
     )
     return prefs.map((p) =>
-      bskyAppStatePref.$isTypeOf(p) ? { ...p, queuedNudges: updated } : p,
+      isTypeOf(bskyAppStatePref, p) ? { ...p, queuedNudges: updated } : p,
     )
   })
 }
@@ -1007,11 +1009,11 @@ export const setActiveProgressGuide: Action<
   void
 > = async (client, guide) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(bskyAppStatePref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
 
     if (existing) {
       return prefs.map((p) =>
-        bskyAppStatePref.$isTypeOf(p)
+        isTypeOf(bskyAppStatePref, p)
           ? { ...p, activeProgressGuide: guide }
           : p,
       )
@@ -1032,7 +1034,7 @@ export const upsertNux: Action<app.bsky.actor.defs.Nux, void> = async (
 ) => {
   validateNux(nux)
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(bskyAppStatePref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
     const currentNuxs = existing?.nuxs ?? []
 
     const idx = currentNuxs.findIndex((n) => n.id === nux.id)
@@ -1045,7 +1047,7 @@ export const upsertNux: Action<app.bsky.actor.defs.Nux, void> = async (
 
     if (existing) {
       return prefs.map((p) =>
-        bskyAppStatePref.$isTypeOf(p) ? { ...p, nuxs: updatedNuxs } : p,
+        isTypeOf(bskyAppStatePref, p) ? { ...p, nuxs: updatedNuxs } : p,
       )
     }
     return [
@@ -1060,12 +1062,12 @@ export const upsertNux: Action<app.bsky.actor.defs.Nux, void> = async (
 
 export const removeNuxs: Action<string[], void> = async (client, ids) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(bskyAppStatePref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
     if (!existing) return false
 
     const updated = (existing.nuxs ?? []).filter((n) => !ids.includes(n.id))
     return prefs.map((p) =>
-      bskyAppStatePref.$isTypeOf(p) ? { ...p, nuxs: updated } : p,
+      isTypeOf(bskyAppStatePref, p) ? { ...p, nuxs: updated } : p,
     )
   })
 }
@@ -1075,11 +1077,11 @@ export const setVerificationPrefs: Action<
   void
 > = async (client, updates) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(verificationPrefs.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(verificationPrefs, p))
 
     if (existing) {
       return prefs.map((p) =>
-        verificationPrefs.$isTypeOf(p) ? { ...p, ...updates } : p,
+        isTypeOf(verificationPrefs, p) ? { ...p, ...updates } : p,
       )
     }
     return [
@@ -1097,7 +1099,7 @@ export const setPostInteractionSettings: Action<
   void
 > = async (client, settings) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(postInteractionSettingsPref.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(postInteractionSettingsPref, p))
 
     // Explicitly assign both fields (old agent.ts:1348-1350):
     // "undefined" means "everyone" - do not merge, replace
@@ -1109,7 +1111,7 @@ export const setPostInteractionSettings: Action<
     }
 
     return prefs
-      .filter((p) => !postInteractionSettingsPref.$isTypeOf(p))
+      .filter((p) => !isTypeOf(postInteractionSettingsPref, p))
       .concat(pref)
   })
 }
@@ -1124,7 +1126,7 @@ export const updateLiveEventPreferences: Action<
   void
 > = async (client, action) => {
   await client.call(updatePreferences, (prefs) => {
-    const existing = prefs.find(liveEventPreferences.$isTypeOf)
+    const existing = prefs.find((p) => isTypeOf(liveEventPreferences, p))
 
     const hiddenFeedIds = new Set<string>(existing?.hiddenFeedIds || [])
     let hideAllFeeds = existing?.hideAllFeeds ?? false
@@ -1148,6 +1150,6 @@ export const updateLiveEventPreferences: Action<
       hideAllFeeds,
     }
 
-    return prefs.filter((p) => !liveEventPreferences.$isTypeOf(p)).concat(pref)
+    return prefs.filter((p) => !isTypeOf(liveEventPreferences, p)).concat(pref)
   })
 }

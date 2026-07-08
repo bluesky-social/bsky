@@ -1,4 +1,5 @@
 import { app, com } from '../lexicons/index.js'
+import { isTypeOf } from '../utils/types.js'
 import {
   InterpretedLabelValueDefinition,
   LabelPreference,
@@ -13,21 +14,13 @@ function isObject(v: unknown): v is Record<string, unknown> {
 export function isQuotedPost(
   embed: unknown,
 ): embed is app.bsky.embed.record.View {
-  return (
-    isObject(embed) &&
-    embed.$type === app.bsky.embed.record.view.$type &&
-    app.bsky.embed.record.view.isTypeOf(embed)
-  )
+  return isObject(embed) && isTypeOf(app.bsky.embed.record.view, embed)
 }
 
 export function isQuotedPostWithMedia(
   embed: unknown,
 ): embed is app.bsky.embed.recordWithMedia.View {
-  return (
-    isObject(embed) &&
-    embed.$type === app.bsky.embed.recordWithMedia.view.$type &&
-    app.bsky.embed.recordWithMedia.view.isTypeOf(embed)
-  )
+  return isObject(embed) && isTypeOf(app.bsky.embed.recordWithMedia.view, embed)
 }
 
 export function interpretLabelValueDefinition(

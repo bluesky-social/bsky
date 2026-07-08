@@ -1,5 +1,6 @@
 import { currentDatetimeString } from '@atproto/syntax'
 import { app } from '../lexicons/index.js'
+import { isTypeOf } from '../utils/types.js'
 
 const REGEX = {
   LEADING_TRAILING_PUNCTUATION: /(?:^\p{P}+|\p{P}+$)/gu,
@@ -60,7 +61,7 @@ export function matchMuteWords({
     .concat(
       (facets || []).flatMap((facet) =>
         facet.features
-          .filter(app.bsky.richtext.facet.tag.$isTypeOf)
+          .filter((f) => isTypeOf(app.bsky.richtext.facet.tag, f))
           .map((tag) => tag.tag),
       ),
     )
