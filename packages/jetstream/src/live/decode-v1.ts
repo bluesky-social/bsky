@@ -84,7 +84,7 @@ export function decodeLiveFrameV1(
   try {
     parsed = JSON.parse(text)
   } catch (err) {
-    throw new MalformedError(`decode v1 live frame: ${(err as Error).message}`)
+    throw new MalformedError('decode v1 live frame', { cause: err })
   }
   const peek = parsed as PeekFrame
   if (peek.error) {
@@ -104,13 +104,21 @@ export function decodeLiveFrameV1(
   if (validateWire) {
     const result = wireV1Frame.safeValidate(parsed)
     if (!result.success) {
-      throw new MalformedError(
-        `wire validation failed: ${String(result.reason)}`,
-      )
+      throw new MalformedError('wire validation failed', {
+        cause: result.reason,
+      })
     }
   }
   const f = parsed as WireV1Frame // the single optimistic boundary
   const seq = f.time_us
+  // seq IS the cursor (dedup, resume, watermark) — a lossy or non-integer
+  // time_us silently corrupts all of them, so this is checked in EVERY mode,
+  // not just validateWire.
+  if (!Number.isSafeInteger(seq)) {
+    throw new MalformedError(
+      `v1 time_us is not a safe integer (got ${String(seq)})`,
+    )
+  }
   const did = f.did
   const base = { did, seq, timeUs: seq }
 
