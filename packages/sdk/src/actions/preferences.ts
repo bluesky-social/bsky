@@ -331,6 +331,10 @@ export const getPreferences: Action<void, BskyPreferences> = async (client) => {
       queuedNudges: bskyAppState?.queuedNudges ?? [],
       activeProgressGuide: bskyAppState?.activeProgressGuide,
       nuxs: bskyAppState?.nuxs ?? [],
+      // only present when set (old agent.ts:659-661)
+      ...(bskyAppState?.isBetaUser !== undefined && {
+        isBetaUser: bskyAppState.isBetaUser,
+      }),
     },
     postInteractionSettings: {
       threadgateAllowRules: postInteraction?.threadgateAllowRules,
@@ -1001,6 +1005,32 @@ export const dismissNudges: Action<string[], void> = async (client, nudges) => {
     return prefs.map((p) =>
       isTypeOf(bskyAppStatePref, p) ? { ...p, queuedNudges: updated } : p,
     )
+  })
+}
+
+/**
+ * Set the flag for participating in the beta features program.
+ * (upstream agent.ts setIsBetaUser, atproto#5178)
+ */
+export const setIsBetaUser: Action<boolean, void> = async (
+  client,
+  isBetaUser,
+) => {
+  await client.call(updatePreferences, (prefs) => {
+    const existing = prefs.find((p) => isTypeOf(bskyAppStatePref, p))
+
+    if (existing) {
+      return prefs.map((p) =>
+        isTypeOf(bskyAppStatePref, p) ? { ...p, isBetaUser } : p,
+      )
+    }
+    return [
+      ...prefs,
+      {
+        $type: bskyAppStatePref.$type,
+        isBetaUser,
+      },
+    ]
   })
 }
 

@@ -268,6 +268,7 @@ These agent methods now correspond to named action functions called via `client.
 | `agent.setVerificationPrefs(prefs)`                | `client.call(setVerificationPrefs, prefs)`                          |
 | `agent.setPostInteractionSettings(s)`              | `client.call(setPostInteractionSettings, s)`                        |
 | `agent.updateLiveEventPreferences(action)`         | `client.call(updateLiveEventPreferences, action)`                   |
+| `agent.setIsBetaUser(v)`                           | `client.call(setIsBetaUser, v)`                                     |
 
 ### Renamed app-state preferences methods (dropped `bskyApp` prefix)
 

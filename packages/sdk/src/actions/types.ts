@@ -38,6 +38,7 @@ export interface BskyPreferences {
     queuedNudges: string[]
     activeProgressGuide: app.bsky.actor.defs.BskyAppProgressGuide | undefined
     nuxs: app.bsky.actor.defs.Nux[]
+    isBetaUser?: boolean
   }
   postInteractionSettings: app.bsky.actor.defs.PostInteractionSettingsPref
   verificationPrefs: app.bsky.actor.defs.VerificationPrefs

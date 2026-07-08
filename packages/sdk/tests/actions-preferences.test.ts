@@ -6,9 +6,11 @@ import {
   addSavedFeeds,
   getPreferences,
   overwriteSavedFeeds,
+  queueNudges,
   removeLabeler,
   setAdultContentEnabled,
   setContentLabelPref,
+  setIsBetaUser,
 } from '../src/index.js'
 import { app } from '../src/lexicons/index.js'
 
@@ -377,6 +379,48 @@ describe('updatePreferences round-trip', () => {
     expect(
       prefs2.moderationPrefs.labelers.some((l) => l.did === 'did:plc:other'),
     ).toBe(false)
+  })
+
+  // ported from upstream atp-agent.test.ts "setIsBetaUser" (atproto#5178)
+  it('setIsBetaUser sets and unsets the flag; absent by default', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+
+    // unset by default
+    const before = await client.call(getPreferences)
+    expect(before.bskyAppState).not.toHaveProperty('isBetaUser')
+
+    await client.call(setIsBetaUser, true)
+    const after = await client.call(getPreferences)
+    expect(after.bskyAppState.isBetaUser).toBe(true)
+
+    await client.call(setIsBetaUser, false)
+    const unset = await client.call(getPreferences)
+    expect(unset.bskyAppState.isBetaUser).toBe(false)
+  })
+
+  it('setIsBetaUser preserves other bskyAppState fields', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+
+    await client.call(queueNudges, ['keepme'])
+    await client.call(setIsBetaUser, true)
+
+    const prefs = await client.call(getPreferences)
+    expect(prefs.bskyAppState.isBetaUser).toBe(true)
+    expect(prefs.bskyAppState.queuedNudges).toEqual(['keepme'])
   })
 })
 

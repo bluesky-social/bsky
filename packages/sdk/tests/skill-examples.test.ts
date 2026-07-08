@@ -55,6 +55,7 @@ import {
   setContentLabelPref,
   setFeedViewPrefs,
   setInterestsPref,
+  setIsBetaUser,
   setPersonalDetails,
   setPostInteractionSettings,
   setThreadViewPrefs,
@@ -200,6 +201,7 @@ describe('skill-examples', () => {
     expect(typeof setVerificationPrefs).toBe('function')
     expect(typeof setPostInteractionSettings).toBe('function')
     expect(typeof updateLiveEventPreferences).toBe('function')
+    expect(typeof setIsBetaUser).toBe('function')
   })
 
   it('bskyApp-renamed action functions are importable', () => {

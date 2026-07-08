@@ -1,3 +1,4 @@
+import { graphemeLen } from '@atproto/lex-data'
 import type { DidString, UriString } from '@atproto/lex-schema'
 import TLDs from 'tlds' with { type: 'json' }
 import { app } from '../lexicons/index.js'
@@ -87,7 +88,11 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
       // strip ending punctuation and any spaces
       tag = tag.trim().replace(TRAILING_PUNCTUATION_REGEX, '')
 
-      if (tag.length === 0 || tag.length > 64) continue
+      // tag.length (UTF-16) is always >= graphemeLen(tag), so only pay for
+      // the grapheme count when the UTF-16 length already exceeds the limit.
+      // (upstream atproto#2657)
+      if (tag.length === 0 || (tag.length > 64 && graphemeLen(tag) > 64))
+        continue
 
       const index = match.index + leading.length
 

@@ -265,6 +265,19 @@ describe('detectFacets', () => {
         [],
       ],
       [
+        // 33 butterflies: 66 UTF-16 units but 33 graphemes — within the
+        // 64-grapheme limit (upstream #2657)
+        `body #${'🦋'.repeat(33)}`,
+        ['🦋'.repeat(33)],
+        [{ byteStart: 5, byteEnd: 5 + 1 + 33 * 4 }],
+      ],
+      [
+        // 65 butterflies: over the limit in graphemes too — rejected
+        `body #${'🦋'.repeat(65)}`,
+        [],
+        [],
+      ],
+      [
         'body #thisisa64characterstring_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!',
         ['thisisa64characterstring_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
         [{ byteStart: 5, byteEnd: 70 }],
