@@ -191,6 +191,41 @@ test('validateWire throws on missing required time_us (the v1 cursor)', () => {
   )
 })
 
+test('unsafe time_us throws MalformedError in EVERY mode (seq is the cursor)', () => {
+  // 2^53 loses precision as a JS number — dedup/resume/watermark would corrupt.
+  const unsafe = (time_us: string) =>
+    v1Put().replace('"time_us":9', `"time_us":${time_us}`)
+  for (const bad of ['9007199254740992', '1.5', 'null']) {
+    expect(() => decodeLiveFrameV1(encStr(unsafe(bad)))).toThrow(MalformedError)
+    expect(() => decodeLiveFrameV1(encStr(unsafe(bad)), true)).toThrow(
+      MalformedError,
+    )
+  }
+  // largest safe integer still decodes
+  expect(
+    decodeLiveFrameV1(encStr(unsafe(String(Number.MAX_SAFE_INTEGER)))),
+  ).not.toBe(SKIP_FRAME)
+})
+
+test('MalformedError carries the underlying cause where one exists', () => {
+  // JSON parse failure -> SyntaxError cause
+  try {
+    decodeLiveFrameV1(encStr('not json'))
+    expect.unreachable()
+  } catch (err) {
+    expect(err).toBeInstanceOf(MalformedError)
+    expect((err as Error).cause).toBeInstanceOf(SyntaxError)
+  }
+  // strict-mode wire violation -> lex validation error cause
+  try {
+    decodeLiveFrameV1(encStr(v1Put({ cid: 'garbage' })), true)
+    expect.unreachable()
+  } catch (err) {
+    expect(err).toBeInstanceOf(MalformedError)
+    expect((err as Error).cause).toBeInstanceOf(Error)
+  }
+})
+
 test('default mode passes a mangled v1 did through untouched', () => {
   const ev = decodeLiveFrameV1(encStr(v1Put()), undefined)
   expect(ev).not.toBe(SKIP_FRAME)
