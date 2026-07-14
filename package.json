@@ -19,7 +19,7 @@
     },
     "packageManager": {
       "name": "pnpm",
-      "version": "11.5.3",
+      "version": "11.13.0",
       "onFail": "error"
     }
   },
@@ -35,7 +35,7 @@
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "changeset": "changeset",
     "version-packages": "changeset version && git add .",
-    "release": "pnpm build && changeset publish",
+    "release": "pnpm build && changeset tag && pnpm publish -r --provenance --no-git-checks --access public",
     "prepare": "is-ci || husky"
   },
   "lint-staged": {

@@ -1,9 +1,10 @@
 name: Publish
 
 # Publishes to npm via OIDC trusted publishing (no long-lived NPM_TOKEN):
-# `id-token: write` + a current npm CLI mint short-lived credentials per
-# publish. Each package must have this repo/workflow configured as a
-# trusted publisher on npmjs.com.
+# `id-token: write` + pnpm mint short-lived credentials per publish. Each
+# package must have this repo/workflow configured as a trusted publisher
+# on npmjs.com. Publishing goes through pnpm (not npm) because npm refuses
+# to run in this repo: devEngines.packageManager pins pnpm with onFail=error.
 
 on:
   push:
@@ -18,7 +19,6 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  NPM_CONFIG_PROVENANCE: true
 
 jobs:
   publish:
@@ -32,7 +32,6 @@ jobs:
           cache: pnpm
           node-version-file: '.nvmrc'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm install --global npm@latest
       - run: pnpm install --frozen-lockfile
       - name: Publish
         uses: changesets/action@63a615b9cd06ba9a3e6d13796c7fbcb080a60a0b # v1.8.0
