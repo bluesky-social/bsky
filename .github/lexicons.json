@@ -1,0 +1,6 @@
+{
+  "dns": {
+    "did": "did:plc:4v4y5r3lwsbtmsxhile2ljac",
+    "carveouts": ["app.bsky.unspecced"]
+  }
+}

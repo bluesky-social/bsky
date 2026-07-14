@@ -63,5 +63,21 @@ export default config(
       ],
     },
   },
+  {
+    files: ['.github/scripts/**/*.ts'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        fetch: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+      },
+    },
+    rules: {
+      // scripts run directly via node type stripping; imports need the
+      // real .ts extension
+      'import-x/extensions': 'off',
+    },
+  },
   prettier,
 )
