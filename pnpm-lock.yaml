@@ -270,8 +270,8 @@ importers:
   packages/jetstream:
     dependencies:
       '@atproto/lex-schema':
-        specifier: ^0.1.4
-        version: 0.1.6
+        specifier: ^0.2.2
+        version: 0.2.2
       '@atproto/ws-client':
         specifier: ^0.1.1
         version: 0.1.8
@@ -449,6 +449,10 @@ packages:
     resolution: {integrity: sha512-4AMwaB0HumrQuaXmYQDHeeZGKj8x6ACiIb8fX96Y0ZZaiM/JUmgZl0LTl/1kbQ7cGPfG+NoGsiuz1iJuFhTjxw==}
     engines: {node: '>=22'}
 
+  '@atproto/lex-schema@0.2.2':
+    resolution: {integrity: sha512-UFK0EH8pw31dvL27aoZ5K78z+UMiD3ybIgkCyd7Idm267KM1IpycerTDeABqo4CYP3/IAnzjGpQaUaVc12bELA==}
+    engines: {node: '>=22'}
+
   '@atproto/lex-schema@0.2.4':
     resolution: {integrity: sha512-60c4aiHVYJQfmLF397d/NUYgrl7XYsnpGZjVLthsLpyn6gBiiFVaL/Pd+azLf/Uztn5ydbGbCxHEsoHsvUZLIg==}
     engines: {node: '>=22'}
@@ -468,6 +472,10 @@ packages:
 
   '@atproto/syntax@0.6.4':
     resolution: {integrity: sha512-ELgpShRGMF65cvLXcoMCZFL0HBzy67yz/Nlhox3yOtTh120B09KjjvZYXhMysVog3nUJqv2EW5rf1VRYCeM/hw==}
+    engines: {node: '>=22'}
+
+  '@atproto/syntax@0.7.2':
+    resolution: {integrity: sha512-tZ1Tr0R9pK4bI4Zs69t29cjMlCFQvRNBeNkqJC5pGeNuCt64D0eoF7s/AlqeVmYppClmQ0xJquggGgsMDP6j7w==}
     engines: {node: '>=22'}
 
   '@atproto/syntax@0.7.3':
@@ -2544,6 +2552,13 @@ snapshots:
       '@standard-schema/spec': 1.1.0
       tslib: 2.8.1
 
+  '@atproto/lex-schema@0.2.2':
+    dependencies:
+      '@atproto/lex-data': 0.1.7
+      '@atproto/syntax': 0.7.2
+      '@standard-schema/spec': 1.1.0
+      tslib: 2.8.1
+
   '@atproto/lex-schema@0.2.4':
     dependencies:
       '@atproto/lex-data': 0.1.7
@@ -2585,6 +2600,11 @@ snapshots:
       zod: 3.25.76
 
   '@atproto/syntax@0.6.4':
+    dependencies:
+      iso-datestring-validator: 2.2.2
+      tslib: 2.8.1
+
+  '@atproto/syntax@0.7.2':
     dependencies:
       iso-datestring-validator: 2.2.2
       tslib: 2.8.1
