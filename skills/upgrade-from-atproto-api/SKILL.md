@@ -8,20 +8,29 @@ description: Migrate code from @atproto/api to @bsky.app/sdk + @atproto/lex — 
 The `@atproto/api` package has been superseded by two packages:
 
 - **`@bsky.app/sdk`** — Bluesky-specific actions, moderation helpers, rich text, and the `api` constants object.
-- **`@atproto/lex`** (and its sub-packages `@atproto/lex-client`, `@atproto/lex-password-session`) — the generic AT Protocol client, session management, and lexicon utilities.
+- **`@atproto/lex`** — the generic AT Protocol client, lexicon utilities, and schema types. A peer dependency of the sdk; install both. (`@atproto/lex-password-session` is separate, only needed for password-based sessions.)
+
+```
+npm install @bsky.app/sdk @atproto/lex
+```
+
+Import `Client` and other lex utilities from `@atproto/lex` — not from its underlying sub-packages (`@atproto/lex-client`, `@atproto/lex-schema`), which shouldn't be depended upon directly.
 
 ## 1. Client Setup
 
-There are three common client patterns. All use the `Client` class from `@atproto/lex-client` (also re-exported from `@atproto/lex`).
+There are two common client patterns.
 
 ```typescript
-import { Client } from '@atproto/lex-client'
+import { Client } from '@atproto/lex'
 import { PasswordSession } from '@atproto/lex-password-session'
 import { api } from '@bsky.app/sdk'
-import { app } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky.app/sdk/lexicons'
 
-// --- Pattern 1: Account client (authenticated, talks directly to the user's account host) ---
-// This is the client to use for record writes and session operations.
+// --- Pattern 1: Authenticated Bluesky client ---
+// Queries are proxied through the account host to api.bsky.app and signed
+// with the user's identity. Record writes and mutations (createRecord,
+// applyWrites, etc.) automatically target the account host directly, so one
+// client covers both.
 const session = await PasswordSession.login({
   service: 'https://bsky.social',
   identifier: 'alice.bsky.social',
@@ -29,19 +38,35 @@ const session = await PasswordSession.login({
   onUpdated: (data) => saveToStorage(data),
   onDeleted: (data) => clearStorage(data.did),
 })
-const accountClient = new Client(session)
-
-// --- Pattern 2: Bluesky API client (authenticated, proxied through the account host) ---
-// Use for reading Bluesky social graph, feeds, profiles. The account host
-// proxies the request to api.bsky.app on your behalf and signs it with your
-// identity.
-const authedBskyClient = new Client(session, {
+const bskyClient = new Client(session, {
   service: api.app.service, // 'did:web:api.bsky.app#bsky_appview'
 })
 
-// --- Pattern 3: Public Bluesky API client (unauthenticated read-only) ---
+// --- Pattern 2: Public Bluesky API client (unauthenticated read-only) ---
 // Use for reading public data without authentication.
 const publicBskyClient = new Client(api.app.urlPublic) // 'https://public.api.bsky.app'
+```
+
+To target a different service for a single request (e.g. the account host
+itself, or a labeler), pass `service` in the per-request options rather than
+constructing another client — `{ service: null }` reaches the account host
+directly:
+
+```typescript
+const records = await bskyClient.call(
+  com.atproto.repo.listRecords,
+  { repo: bskyClient.assertDid, collection: 'app.bsky.feed.post' },
+  { service: null },
+)
+```
+
+Deployments that already keep separate clients for the account host vs the
+Bluesky API can continue to do so — construct each client from the same
+session:
+
+```typescript
+const accountClient = new Client(session)
+const bskyClient = new Client(session, { service: api.app.service })
 ```
 
 **`api` constants reference:**
@@ -58,20 +83,20 @@ const publicBskyClient = new Client(api.app.urlPublic) // 'https://public.api.bs
 | `api.moderation.did`     | `'did:plc:ar7c4by46qjdydhdevvrndac'`                 |
 | `api.moderation.service` | `'did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler'` |
 
-**Labeler caveat:** The `atproto-accept-labelers` header works by replacement, not addition. Sending _any_ custom labelers header replaces the Bluesky API's server-side default (which includes the Bluesky labeler). If you configure custom labelers, always include `api.moderation.did` to keep the Bluesky labeler active:
+**Labeler caveat:** When no labeler headers are sent, the Bluesky API applies its own moderation service by default — so if you don't introduce other labelers, no labeler configuration is needed at all. The `atproto-accept-labelers` header works by replacement, not addition: sending _any_ labelers header replaces that server-side default. So when you introduce other labelers, keep the Bluesky labeler active by setting it as an _app labeler_ — app labelers are always included in the header with the `;redact` parameter (allowing takedowns), which a plain `labelers` entry does not set:
 
 ```typescript
-import { Client } from '@atproto/lex-client'
+import { Client } from '@atproto/lex'
 import { api } from '@bsky.app/sdk'
 
 const client = new Client(session, {
   service: api.app.service,
-  labelers: [
-    api.moderation.did, // keep Bluesky's default labeler
-    'did:plc:mycustomlabeler...',
-  ],
+  appLabelers: [api.moderation.did], // keep Bluesky moderation, with `;redact`
+  labelers: ['did:plc:mycustomlabeler...'], // the user's labeler subscriptions
 })
 ```
+
+(`Client.configure({ appLabelers })` sets the same thing globally for all client instances; prefer the per-client option.) Defaults cascade app → client → request: a per-request `labelers` array replaces the client's, `labelers: null` disables the header for that request, and `appLabelers: null` opts a client or request out of the app labelers.
 
 ---
 
@@ -81,10 +106,10 @@ const client = new Client(session, {
 
 | Old (`@atproto/api`) | New               | Package                         |
 | -------------------- | ----------------- | ------------------------------- |
-| `AtpAgent`           | `Client`          | `@atproto/lex-client`           |
-| `Agent`              | `Client`          | `@atproto/lex-client`           |
-| `BskyAgent`          | `Client`          | `@atproto/lex-client`           |
-| `AtpBaseClient`      | `Client`          | `@atproto/lex-client`           |
+| `AtpAgent`           | `Client`          | `@atproto/lex`                  |
+| `Agent`              | `Client`          | `@atproto/lex`                  |
+| `BskyAgent`          | `Client`          | `@atproto/lex`                  |
+| `AtpBaseClient`      | `Client`          | `@atproto/lex`                  |
 | `CredentialSession`  | `PasswordSession` | `@atproto/lex-password-session` |
 
 ### Sessions
@@ -108,9 +133,9 @@ const client = new Client(session, {
 
 ### Errors
 
-| Old (`@atproto/api`) | New                                 | Package               |
-| -------------------- | ----------------------------------- | --------------------- |
-| `XRPCError`          | `XrpcResponseError` / `XrpcFailure` | `@atproto/lex-client` |
+| Old (`@atproto/api`) | New                                 | Package        |
+| -------------------- | ----------------------------------- | -------------- |
+| `XRPCError`          | `XrpcResponseError` / `XrpcFailure` | `@atproto/lex` |
 
 ### Utility / codec functions
 
@@ -171,7 +196,7 @@ const client = new Client(session, {
 ```typescript
 // Usage with a Client (resolves via com.atproto.identity.resolveHandle):
 const rt = new RichText({ text: 'Hello @alice.bsky.social!' })
-await rt.detectFacets(accountClient)
+await rt.detectFacets(bskyClient)
 
 // Or bring your own HandleResolver:
 await rt.detectFacets(myHandleResolver)
@@ -182,7 +207,7 @@ The `Client`-backed resolver is also exported directly for standalone use:
 ```typescript
 import { ClientHandleResolver } from '@bsky.app/sdk/utils'
 
-const resolver = new ClientHandleResolver(accountClient)
+const resolver = new ClientHandleResolver(bskyClient)
 const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 ```
 
@@ -212,7 +237,7 @@ const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 
 The `Agent`/`AtpAgent`/`BskyAgent` class has been replaced by:
 
-- **`Client`** from `@atproto/lex-client` for raw XRPC calls.
+- **`Client`** from `@atproto/lex` for raw XRPC calls.
 - **Action functions** from `@bsky.app/sdk` for higher-level operations (preferences, records, graph, notifications).
 
 ### Record / graph sugar methods
@@ -241,6 +266,18 @@ These agent methods now correspond to named action functions called via `client.
 **Branded input types:** Unlike the old agent methods, action inputs use the lex string format types — URIs are `AtUriString`, DIDs are `DidString`, etc. Values read from API responses already carry these types; for plain strings from your own storage, validate at the boundary with `asStringFormat(v, 'at-uri')` / `asStringFormat(v, 'did')` (see § 5).
 
 ### Preferences methods
+
+Preference reads and writes target the user's account host by default (like the client's own record helpers), regardless of the client's `service` setting — so they work unchanged on a client configured to proxy to the Bluesky API. `getPreferences` and `updatePreferences` accept an optional `service` in their input to override:
+
+```typescript
+await client.call(getPreferences) // account host
+await client.call(getPreferences, { service: 'did:web:example.com#svc' })
+await client.call(updatePreferences, (prefs) => prefs) // account host
+await client.call(updatePreferences, {
+  update: (prefs) => prefs,
+  service: 'did:web:example.com#svc',
+})
+```
 
 | Old agent method                                   | New action                                                          |
 | -------------------------------------------------- | ------------------------------------------------------------------- |
@@ -326,7 +363,7 @@ await client.call(app.bsky.labeler.getServices, { dids: ['did:plc:...'] })
 The old `agent.getPost({ repo, rkey })` sugar is replaced by `client.get()` using the generated schema:
 
 ```typescript
-import { app } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky.app/sdk/lexicons'
 import { AtUri } from '@atproto/syntax'
 
 // Old: agent.getPost({ repo: 'alice.bsky.social', rkey: '3k2...' })
@@ -350,7 +387,7 @@ const post2 = await client.get(app.bsky.feed.post, {
 ### Password-based sessions (replacing `CredentialSession`)
 
 ```typescript
-import { Client } from '@atproto/lex-client'
+import { Client } from '@atproto/lex'
 import {
   PasswordSession,
   type SessionData,
@@ -451,7 +488,7 @@ function processIncoming(rawDid: string): DidString {
 **Constructing (from known-valid sources):** When you construct values from your own code or generated data, you can cast directly — generated lexicon builders (`schema.$build(...)`) already produce correctly-typed values, so no runtime validation is needed.
 
 ```typescript
-import { app } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky.app/sdk/lexicons'
 
 // $build ensures the type is correct at compile time
 const post = app.bsky.feed.post.$build({
@@ -477,7 +514,7 @@ function handleRepostRequest(rawActor: string, rawUri: string) {
 **Note:** A planned helper on the lex `Client` for object-level "upcast" (e.g. asserting an entire record object matches a schema) is not yet in `@atproto/lex`. Use schema-level `$assert()` / `$matches()` / `$parse()` on generated schema objects until then:
 
 ```typescript
-import { app } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky.app/sdk/lexicons'
 
 const unknown: unknown = fetchedRecord
 app.bsky.feed.post.$assert(unknown) // throws if not a valid post
@@ -503,7 +540,7 @@ asStringFormat(value, 'did')
 Login, create three clients, post with rich text, read the timeline, and moderate a post for display:
 
 ```typescript
-import { Client } from '@atproto/lex-client'
+import { Client } from '@atproto/lex'
 import {
   PasswordSession,
   type SessionData,
@@ -511,7 +548,7 @@ import {
 import { api, post } from '@bsky.app/sdk'
 import { moderatePost, type ModerationOpts } from '@bsky.app/sdk/moderation'
 import { RichText } from '@bsky.app/sdk/richtext'
-import { app } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky.app/sdk/lexicons'
 
 // --- 1. Login ---
 const session = await PasswordSession.login({
@@ -522,35 +559,33 @@ const session = await PasswordSession.login({
   onDeleted: () => clearSession(),
 })
 
-// --- 2. Three clients ---
-const accountClient = new Client(session)
-
-const authedBskyClient = new Client(session, {
+// --- 2. Clients ---
+// No labeler configuration needed: with no labeler headers sent, the
+// Bluesky API applies its own moderation service by default.
+const bskyClient = new Client(session, {
   service: api.app.service,
-  labelers: [
-    api.moderation.did, // include Bluesky's default labeler
-  ],
 })
 
 const publicBskyClient = new Client(api.app.urlPublic)
 
 // --- 3. Post with rich text ---
 const rt = new RichText({ text: 'Hello @bob.bsky.social — check this out!' })
-await rt.detectFacets(accountClient) // resolves mentions via the client
+await rt.detectFacets(bskyClient) // resolves mentions via the client
 
-const { uri, cid } = await accountClient.call(post, {
+// Record writes target the account host automatically
+const { uri, cid } = await bskyClient.call(post, {
   text: rt.text,
   facets: rt.facets,
 })
 console.log('Posted:', uri, cid)
 
 // --- 4. Read the timeline ---
-const timeline = await authedBskyClient.call(app.bsky.feed.getTimeline, {
+const timeline = await bskyClient.call(app.bsky.feed.getTimeline, {
   limit: 20,
 })
 
 // --- 5. Moderate a post for display ---
-const prefs = await authedBskyClient.call(app.bsky.actor.getPreferences, {})
+const prefs = await bskyClient.call(app.bsky.actor.getPreferences, {})
 const moderationOpts: ModerationOpts = {
   userDid: session.did,
   prefs: {

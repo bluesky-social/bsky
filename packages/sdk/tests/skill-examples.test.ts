@@ -181,6 +181,21 @@ describe('skill-examples', () => {
     expect(typeof updateSeenNotifications).toBe('function')
   })
 
+  it('preferences service-override examples compile', () => {
+    async function example(client: Client) {
+      await client.call(getPreferences) // account host
+      await client.call(getPreferences, {
+        service: 'did:web:example.com#svc',
+      })
+      await client.call(updatePreferences, (prefs) => prefs) // account host
+      await client.call(updatePreferences, {
+        update: (prefs) => prefs,
+        service: 'did:web:example.com#svc',
+      })
+    }
+    expect(typeof example).toBe('function')
+  })
+
   it('preference action functions are importable', () => {
     expect(typeof getPreferences).toBe('function')
     expect(typeof setAdultContentEnabled).toBe('function')
@@ -323,21 +338,15 @@ describe('skill-examples', () => {
 // ── README examples compile-check ─────────────────────────────────────────────
 
 describe('README examples', () => {
-  it('three-client pattern compiles', () => {
-    // PDS client from an authenticated session (Agent)
-    function makePdsClient(session: PasswordSession) {
-      return new Client(session)
-    }
-    // App view proxied through PDS (shares the PDS client's agent/auth)
-    function makeAppviewClient(pds: Client) {
-      return new Client(pds.agent, {
-        service: api.app.service,
-      })
+  it('authenticated and public clients compile', () => {
+    // Authenticated Bluesky client (queries proxied through the account
+    // host; record writes/mutations target the account host directly)
+    function makeBskyClient(session: PasswordSession) {
+      return new Client(session, { service: api.app.service })
     }
     // Public unauthenticated client from URL string
     const publicBskyClient = new Client(api.app.urlPublic)
-    expect(typeof makePdsClient).toBe('function')
-    expect(typeof makeAppviewClient).toBe('function')
+    expect(typeof makeBskyClient).toBe('function')
     expect(publicBskyClient).toBeDefined()
   })
 

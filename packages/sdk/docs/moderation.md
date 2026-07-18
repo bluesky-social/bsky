@@ -100,15 +100,17 @@ To gather the label definitions (`labelDefs`) see the _Labelers_ section below.
 
 ## Labelers
 
-Labelers are services that provide moderation labels. Your application will typically have 1+ top-level labelers set with the ability to do "takedowns" on content. This is controlled via this static function, though the default is to use Bluesky's moderation:
+Labelers are services that provide moderation labels. Your application will typically have 1+ top-level labelers set with the ability to do "takedowns" on content. This is controlled via the `appLabelers` client option. When no labeler headers are sent at all, the Bluesky API applies its own moderation service by default — so this only needs to be set when introducing other labelers:
 
 ```typescript
 import { Client } from '@atproto/lex'
 
-Client.configure({
+const client = new Client(session, {
   appLabelers: ['did:web:my-labeler.com'],
 })
 ```
+
+(`Client.configure({ appLabelers })` sets the same thing globally for all client instances; prefer the per-client option.)
 
 Users may also add their own labelers. The active labelers are controlled via an HTTP header which is set by the client from its labelers configuration (`client.setLabelers()`, `client.addLabelers()`). Use the `addLabeler`/`removeLabeler` actions to persist a user's labeler subscriptions in their preferences.
 
@@ -269,24 +271,23 @@ for (const inform of mod.ui('contentList').informs) {
 
 ## Sending moderation reports
 
-Any Labeler is capable of receiving moderation reports. As a result, you need to specify which labeler should receive the report. You do this with the client's `service` option (the `atproto-proxy` header):
+Any Labeler is capable of receiving moderation reports. As a result, you need to specify which labeler should receive the report. You do this with the `service` option (the `atproto-proxy` header), overridable per request:
 
 ```typescript
-import { Client } from '@atproto/lex'
 import { com } from '@bsky.app/sdk/lexicons'
 
-const labelerClient = new Client(accountClient.agent, {
-  service: 'did:web:my-labeler.com#atproto_labeler',
-})
-
-await labelerClient.call(com.atproto.moderation.createReport, {
-  reasonType: 'com.atproto.moderation.defs#reasonViolation',
-  reason: 'They were being such a jerk to me!',
-  subject: {
-    $type: 'com.atproto.admin.defs#repoRef',
-    did: 'did:web:bob.com',
+await client.call(
+  com.atproto.moderation.createReport,
+  {
+    reasonType: 'com.atproto.moderation.defs#reasonViolation',
+    reason: 'They were being such a jerk to me!',
+    subject: {
+      $type: 'com.atproto.admin.defs#repoRef',
+      did: 'did:web:bob.com',
+    },
   },
-})
+  { service: 'did:web:my-labeler.com#atproto_labeler' },
+)
 ```
 
 The Bluesky moderation service's address is available via the `api` export from the SDK:
@@ -294,7 +295,7 @@ The Bluesky moderation service's address is available via the `api` export from 
 ```typescript
 import { api } from '@bsky.app/sdk'
 
-const bskyModerationClient = new Client(accountClient.agent, {
+await client.call(com.atproto.moderation.createReport, report, {
   service: api.moderation.service, // did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler
 })
 ```

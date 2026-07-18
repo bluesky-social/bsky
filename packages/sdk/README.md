@@ -103,21 +103,17 @@ const oauthSession = await oauthClient.restore('did:plc:123')
 const client = new Client(oauthSession)
 ```
 
-### The three-client pattern
+### Authenticated and public clients
 
-Bluesky exposes multiple services. Use the `api.*` constants for addressing:
+Use the `api.*` constants for addressing Bluesky services:
 
 ```typescript
 import { Client } from '@atproto/lex'
 import { api } from '@bsky.app/sdk'
 
-// The user's account host (writes, record mutations — requires an authenticated session)
-const accountClient = new Client(session)
-
-// Bluesky API (authenticated queries, proxied through the account host)
-const authedBskyClient = new Client(accountClient.agent, {
-  service: api.app.service,
-})
+// Bluesky API (authenticated queries, proxied through the account host;
+// record writes and mutations automatically target the account host directly)
+const bskyClient = new Client(session, { service: api.app.service })
 
 // Bluesky API (unauthenticated public queries)
 const publicBskyClient = new Client(api.app.urlPublic)
@@ -150,38 +146,38 @@ import {
 } from '@bsky.app/sdk'
 
 // The DID of the user currently authenticated (or undefined)
-client.did
-client.assertDid // Throws if the user is not authenticated
+bskyClient.did
+bskyClient.assertDid // Throws if the user is not authenticated
 
 // Feeds and content
-await accountClient.call(post, { text: 'Hello, world!' })
-await accountClient.call(deletePost, postUri)
-await accountClient.call(like, { uri, cid })
-await accountClient.call(deleteLike, likeUri)
-await accountClient.call(repost, { uri, cid })
-await accountClient.call(deleteRepost, repostUri)
+await bskyClient.call(post, { text: 'Hello, world!' })
+await bskyClient.call(deletePost, postUri)
+await bskyClient.call(like, { uri, cid })
+await bskyClient.call(deleteLike, likeUri)
+await bskyClient.call(repost, { uri, cid })
+await bskyClient.call(deleteRepost, repostUri)
 
 // Social graph
-await accountClient.call(follow, { did })
-await accountClient.call(deleteFollow, followUri)
-await authedBskyClient.call(muteActor, { actor })
-await authedBskyClient.call(unmuteActor, { actor })
-await authedBskyClient.call(muteActorList, { list })
-await authedBskyClient.call(unmuteActorList, { list })
-await accountClient.call(blockActorList, { list })
-await accountClient.call(unblockActorList, { list })
+await bskyClient.call(follow, { did })
+await bskyClient.call(deleteFollow, followUri)
+await bskyClient.call(muteActor, { actor })
+await bskyClient.call(unmuteActor, { actor })
+await bskyClient.call(muteActorList, { list })
+await bskyClient.call(unmuteActorList, { list })
+await bskyClient.call(blockActorList, { list })
+await bskyClient.call(unblockActorList, { list })
 
 // Actors
-await accountClient.call(upsertProfile, (existing) => ({
+await bskyClient.call(upsertProfile, (existing) => ({
   ...existing,
   displayName: 'Alice',
 }))
 
 // Notifications
-await authedBskyClient.call(updateSeenNotifications, seenAt)
+await bskyClient.call(updateSeenNotifications, seenAt)
 
 // Preferences
-const prefs = await authedBskyClient.call(getPreferences)
+const prefs = await bskyClient.call(getPreferences)
 ```
 
 Queries without a dedicated action are one `xrpc` call away using the generated
@@ -271,7 +267,7 @@ import { moderatePost } from '@bsky.app/sdk/moderation'
 // First get the user's moderation prefs and their label definitions
 // =
 
-const prefs = await authedBskyClient.call(getPreferences)
+const prefs = await bskyClient.call(getPreferences)
 const labelDefs = {
   /* see the Moderation Documentation for gathering labelDefs */
 }
@@ -280,7 +276,7 @@ const labelDefs = {
 // =
 
 const postMod = moderatePost(postView, {
-  userDid: client.assertDid,
+  userDid: bskyClient.assertDid,
   prefs: prefs.moderationPrefs,
   labelDefs,
 })
@@ -342,21 +338,23 @@ record helpers:
 import { currentDatetimeString } from '@atproto/lex'
 import { app, com } from '@bsky.app/sdk/lexicons'
 
-const res1 = await accountClient.createRecord({
+// Record helpers always target the user's account host
+const res1 = await bskyClient.createRecord({
   $type: 'app.bsky.feed.post',
   text: 'Hello, world!',
   createdAt: currentDatetimeString(),
 })
-const res2 = await accountClient.call(com.atproto.repo.listRecords, {
-  repo: alice.did,
-  collection: 'app.bsky.feed.post',
-})
+const res2 = await bskyClient.call(
+  com.atproto.repo.listRecords,
+  { repo: alice.did, collection: 'app.bsky.feed.post' },
+  { service: null }, // target the account host rather than the Bluesky API
+)
 // or, using the typed record convenience helper:
-const res2b = await accountClient.list(app.bsky.feed.post, {
+const res2b = await bskyClient.list(app.bsky.feed.post, {
   repo: alice.did,
 })
 
-const res3 = await authedBskyClient.call(app.bsky.feed.getTimeline, {
+const res3 = await bskyClient.call(app.bsky.feed.getTimeline, {
   limit: 20,
 })
 // res3: app.bsky.feed.getTimeline.OutputSchema
