@@ -68,6 +68,7 @@
     "codegen:labels": "node ./scripts/generate-code.mjs",
     "prebuild": "pnpm run codegen && pnpm run codegen:labels",
     "build": "tsgo --build tsconfig.build.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:peer-matrix": "node ./scripts/peer-matrix.mjs"
   }
 }

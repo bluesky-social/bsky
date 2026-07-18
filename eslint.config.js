@@ -68,7 +68,10 @@ export default config(
     languageOptions: {
       globals: {
         console: 'readonly',
+        fetch: 'readonly',
         process: 'readonly',
+        Request: 'readonly',
+        Response: 'readonly',
         URL: 'readonly',
       },
     },
