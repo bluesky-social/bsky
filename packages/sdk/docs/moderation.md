@@ -275,7 +275,7 @@ Any Labeler is capable of receiving moderation reports. As a result, you need to
 import { Client } from '@atproto/lex'
 import { com } from '@bsky.app/sdk/lexicons'
 
-const labelerClient = new Client(accountClient, {
+const labelerClient = new Client(accountClient.agent, {
   service: 'did:web:my-labeler.com#atproto_labeler',
 })
 
@@ -294,7 +294,7 @@ The Bluesky moderation service's address is available via the `api` export from 
 ```typescript
 import { api } from '@bsky.app/sdk'
 
-const bskyModerationClient = new Client(accountClient, {
+const bskyModerationClient = new Client(accountClient.agent, {
   service: api.moderation.service, // did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler
 })
 ```

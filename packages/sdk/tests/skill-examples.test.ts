@@ -7,7 +7,13 @@
  * compile under the project's tsconfig.
  */
 
-import { jsonToLex, lexParse, lexStringify, lexToJson } from '@atproto/lex'
+import {
+  Client,
+  jsonToLex,
+  lexParse,
+  lexStringify,
+  lexToJson,
+} from '@atproto/lex'
 import {
   type DidString,
   asAtUriString,
@@ -16,7 +22,6 @@ import {
   isDatetimeString,
   isStringFormat,
 } from '@atproto/lex'
-import { Client } from '@atproto/lex-client'
 import {
   PasswordSession,
   type SessionData,
@@ -323,9 +328,9 @@ describe('README examples', () => {
     function makePdsClient(session: PasswordSession) {
       return new Client(session)
     }
-    // App view proxied through PDS
+    // App view proxied through PDS (shares the PDS client's agent/auth)
     function makeAppviewClient(pds: Client) {
-      return new Client(pds, {
+      return new Client(pds.agent, {
         service: api.app.service,
       })
     }

@@ -1,4 +1,4 @@
-import type { Unknown$Type } from '@atproto/lex-schema'
+import type { Unknown$Type } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import {
   Facet,

@@ -1,4 +1,4 @@
-import type { $Typed, AtUriString, BlobRef } from '@atproto/lex-schema'
+import type { $Typed, AtUriString, BlobRef } from '@atproto/lex'
 import { currentDatetimeString, toDatetimeString } from '@atproto/syntax'
 import { describe, expect, it } from 'vitest'
 import type { app } from '../src/lexicons/index.js' // type-only usage for type annotations
@@ -891,7 +891,7 @@ describe(`matchMuteWords`, () => {
               {
                 $type: 'com.example.richtext.facet#other',
                 foo: 'bar',
-              } as unknown as import('@atproto/lex-schema').Unknown$TypedObject,
+              } as unknown as import('@atproto/lex').Unknown$TypedObject,
               {
                 $type: 'app.bsky.richtext.facet#tag',
                 tag: 'bad',

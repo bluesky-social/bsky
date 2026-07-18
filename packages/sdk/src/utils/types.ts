@@ -5,7 +5,7 @@ import type {
   TypedObjectSchema,
   Unknown$TypedObject,
   Validator,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 
 /**
  * The narrowing performed by {@link isTypeOf}: like lex-schema's

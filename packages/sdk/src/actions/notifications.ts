@@ -1,4 +1,4 @@
-import { type Action } from '@atproto/lex-client'
+import { type Action } from '@atproto/lex'
 import type { DatetimeString } from '@atproto/syntax'
 import { currentDatetimeString } from '@atproto/syntax'
 import { app as appLexicons } from '../lexicons/index.js'

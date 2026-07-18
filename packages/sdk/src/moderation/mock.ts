@@ -1,9 +1,4 @@
-import type {
-  $Typed,
-  AtUriString,
-  HandleString,
-  Un$Typed,
-} from '@atproto/lex-schema'
+import type { $Typed, AtUriString, HandleString, Un$Typed } from '@atproto/lex'
 import { currentDatetimeString } from '@atproto/syntax'
 import type { app, com } from '../lexicons/index.js'
 

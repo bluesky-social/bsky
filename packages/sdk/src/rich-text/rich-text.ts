@@ -91,8 +91,7 @@ F: 0 1 2 3 4 5 6 7 8 910   // string indices
    ^-------^               // target slice {start: 0, end: 5}
  */
 
-import type { Client } from '@atproto/lex-client'
-import type { DidString, UriString } from '@atproto/lex-schema'
+import type { Client, DidString, UriString } from '@atproto/lex'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { app } from '../lexicons/index.js'
 import { ClientHandleResolver } from '../utils/index.js'
@@ -348,7 +347,7 @@ export class RichText {
    */
   async detectFacets(resolverOrClient: HandleResolver | Client): Promise<void> {
     // Duck-type rather than instanceof so Client is a type-only import —
-    // avoids runtime coupling to a specific @atproto/lex-client version.
+    // avoids runtime coupling to a specific @atproto/lex version.
     const resolver = isHandleResolver(resolverOrClient)
       ? resolverOrClient
       : new ClientHandleResolver(resolverOrClient)

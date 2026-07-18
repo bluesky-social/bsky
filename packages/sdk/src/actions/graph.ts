@@ -2,7 +2,7 @@ import {
   type Action,
   type AtIdentifierString,
   type CreateOutput,
-} from '@atproto/lex-client'
+} from '@atproto/lex'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'

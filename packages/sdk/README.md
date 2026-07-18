@@ -115,7 +115,9 @@ import { api } from '@bsky.app/sdk'
 const accountClient = new Client(session)
 
 // Bluesky API (authenticated queries, proxied through the account host)
-const authedBskyClient = new Client(accountClient, { service: api.app.service })
+const authedBskyClient = new Client(accountClient.agent, {
+  service: api.app.service,
+})
 
 // Bluesky API (unauthenticated public queries)
 const publicBskyClient = new Client(api.app.urlPublic)

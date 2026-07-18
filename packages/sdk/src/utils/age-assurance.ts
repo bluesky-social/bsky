@@ -1,4 +1,4 @@
-import { l } from '@atproto/lex-schema'
+import { l } from '@atproto/lex'
 import type {
   Access,
   Config,

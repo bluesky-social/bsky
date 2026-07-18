@@ -1,10 +1,12 @@
-import { l } from '@atproto/lex-schema'
+import { l } from '@atproto/lex'
 
-export const nuxSchema = l.object({
-  id: l.string({ maxLength: 64 }),
-  completed: l.boolean(),
-  data: l.optional(l.string({ maxLength: 300 })),
-  expiresAt: l.optional(l.string({ format: 'datetime' })),
+export const nuxSchema = /*#__PURE__*/ l.object({
+  id: /*#__PURE__*/ l.string({ maxLength: 64 }),
+  completed: /*#__PURE__*/ l.boolean(),
+  data: /*#__PURE__*/ l.optional(/*#__PURE__*/ l.string({ maxLength: 300 })),
+  expiresAt: /*#__PURE__*/ l.optional(
+    /*#__PURE__*/ l.string({ format: 'datetime' }),
+  ),
 })
 
 export type Nux = l.Infer<typeof nuxSchema>

@@ -2,10 +2,10 @@ import {
   type Action,
   type CidString,
   type CreateOutput,
+  type DatetimeString,
   type DidString,
   XrpcResponseError,
-} from '@atproto/lex-client'
-import type { DatetimeString } from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import type { app, com } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'

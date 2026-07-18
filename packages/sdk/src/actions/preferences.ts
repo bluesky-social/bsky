@@ -1,4 +1,4 @@
-import { type Action, Client } from '@atproto/lex-client'
+import { type Action, Client } from '@atproto/lex'
 import type { AtUriString, DatetimeString, DidString } from '@atproto/syntax'
 import { AtUri, ensureValidDidRegex, toDatetimeString } from '@atproto/syntax'
 import {
@@ -40,7 +40,7 @@ type SavedFeed = app.bsky.actor.defs.SavedFeed
 
 // Serializes preference read-modify-write cycles per client, replacing the
 // old Agent's per-instance AwaitLock. Keyed weakly so clients can be GC'd.
-const prefsWriteChains = new WeakMap<object, Promise<unknown>>()
+const prefsWriteChains = /*#__PURE__*/ new WeakMap<object, Promise<unknown>>()
 
 function serializedPrefsWrite<T>(
   client: object,
