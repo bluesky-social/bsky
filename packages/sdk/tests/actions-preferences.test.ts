@@ -3,21 +3,25 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_LABEL_SETTINGS,
   addLabeler,
+  addMutedWords,
   addSavedFeeds,
   getPreferences,
+  hidePost,
   overwriteSavedFeeds,
   queueNudges,
   removeLabeler,
   setAdultContentEnabled,
   setContentLabelPref,
   setIsBetaUser,
+  updatePreferences,
 } from '../src/index.js'
 import { app } from '../src/lexicons/index.js'
 
 function fakeClient(
   routes: Record<string, (init: { url: URL; body?: unknown }) => unknown>,
+  clientOptions?: ConstructorParameters<typeof Client>[1],
 ) {
-  const calls: { nsid: string; body?: unknown }[] = []
+  const calls: { nsid: string; body?: unknown; proxy: string | null }[] = []
   const client = new Client(
     {
       did: 'did:plc:test' as never,
@@ -25,7 +29,8 @@ function fakeClient(
         const u = new URL(path, 'https://pds.test')
         const nsid = u.pathname.replace('/xrpc/', '')
         const body = init?.body ? JSON.parse(init.body as string) : undefined
-        calls.push({ nsid, body })
+        const proxy = new Headers(init?.headers).get('atproto-proxy')
+        calls.push({ nsid, body, proxy })
         const handler = routes[nsid]
         if (!handler)
           return new Response(
@@ -38,10 +43,53 @@ function fakeClient(
         })
       },
     },
-    { validateResponse: false },
+    { validateResponse: false, ...clientOptions },
   )
   return { client, calls }
 }
+
+describe('preferences routing', () => {
+  it('targets the account host even when the client proxies to a service', async () => {
+    const { client, calls } = fakeClient(
+      {
+        'app.bsky.actor.getPreferences': () => ({ preferences: [] }),
+        'app.bsky.actor.putPreferences': () => ({}),
+      },
+      { service: 'did:web:api.bsky.app#bsky_appview' },
+    )
+    await client.call(getPreferences)
+    await client.call(updatePreferences, (prefs) => prefs)
+    await client.call(setAdultContentEnabled, true)
+    await client.call(hidePost, 'at://did:plc:x/app.bsky.feed.post/1' as never)
+    await client.call(addSavedFeeds, [
+      { type: 'timeline', value: 'following', pinned: true },
+    ])
+    await client.call(addMutedWords, [{ value: 'sushi', targets: [] }])
+    expect(calls.length).toBeGreaterThan(0)
+    for (const call of calls) {
+      expect(call.proxy).toBeNull()
+    }
+  })
+
+  it('permits overriding the target service', async () => {
+    const service = 'did:web:example.com#custom' as const
+    const { client, calls } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: [] }),
+      'app.bsky.actor.putPreferences': () => ({}),
+    })
+    // getPreferences on empty prefs also performs a migration write, which
+    // must carry the override along with the reads.
+    await client.call(getPreferences, { service })
+    await client.call(updatePreferences, {
+      update: (prefs) => prefs,
+      service,
+    })
+    expect(calls.length).toBeGreaterThan(0)
+    for (const call of calls) {
+      expect(call.proxy).toBe(service)
+    }
+  })
+})
 
 describe('getPreferences', () => {
   it('interprets defaults from an empty pref array', async () => {
