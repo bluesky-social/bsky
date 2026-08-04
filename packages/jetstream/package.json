@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@atproto/lex-schema": "^0.2.2",
-    "@atproto/ws-client": "^0.1.1"
+    "@atproto/ws-client": "^0.2.0"
   },
   "scripts": {
     "build": "tsgo --build tsconfig.build.json",

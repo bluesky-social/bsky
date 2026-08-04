@@ -273,8 +273,8 @@ importers:
         specifier: ^0.2.2
         version: 0.2.2
       '@atproto/ws-client':
-        specifier: ^0.1.1
-        version: 0.1.8
+        specifier: ^0.2.0
+        version: 0.2.0
     devDependencies:
       '@types/ws':
         specifier: ^8.18.1
@@ -482,8 +482,8 @@ packages:
     resolution: {integrity: sha512-7LU8Ra79L5wCqVAZZst2352VMMwkU4KNagVMm6pnURrY/uS7+HrJl3XCuA4V2Gy2dEpkt1r6DBxlsP43/VjDBw==}
     engines: {node: '>=22'}
 
-  '@atproto/ws-client@0.1.8':
-    resolution: {integrity: sha512-EX9SpoOJY4QhDKXe/olJw2h+Lj10SMd0ErDSE8pf3aFmg4MEEA+KBMg7HO8b9U6SNSS6n2nl7GPe37D3rIJ5zw==}
+  '@atproto/ws-client@0.2.0':
+    resolution: {integrity: sha512-qlrAa9d1AWhd3SoZ6dF/gqEpHKPJlXbieA8wrSEjx/hOJVKKR0gTPw3E/gajJ00pPtE88wPE5ARE4whUlOgAyw==}
     engines: {node: '>=22'}
 
   '@babel/helper-string-parser@7.29.7':
@@ -2614,9 +2614,8 @@ snapshots:
       iso-datestring-validator: 2.2.2
       tslib: 2.8.1
 
-  '@atproto/ws-client@0.1.8':
+  '@atproto/ws-client@0.2.0':
     dependencies:
-      '@atproto/common': 0.7.4
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil

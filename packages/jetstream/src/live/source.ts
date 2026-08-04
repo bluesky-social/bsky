@@ -2,7 +2,7 @@ import { type DidString } from '@atproto/lex-schema'
 import { type RawEventV1 } from '../event.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
 import { SKIP_FRAME } from './decode.js'
-import { type LiveTransport, wsKeepAliveTransport } from './transport.js'
+import { type LiveTransport, websocketTransport } from './transport.js'
 
 export { type LiveTransport } from './transport.js'
 
@@ -29,7 +29,7 @@ export async function* liveEvents(
   opts: LiveEventsOpts,
 ): AsyncGenerator<RawEventV1> {
   const origin = wsScheme(opts.host)
-  const transport = opts.transport ?? wsKeepAliveTransport
+  const transport = opts.transport ?? websocketTransport()
   const signal = opts.signal ?? new AbortController().signal
   // lastSeq is the highest DELIVERED seq = reconnect cursor + dedup floor.
   // undefined means nothing delivered yet (seq 0 passes).
