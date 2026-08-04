@@ -3,5 +3,8 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "vitest.explorer",
+    // The "TypeScript 7" language server extension — renamed in place on the
+    // marketplace, so the id still says native-preview.
+    "typescriptteam.native-preview",
   ],
 }
