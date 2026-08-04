@@ -46,6 +46,6 @@
   },
   "scripts": {
     "codegen:labels": "node ./scripts/generate-code.mjs",
-    "build": "tsgo --build tsconfig.build.json"
+    "build": "tsc --build tsconfig.build.json"
   }
 }
