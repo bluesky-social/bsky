@@ -7,4 +7,8 @@ describe('public exports', () => {
     expect(typeof api.typedEventFromRaw).toBe('function')
     expect('Client' in api).toBe(false)
   })
+
+  it('exports the websocketTransport factory', () => {
+    expect(typeof api.websocketTransport).toBe('function')
+  })
 })

@@ -1,7 +1,11 @@
 export { Jetstream } from './jetstream.js'
 export type { JetstreamOpts, LiveOpts } from './jetstream.js'
 export { typedEventFromRaw } from './decode-typed.js'
-export type { LiveTransport } from './live/transport.js'
+export { websocketTransport } from './live/transport.js'
+export type {
+  LiveTransport,
+  WebsocketTransportOptions,
+} from './live/transport.js'
 export type {
   CollectionFilter,
   SchemaCollectionFilter,
