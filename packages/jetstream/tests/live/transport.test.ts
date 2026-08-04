@@ -9,7 +9,7 @@ import { websocketTransport } from '../../src/live/transport.js'
 // websocketTransport so the decoder's string handling can't regress even
 // when fake-transport tests pass.
 
-export const v1Frame = (time_us: number) =>
+const v1Frame = (time_us: number) =>
   JSON.stringify({
     did: 'did:plc:a',
     time_us,
@@ -27,7 +27,7 @@ export const v1Frame = (time_us: number) =>
 // Scripted server: one handler per expected connection, in order. Requests
 // beyond the script are dropped immediately (a reconnecting client retries
 // until the test aborts). urls records each connection's request path.
-export async function serveScript(script: Array<(ws: WebSocket) => void>) {
+async function serveScript(script: Array<(ws: WebSocket) => void>) {
   const wss = await new Promise<WebSocketServer>((resolve) => {
     const server: WebSocketServer = new WebSocketServer({ port: 0 }, () =>
       resolve(server),

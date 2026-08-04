@@ -44,6 +44,16 @@ describe('resolveWebsocketOptions', () => {
       5000,
     )
   })
+  it('idleTimeoutMs: 0 throws (use false to disable)', () => {
+    expect(() => resolveWebsocketOptions({ idleTimeoutMs: 0 })).toThrow(
+      RangeError,
+    )
+  })
+  it('negative idleTimeoutMs throws', () => {
+    expect(() => resolveWebsocketOptions({ idleTimeoutMs: -1 })).toThrow(
+      RangeError,
+    )
+  })
   it('shouldReconnect override passes through (false = never)', () => {
     const o = resolveWebsocketOptions({ shouldReconnect: false })
     expect(o.shouldReconnect).toBe(false)

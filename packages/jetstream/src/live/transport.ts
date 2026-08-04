@@ -29,7 +29,10 @@ export type WebsocketTransportOptions = Omit<
    * End (and redial) the connection when no message arrives within this
    * window. Default 60_000: jetstream is a firehose that normally never goes
    * quiet, and in the browser this is the only dead-connection detector.
-   * `false` disables idle detection.
+   * `false` disables idle detection. Must be > 0 when a number: ws-client
+   * runs the idle timer on a plain `setInterval`, so 0 (or negative) would
+   * silently clamp to a ~1ms timer and redial in a tight loop; use `false`
+   * to disable idle detection instead.
    */
   idleTimeoutMs?: number | false
 }
@@ -56,6 +59,11 @@ export function resolveWebsocketOptions(
     shouldReconnect = jetstreamShouldReconnect,
     ...rest
   } = options
+  if (idleTimeoutMs !== false && idleTimeoutMs <= 0) {
+    throw new RangeError(
+      'idleTimeoutMs must be > 0; use false to disable idle detection',
+    )
+  }
   return {
     ...rest,
     shouldReconnect,
