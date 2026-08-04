@@ -66,16 +66,18 @@ const cursor = new MemoryCursorStore()
 await js.runner(indexer).live({ cursor })
 ```
 
-## Isomorphic
+## Connection behavior
 
-This package runs on Node.js and in the browser. The live transport is built
-on `@atproto/ws-client`, which selects a platform websocket implementation
-itself; nothing in `src/` imports Node-only modules (`ws` is a devDependency
-used only by tests).
+This package runs on Node.js and in the browser.
 
-Websocket behavior (reconnect policy, lifecycle hooks, headers, liveness) is
-configured through the `websocketTransport()` factory and passed via the
-`liveTransport` option:
+A live stream stays up on its own: it reconnects automatically — including
+when the server closes cleanly or goes silent — and resumes from its cursor,
+so no events are lost or duplicated across reconnects. It ends only when you
+`break` out of the loop, abort the `signal`, or a genuinely fatal error
+occurs (which rejects the loop).
+
+To observe or tune connection behavior, configure a transport with
+`websocketTransport()` and pass it via the `liveTransport` option:
 
 ```ts
 import { Jetstream, websocketTransport } from '@bsky.app/jetstream'
@@ -91,12 +93,8 @@ for await (const ev of js.live({
 }
 ```
 
-Defaults: frames are text (`dataMode: 'text'`; a binary frame is fatal), a
-server's clean close reconnects (the resume cursor makes redials seamless),
-and a 60s idle timeout redials silent connections (`idleTimeoutMs: false`
-disables). Under these defaults a live stream never ends on its own — only
-`break`, aborting the `signal`, or a genuinely fatal error ends it.
-
-Two error surfaces, one sentence each: the factory's `onError` reports the
-stream-fatal websocket error (the same error the loop rejects with), while
-`LiveOpts.onError` reports skipped malformed frames at the decode layer.
+Commonly useful options: `onReconnect` to observe connection trouble (retries
+are otherwise silent), `shouldReconnect` to change when the stream gives up,
+and `idleTimeoutMs` to tune dead-connection detection (default 60s; `false`
+disables). `websocketTransport()` inherits the rest of its options from
+[`@atproto/ws-client`](https://npmx.dev/@atproto/ws-client).
