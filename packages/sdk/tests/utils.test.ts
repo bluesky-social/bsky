@@ -57,13 +57,13 @@ describe('age assurance', () => {
       ],
     }
     expect(
-      getAgeAssuranceRegionConfig(config as never, {
+      getAgeAssuranceRegionConfig(config, {
         countryCode: 'US',
         regionCode: 'TX',
       })?.regionCode,
     ).toBe('TX')
     expect(
-      getAgeAssuranceRegionConfig(config as never, {
+      getAgeAssuranceRegionConfig(config, {
         countryCode: 'US',
         regionCode: 'CA',
       })?.regionCode,
@@ -86,7 +86,7 @@ describe('age assurance', () => {
     }
 
     it('finds platform-restricted region when platform matches', () => {
-      const result = getAgeAssuranceRegionConfig(config as never, {
+      const result = getAgeAssuranceRegionConfig(config, {
         countryCode: 'US',
         regionCode: 'TX',
         platform: 'ios',
@@ -101,7 +101,7 @@ describe('age assurance', () => {
     })
 
     it('skips platform-restricted region when platform does not match', () => {
-      const result = getAgeAssuranceRegionConfig(config as never, {
+      const result = getAgeAssuranceRegionConfig(config, {
         countryCode: 'US',
         regionCode: 'TX',
         platform: 'web',
@@ -115,7 +115,7 @@ describe('age assurance', () => {
     })
 
     it('ignores platform restrictions when platform is not provided', () => {
-      const result = getAgeAssuranceRegionConfig(config as never, {
+      const result = getAgeAssuranceRegionConfig(config, {
         countryCode: 'US',
         regionCode: 'TX',
       })
@@ -140,7 +140,7 @@ describe('age assurance', () => {
         },
       ],
     }
-    const result = computeAgeAssuranceRegionAccess(region as never, undefined)
+    const result = computeAgeAssuranceRegionAccess(region, undefined)
     expect(result?.access).toBe('full')
   })
 })
