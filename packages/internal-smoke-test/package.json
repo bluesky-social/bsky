@@ -1,5 +1,5 @@
 {
-  "name": "@bsky.app/internal-smoke-test",
+  "name": "@bsky/internal-smoke-test",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -17,7 +17,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsgo --build tsconfig.build.json",
+    "build": "tsc --build tsconfig.build.json",
     "test": "vitest --run"
   }
 }

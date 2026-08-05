@@ -1,5 +1,5 @@
 {
-  "name": "@bsky.app/sdk",
+  "name": "@bsky/sdk",
   "version": "0.0.0",
   "license": "MIT OR Apache-2.0",
   "description": "Bluesky SDK for use with @atproto/lex",
@@ -67,7 +67,7 @@
     "codegen": "lex build --clear --index-file --out ./src/lexicons --exclude 'app.bsky.unspecced.*' 'tools.ozone.*' 'chat.bsky.convo.exportAccountData'",
     "codegen:labels": "node ./scripts/generate-code.mjs",
     "prebuild": "pnpm run codegen && pnpm run codegen:labels",
-    "build": "tsgo --build tsconfig.build.json",
+    "build": "tsc --build tsconfig.build.json",
     "test": "vitest run",
     "test:peer-matrix": "node ./scripts/peer-matrix.mjs"
   }

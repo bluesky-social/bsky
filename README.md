@@ -1,6 +1,6 @@
 # bsky
 
-TypeScript monorepo for Bluesky packages published under the [`@bsky.app`](https://www.npmjs.com/org/bsky.app) npm organization.
+TypeScript monorepo for Bluesky packages published under the [`@bsky`](https://www.npmjs.com/org/bsky) npm organization.
 
 ## Layout
 
@@ -14,8 +14,8 @@ Requires Node.js >=22.12 and pnpm 11 (enforced via `devEngines`).
 
 ```sh
 pnpm install
-pnpm build      # tsgo project builds, topological
-pnpm typecheck  # tsgo --build tsconfig.json
+pnpm build      # tsc project builds, topological
+pnpm typecheck  # tsc --build tsconfig.json
 pnpm lint       # eslint
 pnpm format     # prettier --write
 pnpm test       # vitest
@@ -25,7 +25,7 @@ pnpm verify     # format:check + lint + typecheck + test (what CI runs)
 ## Package conventions
 
 - ESM-only: `"type": "module"`, single-entry `exports` with `types` + `default` conditions
-- Built with `tsgo --build tsconfig.build.json` into `dist/`
+- Built with `tsc --build tsconfig.build.json` into `dist/`
 - `tsconfig.json` is references-only, pointing at `tsconfig.build.json` (and `tsconfig.tests.json` if present), which extend a preset from `tsconfig/`
 - Tests live in `tests/` and run with vitest via a per-package `vitest.config.ts`
 - New packages must be added to the root `tsconfig.json` `references` list
