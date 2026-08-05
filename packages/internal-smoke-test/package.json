@@ -1,5 +1,5 @@
 {
-  "name": "@bsky.app/internal-smoke-test",
+  "name": "@bsky/internal-smoke-test",
   "version": "0.0.0",
   "private": true,
   "type": "module",
