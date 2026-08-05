@@ -1,6 +1,6 @@
 # bsky
 
-TypeScript monorepo for Bluesky packages published under the [`@bsky.app`](https://www.npmjs.com/org/bsky.app) npm organization.
+TypeScript monorepo for Bluesky packages published under the [`@bsky`](https://www.npmjs.com/org/bsky) npm organization.
 
 ## Layout
 
