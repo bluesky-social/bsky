@@ -70,6 +70,65 @@ describe('age assurance', () => {
     ).toBeUndefined()
   })
 
+  describe('platform-restricted regions', () => {
+    const config = {
+      $type: 'app.bsky.ageassurance.defs#config' as const,
+      regions: [
+        {
+          platforms: ['ios', 'android'],
+          countryCode: 'US',
+          regionCode: 'TX',
+          minAccessAge: 18,
+          rules: [],
+        },
+        { countryCode: 'US', minAccessAge: 13, rules: [] },
+      ],
+    }
+
+    it('finds platform-restricted region when platform matches', () => {
+      const result = getAgeAssuranceRegionConfig(config as never, {
+        countryCode: 'US',
+        regionCode: 'TX',
+        platform: 'ios',
+      })
+      expect(result).toEqual({
+        platforms: ['ios', 'android'],
+        countryCode: 'US',
+        regionCode: 'TX',
+        minAccessAge: 18,
+        rules: [],
+      })
+    })
+
+    it('skips platform-restricted region when platform does not match', () => {
+      const result = getAgeAssuranceRegionConfig(config as never, {
+        countryCode: 'US',
+        regionCode: 'TX',
+        platform: 'web',
+      })
+      // falls through to the country-wide US config
+      expect(result).toEqual({
+        countryCode: 'US',
+        minAccessAge: 13,
+        rules: [],
+      })
+    })
+
+    it('ignores platform restrictions when platform is not provided', () => {
+      const result = getAgeAssuranceRegionConfig(config as never, {
+        countryCode: 'US',
+        regionCode: 'TX',
+      })
+      expect(result).toEqual({
+        platforms: ['ios', 'android'],
+        countryCode: 'US',
+        regionCode: 'TX',
+        minAccessAge: 18,
+        rules: [],
+      })
+    })
+  })
+
   it('computeAgeAssuranceRegionAccess applies default rule', () => {
     const region = {
       countryCode: 'US',
