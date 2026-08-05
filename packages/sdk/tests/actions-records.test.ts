@@ -133,6 +133,23 @@ describe('record actions', () => {
     })
     await client.call(muteActor, { actor: 'did:plc:bad' })
     expect(calls[0].nsid).toBe('app.bsky.graph.muteActor')
+    expect(calls[0].body).toEqual({ actor: 'did:plc:bad' })
+  })
+
+  it('muteActor passes scoped-mute options', async () => {
+    const { client, calls } = fakeClient({
+      'app.bsky.graph.muteActor': () => ({}),
+    })
+    await client.call(muteActor, {
+      actor: 'did:plc:bad',
+      onlyReposts: true,
+      onlyQuoteposts: true,
+    })
+    expect(calls[0].body).toEqual({
+      actor: 'did:plc:bad',
+      onlyReposts: true,
+      onlyQuoteposts: true,
+    })
   })
 
   it('follow creates a graph follow record', async () => {

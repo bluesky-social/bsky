@@ -255,7 +255,7 @@ These agent methods now correspond to named action functions called via `client.
 | `agent.follow(did)`                     | `client.call(follow, { did })`                 | `@bsky.app/sdk` |
 | `agent.deleteFollow(uri)`               | `client.call(deleteFollow, uri)`               | `@bsky.app/sdk` |
 | `agent.upsertProfile(fn)`               | `client.call(upsertProfile, fn)`               | `@bsky.app/sdk` |
-| `agent.mute(actor)`                     | `client.call(muteActor, { actor })`            | `@bsky.app/sdk` |
+| `agent.mute(actor, opts?)`              | `client.call(muteActor, { actor, ...opts })`   | `@bsky.app/sdk` |
 | `agent.unmute(actor)`                   | `client.call(unmuteActor, { actor })`          | `@bsky.app/sdk` |
 | `agent.muteModList(uri)`                | `client.call(muteActorList, { list: uri })`    | `@bsky.app/sdk` |
 | `agent.unmuteModList(uri)`              | `client.call(unmuteActorList, { list: uri })`  | `@bsky.app/sdk` |

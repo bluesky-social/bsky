@@ -8,14 +8,20 @@ import type { app } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'
 
 /**
- * Mute an actor (user).
+ * Mute an actor (user). When an `only` scope is set, just the scoped content
+ * is muted; when none are set, the account is fully muted. Repeat calls
+ * replace the stored scope rather than adding to it.
  */
-export const muteActor: Action<{ actor: AtIdentifierString }, void> = async (
-  client,
-  { actor },
-) => {
+export const muteActor: Action<
+  {
+    actor: AtIdentifierString
+    onlyReposts?: boolean
+    onlyQuoteposts?: boolean
+  },
+  void
+> = async (client, { actor, onlyReposts, onlyQuoteposts }) => {
   await client.xrpc(appLexicons.bsky.graph.muteActor.main, {
-    body: { actor },
+    body: { actor, onlyReposts, onlyQuoteposts },
   })
 }
 
