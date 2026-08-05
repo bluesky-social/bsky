@@ -1,17 +1,17 @@
 ---
 name: upgrade-from-atproto-api
-description: Migrate code from @atproto/api to @bsky.app/sdk + @atproto/lex — import mappings, agent-to-client patterns, string format types
+description: Migrate code from @atproto/api to @bsky/sdk + @atproto/lex — import mappings, agent-to-client patterns, string format types
 ---
 
-# Migrating from `@atproto/api` to `@bsky.app/sdk` + `@atproto/lex`
+# Migrating from `@atproto/api` to `@bsky/sdk` + `@atproto/lex`
 
 The `@atproto/api` package has been superseded by two packages:
 
-- **`@bsky.app/sdk`** — Bluesky-specific actions, moderation helpers, rich text, and the `api` constants object.
+- **`@bsky/sdk`** — Bluesky-specific actions, moderation helpers, rich text, and the `api` constants object.
 - **`@atproto/lex`** — the generic AT Protocol client, lexicon utilities, and schema types. A peer dependency of the sdk; install both. (`@atproto/lex-password-session` is separate, only needed for password-based sessions.)
 
 ```
-npm install @bsky.app/sdk @atproto/lex
+npm install @bsky/sdk @atproto/lex
 ```
 
 Import `Client` and other lex utilities from `@atproto/lex` — not from its underlying sub-packages (`@atproto/lex-client`, `@atproto/lex-schema`), which shouldn't be depended upon directly.
@@ -23,8 +23,8 @@ There are two common client patterns.
 ```typescript
 import { Client } from '@atproto/lex'
 import { PasswordSession } from '@atproto/lex-password-session'
-import { api } from '@bsky.app/sdk'
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { api } from '@bsky/sdk'
+import { app, com } from '@bsky/sdk/lexicons'
 
 // --- Pattern 1: Authenticated Bluesky client ---
 // Queries are proxied through the account host to api.bsky.app and signed
@@ -87,7 +87,7 @@ const bskyClient = new Client(session, { service: api.app.service })
 
 ```typescript
 import { Client } from '@atproto/lex'
-import { api } from '@bsky.app/sdk'
+import { api } from '@bsky/sdk'
 
 const client = new Client(session, {
   service: api.app.service,
@@ -124,12 +124,12 @@ const client = new Client(session, {
 
 ### Preferences Types
 
-| Old (`@atproto/api`)       | New                        | Package         | Notes                                                      |
-| -------------------------- | -------------------------- | --------------- | ---------------------------------------------------------- |
-| `BskyPreferences`          | `BskyPreferences`          | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
-| `BskyFeedViewPreference`   | `BskyFeedViewPreference`   | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
-| `BskyThreadViewPreference` | `BskyThreadViewPreference` | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
-| `BskyInterestsPreference`  | `BskyInterestsPreference`  | `@bsky.app/sdk` | Still available, now exported from SDK root (via types.ts) |
+| Old (`@atproto/api`)       | New                        | Package     | Notes                                                      |
+| -------------------------- | -------------------------- | ----------- | ---------------------------------------------------------- |
+| `BskyPreferences`          | `BskyPreferences`          | `@bsky/sdk` | Still available, now exported from SDK root (via types.ts) |
+| `BskyFeedViewPreference`   | `BskyFeedViewPreference`   | `@bsky/sdk` | Still available, now exported from SDK root (via types.ts) |
+| `BskyThreadViewPreference` | `BskyThreadViewPreference` | `@bsky/sdk` | Still available, now exported from SDK root (via types.ts) |
+| `BskyInterestsPreference`  | `BskyInterestsPreference`  | `@bsky/sdk` | Still available, now exported from SDK root (via types.ts) |
 
 ### Errors
 
@@ -139,15 +139,15 @@ const client = new Client(session, {
 
 ### Utility / codec functions
 
-| Old (`@atproto/api`) | New                                                    | Package                  |
-| -------------------- | ------------------------------------------------------ | ------------------------ |
-| `jsonStringToLex`    | `lexParse`                                             | `@atproto/lex`           |
-| `jsonToLex`          | `jsonToLex`                                            | `@atproto/lex`           |
-| `lexToJson`          | `lexToJson`                                            | `@atproto/lex`           |
-| `stringifyLex`       | `lexStringify`                                         | `@atproto/lex`           |
-| `BlobRef`            | `BlobRef`                                              | `@atproto/lex`           |
-| `asPredicate`        | `schema.$matches` (e.g. `app.bsky.feed.post.$matches`) | `@bsky.app/sdk/lexicons` |
-| `parseLanguage`      | removed — use `isLanguageString`                       | `@atproto/lex`           |
+| Old (`@atproto/api`) | New                                                    | Package              |
+| -------------------- | ------------------------------------------------------ | -------------------- |
+| `jsonStringToLex`    | `lexParse`                                             | `@atproto/lex`       |
+| `jsonToLex`          | `jsonToLex`                                            | `@atproto/lex`       |
+| `lexToJson`          | `lexToJson`                                            | `@atproto/lex`       |
+| `stringifyLex`       | `lexStringify`                                         | `@atproto/lex`       |
+| `BlobRef`            | `BlobRef`                                              | `@atproto/lex`       |
+| `asPredicate`        | `schema.$matches` (e.g. `app.bsky.feed.post.$matches`) | `@bsky/sdk/lexicons` |
+| `parseLanguage`      | removed — use `isLanguageString`                       | `@atproto/lex`       |
 
 ### Type utilities
 
@@ -158,38 +158,38 @@ const client = new Client(session, {
 
 ### Constants
 
-| Old (`@atproto/api`)     | New                      | Package         |
-| ------------------------ | ------------------------ | --------------- |
-| `BSKY_LABELER_DID`       | `api.moderation.did`     | `@bsky.app/sdk` |
-| `DEFAULT_LABEL_SETTINGS` | `DEFAULT_LABEL_SETTINGS` | `@bsky.app/sdk` |
+| Old (`@atproto/api`)     | New                      | Package     |
+| ------------------------ | ------------------------ | ----------- |
+| `BSKY_LABELER_DID`       | `api.moderation.did`     | `@bsky/sdk` |
+| `DEFAULT_LABEL_SETTINGS` | `DEFAULT_LABEL_SETTINGS` | `@bsky/sdk` |
 
 ### Moderation
 
-| Old (`@atproto/api`)             | New                              | Package                    |
-| -------------------------------- | -------------------------------- | -------------------------- |
-| `moderatePost`                   | `moderatePost`                   | `@bsky.app/sdk/moderation` |
-| `moderateProfile`                | `moderateProfile`                | `@bsky.app/sdk/moderation` |
-| `moderateUserList`               | `moderateUserList`               | `@bsky.app/sdk/moderation` |
-| `moderateFeedGenerator`          | `moderateFeedGenerator`          | `@bsky.app/sdk/moderation` |
-| `moderateNotification`           | `moderateNotification`           | `@bsky.app/sdk/moderation` |
-| `moderateStatus`                 | `moderateStatus`                 | `@bsky.app/sdk/moderation` |
-| `ModerationUI`                   | `ModerationUI`                   | `@bsky.app/sdk/moderation` |
-| `ModerationDecision`             | `ModerationDecision`             | `@bsky.app/sdk/moderation` |
-| `interpretLabelValueDefinition`  | `interpretLabelValueDefinition`  | `@bsky.app/sdk/moderation` |
-| `interpretLabelValueDefinitions` | `interpretLabelValueDefinitions` | `@bsky.app/sdk/moderation` |
-| `hasMutedWord`                   | `hasMutedWord`                   | `@bsky.app/sdk/moderation` |
-| `matchMuteWords`                 | `matchMuteWords`                 | `@bsky.app/sdk/moderation` |
-| `LABELS`                         | `LABELS`                         | `@bsky.app/sdk/moderation` |
+| Old (`@atproto/api`)             | New                              | Package                |
+| -------------------------------- | -------------------------------- | ---------------------- |
+| `moderatePost`                   | `moderatePost`                   | `@bsky/sdk/moderation` |
+| `moderateProfile`                | `moderateProfile`                | `@bsky/sdk/moderation` |
+| `moderateUserList`               | `moderateUserList`               | `@bsky/sdk/moderation` |
+| `moderateFeedGenerator`          | `moderateFeedGenerator`          | `@bsky/sdk/moderation` |
+| `moderateNotification`           | `moderateNotification`           | `@bsky/sdk/moderation` |
+| `moderateStatus`                 | `moderateStatus`                 | `@bsky/sdk/moderation` |
+| `ModerationUI`                   | `ModerationUI`                   | `@bsky/sdk/moderation` |
+| `ModerationDecision`             | `ModerationDecision`             | `@bsky/sdk/moderation` |
+| `interpretLabelValueDefinition`  | `interpretLabelValueDefinition`  | `@bsky/sdk/moderation` |
+| `interpretLabelValueDefinitions` | `interpretLabelValueDefinitions` | `@bsky/sdk/moderation` |
+| `hasMutedWord`                   | `hasMutedWord`                   | `@bsky/sdk/moderation` |
+| `matchMuteWords`                 | `matchMuteWords`                 | `@bsky/sdk/moderation` |
+| `LABELS`                         | `LABELS`                         | `@bsky/sdk/moderation` |
 
 ### Rich text
 
-| Old (`@atproto/api`)               | New                                    | Package                  |
-| ---------------------------------- | -------------------------------------- | ------------------------ |
-| `RichText`                         | `RichText`                             | `@bsky.app/sdk/richtext` |
-| `RichText.detectFacets(agent)`     | `rt.detectFacets(resolver)` — see note | `@bsky.app/sdk/richtext` |
-| `sanitizeRichText`                 | `sanitizeRichText`                     | `@bsky.app/sdk/richtext` |
-| `UnicodeString`                    | `UnicodeString`                        | `@bsky.app/sdk/richtext` |
-| `MENTION_REGEX`, `URL_REGEX`, etc. | same names                             | `@bsky.app/sdk/richtext` |
+| Old (`@atproto/api`)               | New                                    | Package              |
+| ---------------------------------- | -------------------------------------- | -------------------- |
+| `RichText`                         | `RichText`                             | `@bsky/sdk/richtext` |
+| `RichText.detectFacets(agent)`     | `rt.detectFacets(resolver)` — see note | `@bsky/sdk/richtext` |
+| `sanitizeRichText`                 | `sanitizeRichText`                     | `@bsky/sdk/richtext` |
+| `UnicodeString`                    | `UnicodeString`                        | `@bsky/sdk/richtext` |
+| `MENTION_REGEX`, `URL_REGEX`, etc. | same names                             | `@bsky/sdk/richtext` |
 
 **`detectFacets` resolver change:** The method now takes either a `Client` or a `HandleResolver` from `@atproto-labs/handle-resolver` instead of an agent. Passing a `Client` resolves handles via `com.atproto.identity.resolveHandle`:
 
@@ -205,7 +205,7 @@ await rt.detectFacets(myHandleResolver)
 The `Client`-backed resolver is also exported directly for standalone use:
 
 ```typescript
-import { ClientHandleResolver } from '@bsky.app/sdk/utils'
+import { ClientHandleResolver } from '@bsky/sdk/utils'
 
 const resolver = new ClientHandleResolver(bskyClient)
 const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
@@ -213,12 +213,12 @@ const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 
 ### Utils
 
-| Old (`@atproto/api`)     | New                                          | Package               |
-| ------------------------ | -------------------------------------------- | --------------------- |
-| `sanitizeMutedWordValue` | `sanitizeMutedWordValue`                     | `@bsky.app/sdk/utils` |
-| `validateNux`            | `validateNux`                                | `@bsky.app/sdk/utils` |
-| `nuxSchema`              | `nuxSchema`                                  | `@bsky.app/sdk/utils` |
-| `savedFeedsToUriArrays`  | removed — compute from `savedFeeds` directly | —                     |
+| Old (`@atproto/api`)     | New                                          | Package           |
+| ------------------------ | -------------------------------------------- | ----------------- |
+| `sanitizeMutedWordValue` | `sanitizeMutedWordValue`                     | `@bsky/sdk/utils` |
+| `validateNux`            | `validateNux`                                | `@bsky/sdk/utils` |
+| `nuxSchema`              | `nuxSchema`                                  | `@bsky/sdk/utils` |
+| `savedFeedsToUriArrays`  | removed — compute from `savedFeeds` directly | —                 |
 
 ### Removed without direct replacement
 
@@ -227,7 +227,7 @@ const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 | `mock` / `BskyAgent.mockResolveHandles` | removed; test with a fake `HandleResolver` function                             |
 | `isDid` / `asDid` / `assertDid`         | use `isStringFormat(v, 'did')` / `asStringFormat(v, 'did')` from `@atproto/lex` |
 | `AtUri`                                 | `AtUri` from `@atproto/syntax` (still a direct dependency)                      |
-| `lexicons` export (Lexicons instance)   | use generated schema objects from `@bsky.app/sdk/lexicons`                      |
+| `lexicons` export (Lexicons instance)   | use generated schema objects from `@bsky/sdk/lexicons`                          |
 | `getSavedFeedType`                      | internal only; moved to preference actions                                      |
 | `validateSavedFeed`                     | internal only; moved to preference actions                                      |
 
@@ -238,30 +238,30 @@ const did = await resolver.resolve('alice.bsky.social') // AtprotoDid | null
 The `Agent`/`AtpAgent`/`BskyAgent` class has been replaced by:
 
 - **`Client`** from `@atproto/lex` for raw XRPC calls.
-- **Action functions** from `@bsky.app/sdk` for higher-level operations (preferences, records, graph, notifications).
+- **Action functions** from `@bsky/sdk` for higher-level operations (preferences, records, graph, notifications).
 
 ### Record / graph sugar methods
 
 These agent methods now correspond to named action functions called via `client.call(action, input)`:
 
-| Old agent method                        | New action                                     | Import          |
-| --------------------------------------- | ---------------------------------------------- | --------------- |
-| `agent.post(input)`                     | `client.call(post, input)`                     | `@bsky.app/sdk` |
-| `agent.deletePost(uri)`                 | `client.call(deletePost, uri)`                 | `@bsky.app/sdk` |
-| `agent.like(uri, cid)`                  | `client.call(like, { uri, cid })`              | `@bsky.app/sdk` |
-| `agent.deleteLike(uri)`                 | `client.call(deleteLike, uri)`                 | `@bsky.app/sdk` |
-| `agent.repost(uri, cid)`                | `client.call(repost, { uri, cid })`            | `@bsky.app/sdk` |
-| `agent.deleteRepost(uri)`               | `client.call(deleteRepost, uri)`               | `@bsky.app/sdk` |
-| `agent.follow(did)`                     | `client.call(follow, { did })`                 | `@bsky.app/sdk` |
-| `agent.deleteFollow(uri)`               | `client.call(deleteFollow, uri)`               | `@bsky.app/sdk` |
-| `agent.upsertProfile(fn)`               | `client.call(upsertProfile, fn)`               | `@bsky.app/sdk` |
-| `agent.mute(actor, opts?)`              | `client.call(muteActor, { actor, ...opts })`   | `@bsky.app/sdk` |
-| `agent.unmute(actor)`                   | `client.call(unmuteActor, { actor })`          | `@bsky.app/sdk` |
-| `agent.muteModList(uri)`                | `client.call(muteActorList, { list: uri })`    | `@bsky.app/sdk` |
-| `agent.unmuteModList(uri)`              | `client.call(unmuteActorList, { list: uri })`  | `@bsky.app/sdk` |
-| `agent.blockModList(uri)`               | `client.call(blockActorList, { list: uri })`   | `@bsky.app/sdk` |
-| `agent.unblockModList(uri)`             | `client.call(unblockActorList, { list: uri })` | `@bsky.app/sdk` |
-| `agent.updateSeenNotifications(seenAt)` | `client.call(updateSeenNotifications, seenAt)` | `@bsky.app/sdk` |
+| Old agent method                        | New action                                     | Import      |
+| --------------------------------------- | ---------------------------------------------- | ----------- |
+| `agent.post(input)`                     | `client.call(post, input)`                     | `@bsky/sdk` |
+| `agent.deletePost(uri)`                 | `client.call(deletePost, uri)`                 | `@bsky/sdk` |
+| `agent.like(uri, cid)`                  | `client.call(like, { uri, cid })`              | `@bsky/sdk` |
+| `agent.deleteLike(uri)`                 | `client.call(deleteLike, uri)`                 | `@bsky/sdk` |
+| `agent.repost(uri, cid)`                | `client.call(repost, { uri, cid })`            | `@bsky/sdk` |
+| `agent.deleteRepost(uri)`               | `client.call(deleteRepost, uri)`               | `@bsky/sdk` |
+| `agent.follow(did)`                     | `client.call(follow, { did })`                 | `@bsky/sdk` |
+| `agent.deleteFollow(uri)`               | `client.call(deleteFollow, uri)`               | `@bsky/sdk` |
+| `agent.upsertProfile(fn)`               | `client.call(upsertProfile, fn)`               | `@bsky/sdk` |
+| `agent.mute(actor, opts?)`              | `client.call(muteActor, { actor, ...opts })`   | `@bsky/sdk` |
+| `agent.unmute(actor)`                   | `client.call(unmuteActor, { actor })`          | `@bsky/sdk` |
+| `agent.muteModList(uri)`                | `client.call(muteActorList, { list: uri })`    | `@bsky/sdk` |
+| `agent.unmuteModList(uri)`              | `client.call(unmuteActorList, { list: uri })`  | `@bsky/sdk` |
+| `agent.blockModList(uri)`               | `client.call(blockActorList, { list: uri })`   | `@bsky/sdk` |
+| `agent.unblockModList(uri)`             | `client.call(unblockActorList, { list: uri })` | `@bsky/sdk` |
+| `agent.updateSeenNotifications(seenAt)` | `client.call(updateSeenNotifications, seenAt)` | `@bsky/sdk` |
 
 **Branded input types:** Unlike the old agent methods, action inputs use the lex string format types — URIs are `AtUriString`, DIDs are `DidString`, etc. Values read from API responses already carry these types; for plain strings from your own storage, validate at the boundary with `asStringFormat(v, 'at-uri')` / `asStringFormat(v, 'did')` (see § 5).
 
@@ -325,10 +325,10 @@ await client.call(updatePreferences, {
 
 ### Bluesky API passthrough methods (17 total)
 
-These agent shortcuts now map directly to `client.call(schema, params)` with the schema imported from `@bsky.app/sdk/lexicons`:
+These agent shortcuts now map directly to `client.call(schema, params)` with the schema imported from `@bsky/sdk/lexicons`:
 
 ```typescript
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky/sdk/lexicons'
 
 // feeds
 await client.call(app.bsky.feed.getTimeline, { limit: 50 })
@@ -363,7 +363,7 @@ await client.call(app.bsky.labeler.getServices, { dids: ['did:plc:...'] })
 The old `agent.getPost({ repo, rkey })` sugar is replaced by `client.get()` using the generated schema:
 
 ```typescript
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky/sdk/lexicons'
 import { AtUri } from '@atproto/syntax'
 
 // Old: agent.getPost({ repo: 'alice.bsky.social', rkey: '3k2...' })
@@ -488,7 +488,7 @@ function processIncoming(rawDid: string): DidString {
 **Constructing (from known-valid sources):** When you construct values from your own code or generated data, you can cast directly — generated lexicon builders (`schema.$build(...)`) already produce correctly-typed values, so no runtime validation is needed.
 
 ```typescript
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky/sdk/lexicons'
 
 // $build ensures the type is correct at compile time
 const post = app.bsky.feed.post.$build({
@@ -514,7 +514,7 @@ function handleRepostRequest(rawActor: string, rawUri: string) {
 **Note:** A planned helper on the lex `Client` for object-level "upcast" (e.g. asserting an entire record object matches a schema) is not yet in `@atproto/lex`. Use schema-level `$assert()` / `$matches()` / `$parse()` on generated schema objects until then:
 
 ```typescript
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky/sdk/lexicons'
 
 const unknown: unknown = fetchedRecord
 app.bsky.feed.post.$assert(unknown) // throws if not a valid post
@@ -545,10 +545,10 @@ import {
   PasswordSession,
   type SessionData,
 } from '@atproto/lex-password-session'
-import { api, post } from '@bsky.app/sdk'
-import { moderatePost, type ModerationOpts } from '@bsky.app/sdk/moderation'
-import { RichText } from '@bsky.app/sdk/richtext'
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { api, post } from '@bsky/sdk'
+import { moderatePost, type ModerationOpts } from '@bsky/sdk/moderation'
+import { RichText } from '@bsky/sdk/richtext'
+import { app, com } from '@bsky/sdk/lexicons'
 
 // --- 1. Login ---
 const session = await PasswordSession.login({

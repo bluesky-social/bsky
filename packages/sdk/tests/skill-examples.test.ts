@@ -353,7 +353,7 @@ describe('README examples', () => {
   it('post action compiles', () => {
     async function example(accountClient: Client) {
       const result = await accountClient.call(post, {
-        text: 'Hello from @bsky.app/sdk!',
+        text: 'Hello from @bsky/sdk!',
         langs: ['en'],
       })
       // result: { uri: string; cid: string }

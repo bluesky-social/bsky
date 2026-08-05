@@ -1,21 +1,21 @@
-# @bsky.app/sdk
+# @bsky/sdk
 
 Bluesky SDK built on [@atproto/lex](https://github.com/bluesky-social/atproto/tree/main/packages/lex). Provides Bluesky lexicon definitions, typed actions, moderation utilities, rich-text helpers, and string utilities.
 
 ## Install
 
 ```sh
-npm install @bsky.app/sdk @atproto/lex
+npm install @bsky/sdk @atproto/lex
 ```
 
-`@atproto/lex` provides the `Client` class that powers all API calls. `@bsky.app/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
+`@atproto/lex` provides the `Client` class that powers all API calls. `@bsky/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
 
 ## Getting started
 
 ```typescript
 import { Client } from '@atproto/lex'
 import { PasswordSession } from '@atproto/lex-password-session'
-import { post } from '@bsky.app/sdk'
+import { post } from '@bsky/sdk'
 
 const session = await PasswordSession.login({
   service: 'https://bsky.social',
@@ -109,7 +109,7 @@ Use the `api.*` constants for addressing Bluesky services:
 
 ```typescript
 import { Client } from '@atproto/lex'
-import { api } from '@bsky.app/sdk'
+import { api } from '@bsky/sdk'
 
 // Bluesky API (authenticated queries, proxied through the account host;
 // record writes and mutations automatically target the account host directly)
@@ -143,7 +143,7 @@ import {
   unmuteActorList,
   updateSeenNotifications,
   upsertProfile,
-} from '@bsky.app/sdk'
+} from '@bsky/sdk'
 
 // The DID of the user currently authenticated (or undefined)
 bskyClient.did
@@ -189,7 +189,7 @@ The lexicons include a complete types system with validation and type-guards.
 For example, to validate a post record:
 
 ```typescript
-import { app } from '@bsky.app/sdk/lexicons'
+import { app } from '@bsky/sdk/lexicons'
 
 const post = { ... }
 if (app.bsky.feed.post.$isTypeOf(post)) {
@@ -213,7 +213,7 @@ Some records (ie posts) use the `app.bsky.richtext` lexicon. At the moment richt
 
 ```typescript
 import { currentDatetimeString } from '@atproto/lex'
-import { RichText } from '@bsky.app/sdk/richtext'
+import { RichText } from '@bsky/sdk/richtext'
 
 // creating richtext
 const rt = new RichText({
@@ -261,8 +261,8 @@ Applying the moderation system is a challenging task, but we've done our best to
 For more information, see the [Moderation Documentation](./docs/moderation.md).
 
 ```typescript
-import { getPreferences } from '@bsky.app/sdk'
-import { moderatePost } from '@bsky.app/sdk/moderation'
+import { getPreferences } from '@bsky/sdk'
+import { moderatePost } from '@bsky/sdk/moderation'
 
 // First get the user's moderation prefs and their label definitions
 // =
@@ -336,7 +336,7 @@ record helpers:
 
 ```typescript
 import { currentDatetimeString } from '@atproto/lex'
-import { app, com } from '@bsky.app/sdk/lexicons'
+import { app, com } from '@bsky/sdk/lexicons'
 
 // Record helpers always target the user's account host
 const res1 = await bskyClient.createRecord({
@@ -386,13 +386,13 @@ const client = new Client({
 
 ## Subpaths
 
-| Import                     | Contents                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------ |
-| `@bsky.app/sdk`            | `api` constants, actions, `DEFAULT_LABEL_SETTINGS`                                   |
-| `@bsky.app/sdk/lexicons`   | Generated lexicon definitions (`app`, `com`, `chat`)                                 |
-| `@bsky.app/sdk/moderation` | `moderatePost`, `moderateProfile`, and friends; `ModerationDecision`, `ModerationUI` |
-| `@bsky.app/sdk/richtext`   | `RichText` builder                                                                   |
-| `@bsky.app/sdk/utils`      | Age assurance helpers, `sanitizeMutedWordValue`, nux validation                      |
+| Import                 | Contents                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `@bsky/sdk`            | `api` constants, actions, `DEFAULT_LABEL_SETTINGS`                                   |
+| `@bsky/sdk/lexicons`   | Generated lexicon definitions (`app`, `com`, `chat`)                                 |
+| `@bsky/sdk/moderation` | `moderatePost`, `moderateProfile`, and friends; `ModerationDecision`, `ModerationUI` |
+| `@bsky/sdk/richtext`   | `RichText` builder                                                                   |
+| `@bsky/sdk/utils`      | Age assurance helpers, `sanitizeMutedWordValue`, nux validation                      |
 
 ## Upgrading from @atproto/api
 

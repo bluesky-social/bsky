@@ -1,6 +1,6 @@
 /*
  * Peer-compatibility smoke test. Run from a scratch project where
- * @bsky.app/sdk (packed tarball) and a candidate @atproto/lex version are
+ * @bsky/sdk (packed tarball) and a candidate @atproto/lex version are
  * installed as regular dependencies. Used two ways by peer-matrix.mjs:
  *
  *   1. Typechecked (tsgo --noEmit) — verifies the sdk's published .d.ts
@@ -15,19 +15,19 @@
  */
 import assert from 'node:assert/strict'
 import { Client, type DidString } from '@atproto/lex'
-import { api, post } from '@bsky.app/sdk'
-import { app } from '@bsky.app/sdk/lexicons'
+import { api, post } from '@bsky/sdk'
+import { app } from '@bsky/sdk/lexicons'
 import {
   LABELS,
   type ModerationDecision,
   type ModerationOpts,
   moderatePost,
-} from '@bsky.app/sdk/moderation'
-import { RichText } from '@bsky.app/sdk/richtext'
-import { validateNux } from '@bsky.app/sdk/utils'
+} from '@bsky/sdk/moderation'
+import { RichText } from '@bsky/sdk/richtext'
+import { validateNux } from '@bsky/sdk/utils'
 
 const lexVersion = process.env.LEX_VERSION ?? 'unknown'
-console.log(`smoke: @bsky.app/sdk against @atproto/lex@${lexVersion}`)
+console.log(`smoke: @bsky/sdk against @atproto/lex@${lexVersion}`)
 
 // Constants
 assert.equal(api.app.urlPublic, 'https://public.api.bsky.app')

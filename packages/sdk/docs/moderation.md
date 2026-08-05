@@ -85,8 +85,8 @@ export interface ModerationOpts {
 You can quickly grab the `ModerationPrefs` using the `getPreferences` action:
 
 ```typescript
-import { getPreferences } from '@bsky.app/sdk'
-import { moderatePost } from '@bsky.app/sdk/moderation'
+import { getPreferences } from '@bsky/sdk'
+import { moderatePost } from '@bsky/sdk/moderation'
 
 const prefs = await client.call(getPreferences)
 moderatePost(post, {
@@ -152,13 +152,13 @@ Here is how to do this:
 
 ```typescript
 import { Client } from '@atproto/lex'
-import { getPreferences } from '@bsky.app/sdk'
-import { app } from '@bsky.app/sdk/lexicons'
+import { getPreferences } from '@bsky/sdk'
+import { app } from '@bsky/sdk/lexicons'
 import {
   type InterpretedLabelValueDefinition,
   interpretLabelValueDefinitions,
   moderatePost,
-} from '@bsky.app/sdk/moderation'
+} from '@bsky/sdk/moderation'
 
 // assume `client` is backed by a signed-in session
 const prefs = await client.call(getPreferences)
@@ -194,7 +194,7 @@ import {
   moderateFeedGenerator,
   moderateUserList,
   moderateStatus,
-} from '@bsky.app/sdk/moderation'
+} from '@bsky/sdk/moderation'
 ```
 
 Each of these follows the same API signature:
@@ -274,7 +274,7 @@ for (const inform of mod.ui('contentList').informs) {
 Any Labeler is capable of receiving moderation reports. As a result, you need to specify which labeler should receive the report. You do this with the `service` option (the `atproto-proxy` header), overridable per request:
 
 ```typescript
-import { com } from '@bsky.app/sdk/lexicons'
+import { com } from '@bsky/sdk/lexicons'
 
 await client.call(
   com.atproto.moderation.createReport,
@@ -293,7 +293,7 @@ await client.call(
 The Bluesky moderation service's address is available via the `api` export from the SDK:
 
 ```typescript
-import { api } from '@bsky.app/sdk'
+import { api } from '@bsky/sdk'
 
 await client.call(com.atproto.moderation.createReport, report, {
   service: api.moderation.service, // did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler

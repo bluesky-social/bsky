@@ -16,9 +16,9 @@ jobs:
           node-version-file: '.nvmrc'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @bsky.app/sdk exec lex install --ci
+      - run: pnpm --filter @bsky/sdk exec lex install --ci
       # Generate src/lexicons (gitignored) so lint/typecheck can resolve imports
-      - run: pnpm --filter @bsky.app/sdk run codegen
+      - run: pnpm --filter @bsky/sdk run codegen
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm build
@@ -39,9 +39,9 @@ jobs:
           node-version-file: '.nvmrc'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @bsky.app/sdk exec lex install --ci
-      - run: pnpm --filter @bsky.app/sdk run build
-      - run: pnpm --filter @bsky.app/sdk run test:peer-matrix
+      - run: pnpm --filter @bsky/sdk exec lex install --ci
+      - run: pnpm --filter @bsky/sdk run build
+      - run: pnpm --filter @bsky/sdk run test:peer-matrix
 
   changeset:
     if: github.event_name == 'pull_request'
