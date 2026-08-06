@@ -215,11 +215,11 @@ Some records (ie posts) use the `app.bsky.richtext` lexicon. At the moment richt
 import { currentDatetimeString } from '@atproto/lex'
 import { RichText } from '@bsky/sdk/richtext'
 
-// creating richtext
-const rt = new RichText({
-  text: 'Hello @alice.com, check out this link: https://example.com',
-})
-await rt.detectFacets(client) // automatically detects mentions and links
+// creating richtext — detects mentions and links, resolving mentions to DIDs
+const rt = await RichText.resolve(
+  'Hello @alice.com, check out this link: https://example.com',
+  { resolver: client },
+)
 const postRecord = {
   $type: 'app.bsky.feed.post',
   text: rt.text,

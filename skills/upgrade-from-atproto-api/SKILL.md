@@ -200,6 +200,11 @@ await rt.detectFacets(bskyClient)
 
 // Or bring your own HandleResolver:
 await rt.detectFacets(myHandleResolver)
+
+// Or use the one-step static helper (construct + detect + resolve):
+const rt2 = await RichText.resolve('Hello @alice.bsky.social!', {
+  resolver: bskyClient,
+})
 ```
 
 The `Client`-backed resolver is also exported directly for standalone use:

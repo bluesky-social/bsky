@@ -486,3 +486,36 @@ describe('detectFacets with Client', () => {
     expect(mention?.did).toBe('did:plc:resolved-alice.test')
   })
 })
+
+describe('RichText.resolve', () => {
+  it('creates rich text with facets detected and mentions resolved', async () => {
+    const rt = await RichText.resolve(
+      'hello @alice.test check https://example.com',
+      {
+        resolver,
+      },
+    )
+
+    expect(rt).toBeInstanceOf(RichText)
+    expect(rt.text).toBe('hello @alice.test check https://example.com')
+
+    const mention = rt.facets?.flatMap((f) => f.features).find(isMention)
+    expect(mention?.did).toBe('did:fake:alice.test')
+
+    const link = rt.facets?.flatMap((f) => f.features).find(isLink)
+    expect(link?.uri).toBe('https://example.com')
+  })
+
+  it('honors RichTextOpts (cleanNewlines)', async () => {
+    const rt = await RichText.resolve('hello\n\n\n\n\nworld', {
+      resolver,
+      cleanNewlines: true,
+    })
+    expect(rt.text).toBe('hello\n\nworld')
+  })
+
+  it('produces no facets for plain text', async () => {
+    const rt = await RichText.resolve('just plain text', { resolver })
+    expect(rt.facets).toBeUndefined()
+  })
+})

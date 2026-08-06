@@ -160,6 +160,23 @@ export class RichText {
   unicodeText: UnicodeString
   facets?: Facet[]
 
+  /**
+   * Creates a RichText from plain text with facets (links, mentions, tags)
+   * auto-detected and mentions resolved to DIDs.
+   *
+   * Equivalent to constructing a RichText and calling
+   * {@link RichText.detectFacets}.
+   */
+  static async resolve(
+    text: string,
+    opts: RichTextOpts & { resolver: HandleResolver | Client },
+  ): Promise<RichText> {
+    const { resolver, ...rtOpts } = opts
+    const rt = new RichText({ text }, rtOpts)
+    await rt.detectFacets(resolver)
+    return rt
+  }
+
   constructor(props: RichTextProps, opts?: RichTextOpts) {
     this.unicodeText = new UnicodeString(props.text)
     this.facets = props.facets
