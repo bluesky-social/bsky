@@ -26,14 +26,14 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
 
       const start = text.utf16.indexOf(match[3], match.index) - 1
       facets.push({
-        $type: 'app.bsky.richtext.facet',
+        $type: app.bsky.richtext.facet.$type,
         index: {
           byteStart: text.utf16IndexToUtf8Index(start),
           byteEnd: text.utf16IndexToUtf8Index(start + match[3].length + 1),
         },
         features: [
           {
-            $type: 'app.bsky.richtext.facet#mention',
+            $type: app.bsky.richtext.facet.mention.$type,
             did: match[3] as DidString, // boundary: detected text must be resolved
           },
         ],
@@ -70,7 +70,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         },
         features: [
           {
-            $type: 'app.bsky.richtext.facet#link',
+            $type: app.bsky.richtext.facet.link.$type,
             uri: uri as UriString, // boundary: detected text, format verified by URL_REGEX
           },
         ],
@@ -103,7 +103,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         },
         features: [
           {
-            $type: 'app.bsky.richtext.facet#tag',
+            $type: app.bsky.richtext.facet.tag.$type,
             tag: tag,
           },
         ],
@@ -131,7 +131,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
         },
         features: [
           {
-            $type: 'app.bsky.richtext.facet#tag',
+            $type: app.bsky.richtext.facet.tag.$type,
             tag: '$' + ticker, // Store with $ prefix
           },
         ],

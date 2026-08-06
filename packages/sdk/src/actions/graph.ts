@@ -69,7 +69,7 @@ export const blockActorList: Action<
   CreateOutput
 > = async (client, { list }) => {
   const res = await client.createRecord({
-    $type: 'app.bsky.graph.listblock',
+    $type: appLexicons.bsky.graph.listblock.$type,
     subject: list,
     createdAt: currentDatetimeString(),
   } satisfies app.bsky.graph.listblock.Main)
@@ -90,6 +90,6 @@ export const unblockActorList: Action<{ list: AtUriString }, void> = async (
   const blocked = listRes.body.list.viewer?.blocked
   if (blocked) {
     const urip = new AtUri(blocked)
-    await client.deleteRecord('app.bsky.graph.listblock', urip.rkey)
+    await client.deleteRecord(appLexicons.bsky.graph.listblock.$type, urip.rkey)
   }
 }

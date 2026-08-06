@@ -84,8 +84,9 @@ function getSavedFeedType(
   if (uri === 'following') return 'timeline'
   try {
     const parsed = new AtUri(uri)
-    if (parsed.collection === 'app.bsky.feed.generator') return 'feed'
-    if (parsed.collection === 'app.bsky.graph.list') return 'list'
+    if (parsed.collection === appLexicons.bsky.feed.generator.$type)
+      return 'feed'
+    if (parsed.collection === appLexicons.bsky.graph.list.$type) return 'list'
   } catch {
     // ignore
   }
@@ -98,12 +99,18 @@ function validateSavedFeed(feed: SavedFeed): void {
   }
   if (['feed', 'list'].includes(feed.type)) {
     const uri = new AtUri(feed.value)
-    if (feed.type === 'feed' && uri.collection !== 'app.bsky.feed.generator') {
+    if (
+      feed.type === 'feed' &&
+      uri.collection !== appLexicons.bsky.feed.generator.$type
+    ) {
       throw new Error(
         `Saved feed of type 'feed' must be a feed, got ${uri.collection}`,
       )
     }
-    if (feed.type === 'list' && uri.collection !== 'app.bsky.graph.list') {
+    if (
+      feed.type === 'list' &&
+      uri.collection !== appLexicons.bsky.graph.list.$type
+    ) {
       throw new Error(
         `Saved feed of type 'list' must be a list, got ${uri.collection}`,
       )

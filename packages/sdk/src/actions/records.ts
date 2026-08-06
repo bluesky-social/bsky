@@ -11,8 +11,9 @@ import type { app, com } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'
 
 // NOTE record actions use the raw client.createRecord()/deleteRecord()
-// helpers with type-only lexicon imports, rather than client.create()/delete()
-// with runtime schemas — this keeps record lexicons out of the bundle.
+// helpers rather than client.create()/delete() with runtime schemas — the
+// only runtime lexicon values used are $type constants (plain strings), which
+// keeps record schemas out of the bundle.
 
 type StrongRef = com.atproto.repo.strongRef.Main
 
@@ -26,7 +27,7 @@ type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
 export const post: Action<PostInput, CreateOutput> = async (client, input) => {
   const res = await client.createRecord({
     ...input,
-    $type: 'app.bsky.feed.post',
+    $type: appLexicons.bsky.feed.post.$type,
     createdAt: input.createdAt ?? currentDatetimeString(),
   } satisfies app.bsky.feed.post.Main)
   return res.body
@@ -40,7 +41,7 @@ export const deletePost: Action<AtUriString, void> = async (
   postUri,
 ) => {
   const urip = new AtUri(postUri)
-  await client.deleteRecord('app.bsky.feed.post', urip.rkeySafe, {
+  await client.deleteRecord(appLexicons.bsky.feed.post.$type, urip.rkeySafe, {
     // delete must target the record's own DID, which may differ from
     // client.assertDid in admin/mod flows.
     repo: urip.hostname,
@@ -61,7 +62,7 @@ export const like: Action<LikeInput, CreateOutput> = async (
   { uri, cid, via },
 ) => {
   const res = await client.createRecord({
-    $type: 'app.bsky.feed.like',
+    $type: appLexicons.bsky.feed.like.$type,
     subject: { uri, cid },
     createdAt: currentDatetimeString(),
     via,
@@ -77,7 +78,7 @@ export const deleteLike: Action<AtUriString, void> = async (
   likeUri,
 ) => {
   const urip = new AtUri(likeUri)
-  await client.deleteRecord('app.bsky.feed.like', urip.rkeySafe, {
+  await client.deleteRecord(appLexicons.bsky.feed.like.$type, urip.rkeySafe, {
     // delete must target the record's own DID.
     repo: urip.hostname,
   })
@@ -97,7 +98,7 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   { uri, cid, via },
 ) => {
   const res = await client.createRecord({
-    $type: 'app.bsky.feed.repost',
+    $type: appLexicons.bsky.feed.repost.$type,
     subject: { uri, cid },
     createdAt: currentDatetimeString(),
     via,
@@ -113,7 +114,7 @@ export const deleteRepost: Action<AtUriString, void> = async (
   repostUri,
 ) => {
   const urip = new AtUri(repostUri)
-  await client.deleteRecord('app.bsky.feed.repost', urip.rkeySafe, {
+  await client.deleteRecord(appLexicons.bsky.feed.repost.$type, urip.rkeySafe, {
     // delete must target the record's own DID.
     repo: urip.hostname,
   })
@@ -129,7 +130,7 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   { did, via },
 ) => {
   const res = await client.createRecord({
-    $type: 'app.bsky.graph.follow',
+    $type: appLexicons.bsky.graph.follow.$type,
     subject: did,
     createdAt: currentDatetimeString(),
     via,
@@ -145,10 +146,14 @@ export const deleteFollow: Action<AtUriString, void> = async (
   followUri,
 ) => {
   const urip = new AtUri(followUri)
-  await client.deleteRecord('app.bsky.graph.follow', urip.rkeySafe, {
-    // delete must target the record's own DID.
-    repo: urip.hostname,
-  })
+  await client.deleteRecord(
+    appLexicons.bsky.graph.follow.$type,
+    urip.rkeySafe,
+    {
+      // delete must target the record's own DID.
+      repo: urip.hostname,
+    },
+  )
 }
 
 type ProfileRecord = app.bsky.actor.profile.Main
@@ -188,7 +193,7 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
     // Validate post-update record; throw BEFORE putRecord on failure
     // (old agent.ts:471-476: validateRecord gate).
     appLexicons.bsky.actor.profile.main.check({
-      $type: 'app.bsky.actor.profile',
+      $type: appLexicons.bsky.actor.profile.$type,
       ...updated,
     })
 

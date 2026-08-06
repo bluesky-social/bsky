@@ -406,14 +406,14 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
   for (const ent of entities) {
     if (ent.type === 'link') {
       facets.push({
-        $type: 'app.bsky.richtext.facet',
+        $type: app.bsky.richtext.facet.$type,
         index: {
           byteStart: text.utf16IndexToUtf8Index(ent.index.start),
           byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
         },
         features: [
           {
-            $type: 'app.bsky.richtext.facet#link',
+            $type: app.bsky.richtext.facet.link.$type,
             // entity type checked above; value is entity string from input
             uri: ent.value as UriString,
           },
@@ -421,14 +421,14 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
       })
     } else if (ent.type === 'mention') {
       facets.push({
-        $type: 'app.bsky.richtext.facet',
+        $type: app.bsky.richtext.facet.$type,
         index: {
           byteStart: text.utf16IndexToUtf8Index(ent.index.start),
           byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
         },
         features: [
           {
-            $type: 'app.bsky.richtext.facet#mention',
+            $type: app.bsky.richtext.facet.mention.$type,
             // entity type checked above; value is entity string from input
             did: ent.value as DidString,
           },
