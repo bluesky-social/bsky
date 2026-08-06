@@ -1,14 +1,7 @@
-import type {
-  $Type,
-  $Typed,
-  LexMap,
-  TypedObjectSchema,
-  Unknown$TypedObject,
-  Validator,
-} from '@atproto/lex'
+import type { $Type, $Typed, Unknown$TypedObject } from '@atproto/lex'
 
 /**
- * The narrowing performed by {@link isTypeOf}: like lex-schema's
+ * The narrowing performed by {@link is$typedObject}: like lex-schema's
  * `MaybeTypedObject` (the narrowing of `TypedObjectSchema.isTypeOf`), except
  * `$type` is required on the result rather than optional.
  */
@@ -23,16 +16,17 @@ export type TypedObject<
  * Strict variant of `TypedObjectSchema.isTypeOf`, which we prefer because the
  * schema method matches when `$type` is missing — fine for discriminating
  * accurately-typed unions, but a footgun on imperfectly-typed data, where an
- * unrelated object silently "matches". This guard also requires `$type` to
- * be present.
+ * unrelated object silently "matches". This guard requires `$type` to be
+ * present and equal to the schema's `$type` constant.
+ *
+ * @example
+ * ```ts
+ * prefs.find((p) => is$typedObject(p, adultContentPref.$type))
+ * ```
  */
-export function isTypeOf<
+export function is$typedObject<
   TType extends $Type,
-  TShape extends Validator<LexMap>,
   TValue extends Record<string, unknown>,
->(
-  schema: TypedObjectSchema<TType, TShape>,
-  value: TValue,
-): value is TypedObject<TType, TValue> {
-  return value.$type != null && schema.isTypeOf(value)
+>(value: TValue, $type: TType): value is TypedObject<TType, TValue> {
+  return value.$type === $type
 }

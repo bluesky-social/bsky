@@ -95,7 +95,7 @@ import type { Client, DidString, UriString } from '@atproto/lex'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { app } from '../lexicons/index.js'
 import { ClientHandleResolver } from '../utils/index.js'
-import { isTypeOf } from '../utils/types.js'
+import { is$typedObject } from '../utils/types.js'
 import { detectFacets } from './detection.js'
 import { sanitizeRichText } from './sanitization.js'
 import { UnicodeString } from './unicode.js'
@@ -127,7 +127,7 @@ export class RichTextSegment {
 
   get link(): FacetLink | undefined {
     return this.facet?.features.find((f) =>
-      isTypeOf(app.bsky.richtext.facet.link, f),
+      is$typedObject(f, app.bsky.richtext.facet.link.$type),
     )
   }
 
@@ -137,7 +137,7 @@ export class RichTextSegment {
 
   get mention(): FacetMention | undefined {
     return this.facet?.features.find((f) =>
-      isTypeOf(app.bsky.richtext.facet.mention, f),
+      is$typedObject(f, app.bsky.richtext.facet.mention.$type),
     )
   }
 
@@ -147,7 +147,7 @@ export class RichTextSegment {
 
   get tag(): FacetTag | undefined {
     return this.facet?.features.find((f) =>
-      isTypeOf(app.bsky.richtext.facet.tag, f),
+      is$typedObject(f, app.bsky.richtext.facet.tag.$type),
     )
   }
 
@@ -356,7 +356,7 @@ export class RichText {
       const promises: Promise<void>[] = []
       for (const facet of this.facets) {
         for (const feature of facet.features) {
-          if (isTypeOf(app.bsky.richtext.facet.mention, feature)) {
+          if (is$typedObject(feature, app.bsky.richtext.facet.mention.$type)) {
             promises.push(
               resolver
                 .resolve(feature.did)

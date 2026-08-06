@@ -2,14 +2,14 @@ import type { AtprotoDid, HandleResolver } from '@atproto-labs/handle-resolver'
 import { describe, expect, it } from 'vitest'
 import { app } from '../src/lexicons/index.js'
 import { RichText, RichTextSegment } from '../src/rich-text/index.js'
-import { isTypeOf } from '../src/utils/types.js'
+import { is$typedObject } from '../src/utils/types.js'
 
 const isLink = <T extends Record<string, unknown>>(f: T) =>
-  isTypeOf(app.bsky.richtext.facet.link, f)
+  is$typedObject(f, app.bsky.richtext.facet.link.$type)
 const isMention = <T extends Record<string, unknown>>(f: T) =>
-  isTypeOf(app.bsky.richtext.facet.mention, f)
+  is$typedObject(f, app.bsky.richtext.facet.mention.$type)
 const isTag = <T extends Record<string, unknown>>(f: T) =>
-  isTypeOf(app.bsky.richtext.facet.tag, f)
+  is$typedObject(f, app.bsky.richtext.facet.tag.$type)
 
 // Stub resolver: mirrors the old AtpAgent mock — resolves every handle to did:fake:<handle>
 const resolver: HandleResolver = {

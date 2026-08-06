@@ -3,7 +3,7 @@
  * @bsky/sdk (packed tarball) and a candidate @atproto/lex version are
  * installed as regular dependencies. Used two ways by peer-matrix.mjs:
  *
- *   1. Typechecked (tsgo --noEmit) — verifies the sdk's published .d.ts
+ *   1. Typechecked (tsc --noEmit) — verifies the sdk's published .d.ts
  *      surface composes with the candidate lex version's types.
  *   2. Executed (node --experimental-strip-types) — exercises the sdk/lex
  *      boundary at runtime without network access: schema validation,

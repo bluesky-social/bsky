@@ -12,7 +12,7 @@ import type {
   ConfigRegionRuleIfDeclaredUnderAge,
 } from '../lexicons/app/bsky/ageassurance/defs.defs.js'
 import { app } from '../lexicons/index.js'
-import { isTypeOf } from './types.js'
+import { is$typedObject } from './types.js'
 
 const defs = app.bsky.ageassurance.defs
 
@@ -91,7 +91,7 @@ export function computeAgeAssuranceRegionAccess(
   | undefined {
   // first match wins
   for (const rule of region.rules) {
-    if (isTypeOf(defs.configRegionRuleIfAccountNewerThan, rule)) {
+    if (is$typedObject(rule, defs.configRegionRuleIfAccountNewerThan.$type)) {
       if (data?.accountCreatedAt && !data?.assuredAge) {
         const accountCreatedAt = new Date(data.accountCreatedAt)
         const threshold = new Date(rule.date)
@@ -102,7 +102,9 @@ export function computeAgeAssuranceRegionAccess(
           }
         }
       }
-    } else if (isTypeOf(defs.configRegionRuleIfAccountOlderThan, rule)) {
+    } else if (
+      is$typedObject(rule, defs.configRegionRuleIfAccountOlderThan.$type)
+    ) {
       if (data?.accountCreatedAt && !data?.assuredAge) {
         const accountCreatedAt = new Date(data.accountCreatedAt)
         const threshold = new Date(rule.date)
@@ -113,35 +115,43 @@ export function computeAgeAssuranceRegionAccess(
           }
         }
       }
-    } else if (isTypeOf(defs.configRegionRuleIfDeclaredOverAge, rule)) {
+    } else if (
+      is$typedObject(rule, defs.configRegionRuleIfDeclaredOverAge.$type)
+    ) {
       if (data?.declaredAge !== undefined && data.declaredAge >= rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (isTypeOf(defs.configRegionRuleIfDeclaredUnderAge, rule)) {
+    } else if (
+      is$typedObject(rule, defs.configRegionRuleIfDeclaredUnderAge.$type)
+    ) {
       if (data?.declaredAge !== undefined && data.declaredAge < rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (isTypeOf(defs.configRegionRuleIfAssuredOverAge, rule)) {
+    } else if (
+      is$typedObject(rule, defs.configRegionRuleIfAssuredOverAge.$type)
+    ) {
       if (data?.assuredAge && data.assuredAge >= rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (isTypeOf(defs.configRegionRuleIfAssuredUnderAge, rule)) {
+    } else if (
+      is$typedObject(rule, defs.configRegionRuleIfAssuredUnderAge.$type)
+    ) {
       if (data?.assuredAge && data.assuredAge < rule.age) {
         return {
           access: rule.access,
           reason: rule.$type,
         }
       }
-    } else if (isTypeOf(defs.configRegionRuleDefault, rule)) {
+    } else if (is$typedObject(rule, defs.configRegionRuleDefault.$type)) {
       return {
         access: rule.access,
         reason: rule.$type,

@@ -7,7 +7,7 @@
  * For each candidate version: packs the sdk into a tarball, installs it with
  * that lex version into a scratch project OUTSIDE the workspace (so peer
  * resolution matches a real consumer install, not workspace hoisting), then
- * typechecks peer-smoke.ts there (repo tsgo, --noEmit) and executes it.
+ * typechecks peer-smoke.ts there (repo tsc, --noEmit) and executes it.
  *
  * Usage:
  *   node scripts/peer-matrix.mjs             # earliest + latest-per-minor
@@ -30,7 +30,7 @@ import { fileURLToPath } from 'node:url'
 
 const sdkDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 const repoRoot = join(sdkDir, '..', '..')
-const tsgo = join(repoRoot, 'node_modules', '.bin', 'tsgo')
+const tsc = join(repoRoot, 'node_modules', '.bin', 'tsc')
 const pkg = JSON.parse(readFileSync(join(sdkDir, 'package.json'), 'utf8'))
 const peerRange = pkg.peerDependencies['@atproto/lex']
 const rootPkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'))
@@ -129,7 +129,7 @@ for (const version of versions) {
         include: ['peer-smoke.ts'],
       }),
     )
-    run(tsgo, ['--project', '.'], { cwd: dir, stdio: 'inherit' })
+    run(tsc, ['--project', '.'], { cwd: dir, stdio: 'inherit' })
     run('node', ['--experimental-strip-types', 'peer-smoke.ts'], {
       cwd: dir,
       stdio: 'inherit',

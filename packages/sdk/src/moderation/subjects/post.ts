@@ -1,5 +1,5 @@
 import { app } from '../../lexicons/index.js'
-import { isTypeOf } from '../../utils/types.js'
+import { is$typedObject } from '../../utils/types.js'
 import { ModerationDecision } from '../decision.js'
 import { MuteWordMatch, matchMuteWords } from '../mutewords.js'
 import { ModerationOpts, ModerationSubjectPost } from '../types.js'
@@ -44,20 +44,34 @@ function decideEmbed(
   opts: ModerationOpts,
 ) {
   if (embed) {
-    if (isTypeOf(app.bsky.embed.record.view, embed)) {
-      if (isTypeOf(app.bsky.embed.record.viewRecord, embed.record)) {
+    if (is$typedObject(embed, app.bsky.embed.record.view.$type)) {
+      if (
+        is$typedObject(embed.record, app.bsky.embed.record.viewRecord.$type)
+      ) {
         // quote post
         return decideQuotedPost(embed.record, opts)
-      } else if (isTypeOf(app.bsky.embed.record.viewBlocked, embed.record)) {
+      } else if (
+        is$typedObject(embed.record, app.bsky.embed.record.viewBlocked.$type)
+      ) {
         // blocked quote post
         return decideBlockedQuotedPost(embed.record, opts)
       }
-    } else if (isTypeOf(app.bsky.embed.recordWithMedia.view, embed)) {
-      if (isTypeOf(app.bsky.embed.record.viewRecord, embed.record.record)) {
+    } else if (
+      is$typedObject(embed, app.bsky.embed.recordWithMedia.view.$type)
+    ) {
+      if (
+        is$typedObject(
+          embed.record.record,
+          app.bsky.embed.record.viewRecord.$type,
+        )
+      ) {
         // quoted post with media
         return decideQuotedPost(embed.record.record, opts)
       } else if (
-        isTypeOf(app.bsky.embed.record.viewBlocked, embed.record.record)
+        is$typedObject(
+          embed.record.record,
+          app.bsky.embed.record.viewBlocked.$type,
+        )
       ) {
         // blocked quoted post with media
         return decideBlockedQuotedPost(embed.record.record, opts)
@@ -124,15 +138,24 @@ function checkHiddenPost(
   }
   if (subject.embed) {
     if (
-      isTypeOf(app.bsky.embed.record.view, subject.embed) &&
-      isTypeOf(app.bsky.embed.record.viewRecord, subject.embed.record) &&
+      is$typedObject(subject.embed, app.bsky.embed.record.view.$type) &&
+      is$typedObject(
+        subject.embed.record,
+        app.bsky.embed.record.viewRecord.$type,
+      ) &&
       hiddenPosts.includes(subject.embed.record.uri)
     ) {
       return true
     }
     if (
-      isTypeOf(app.bsky.embed.recordWithMedia.view, subject.embed) &&
-      isTypeOf(app.bsky.embed.record.viewRecord, subject.embed.record.record) &&
+      is$typedObject(
+        subject.embed,
+        app.bsky.embed.recordWithMedia.view.$type,
+      ) &&
+      is$typedObject(
+        subject.embed.record.record,
+        app.bsky.embed.record.viewRecord.$type,
+      ) &&
       hiddenPosts.includes(subject.embed.record.record.uri)
     ) {
       return true
@@ -173,7 +196,10 @@ function matchAllMuteWords(
       return matches
     }
 
-    if (post.embed && isTypeOf(app.bsky.embed.images.main, post.embed)) {
+    if (
+      post.embed &&
+      is$typedObject(post.embed, app.bsky.embed.images.main.$type)
+    ) {
       // post images
       for (const image of post.embed.images) {
         const matches = matchMuteWords({
@@ -188,10 +214,13 @@ function matchAllMuteWords(
       }
     }
 
-    if (post.embed && isTypeOf(app.bsky.embed.gallery.main, post.embed)) {
+    if (
+      post.embed &&
+      is$typedObject(post.embed, app.bsky.embed.gallery.main.$type)
+    ) {
       // post gallery items
       for (const item of post.embed.items) {
-        if (isTypeOf(app.bsky.embed.gallery.image, item)) {
+        if (is$typedObject(item, app.bsky.embed.gallery.image.$type)) {
           const matches = matchMuteWords({
             mutedWords,
             text: item.alt,
@@ -210,8 +239,8 @@ function matchAllMuteWords(
   if (embed) {
     // quote post
     if (
-      isTypeOf(app.bsky.embed.record.view, embed) &&
-      isTypeOf(app.bsky.embed.record.viewRecord, embed.record)
+      is$typedObject(embed, app.bsky.embed.record.view.$type) &&
+      is$typedObject(embed.record, app.bsky.embed.record.viewRecord.$type)
     ) {
       if (app.bsky.feed.post.$isTypeOf(embed.record.value)) {
         const embeddedPost = embed.record.value as app.bsky.feed.post.Main
@@ -233,7 +262,7 @@ function matchAllMuteWords(
         // quoted post's images
         if (
           embeddedPost.embed &&
-          isTypeOf(app.bsky.embed.images.main, embeddedPost.embed)
+          is$typedObject(embeddedPost.embed, app.bsky.embed.images.main.$type)
         ) {
           for (const image of embeddedPost.embed.images) {
             const matches = matchMuteWords({
@@ -251,10 +280,10 @@ function matchAllMuteWords(
         // quoted post's gallery
         if (
           embeddedPost.embed &&
-          isTypeOf(app.bsky.embed.gallery.main, embeddedPost.embed)
+          is$typedObject(embeddedPost.embed, app.bsky.embed.gallery.main.$type)
         ) {
           for (const item of embeddedPost.embed.items) {
-            if (isTypeOf(app.bsky.embed.gallery.image, item)) {
+            if (is$typedObject(item, app.bsky.embed.gallery.image.$type)) {
               const matches = matchMuteWords({
                 mutedWords,
                 text: item.alt,
@@ -271,7 +300,7 @@ function matchAllMuteWords(
         // quoted post's link card
         if (
           embeddedPost.embed &&
-          isTypeOf(app.bsky.embed.external.main, embeddedPost.embed)
+          is$typedObject(embeddedPost.embed, app.bsky.embed.external.main.$type)
         ) {
           const { external } = embeddedPost.embed
           const matches = matchMuteWords({
@@ -287,11 +316,17 @@ function matchAllMuteWords(
 
         if (
           embeddedPost.embed &&
-          isTypeOf(app.bsky.embed.recordWithMedia.main, embeddedPost.embed)
+          is$typedObject(
+            embeddedPost.embed,
+            app.bsky.embed.recordWithMedia.main.$type,
+          )
         ) {
           // quoted post's link card when it did a quote + media
           if (
-            isTypeOf(app.bsky.embed.external.main, embeddedPost.embed.media)
+            is$typedObject(
+              embeddedPost.embed.media,
+              app.bsky.embed.external.main.$type,
+            )
           ) {
             const { external } = embeddedPost.embed.media
             const matches = matchMuteWords({
@@ -306,7 +341,12 @@ function matchAllMuteWords(
           }
 
           // quoted post's images when it did a quote + media
-          if (isTypeOf(app.bsky.embed.images.main, embeddedPost.embed.media)) {
+          if (
+            is$typedObject(
+              embeddedPost.embed.media,
+              app.bsky.embed.images.main.$type,
+            )
+          ) {
             for (const image of embeddedPost.embed.media.images) {
               const matches = matchMuteWords({
                 mutedWords,
@@ -324,9 +364,14 @@ function matchAllMuteWords(
           }
 
           // quoted post's gallery when it did a quote + media
-          if (isTypeOf(app.bsky.embed.gallery.main, embeddedPost.embed.media)) {
+          if (
+            is$typedObject(
+              embeddedPost.embed.media,
+              app.bsky.embed.gallery.main.$type,
+            )
+          ) {
             for (const item of embeddedPost.embed.media.items) {
-              if (isTypeOf(app.bsky.embed.gallery.image, item)) {
+              if (is$typedObject(item, app.bsky.embed.gallery.image.$type)) {
                 const matches = matchMuteWords({
                   mutedWords,
                   text: item.alt,
@@ -346,7 +391,7 @@ function matchAllMuteWords(
       }
     }
     // link card
-    else if (isTypeOf(app.bsky.embed.external.view, embed)) {
+    else if (is$typedObject(embed, app.bsky.embed.external.view.$type)) {
       const { external } = embed
       const matches = matchMuteWords({
         mutedWords,
@@ -360,8 +405,11 @@ function matchAllMuteWords(
     }
     // quote post with media
     else if (
-      isTypeOf(app.bsky.embed.recordWithMedia.view, embed) &&
-      isTypeOf(app.bsky.embed.record.viewRecord, embed.record.record)
+      is$typedObject(embed, app.bsky.embed.recordWithMedia.view.$type) &&
+      is$typedObject(
+        embed.record.record,
+        app.bsky.embed.record.viewRecord.$type,
+      )
     ) {
       const embedAuthor = embed.record.record.author
 
@@ -382,7 +430,7 @@ function matchAllMuteWords(
       }
 
       // quoted post images
-      if (isTypeOf(app.bsky.embed.images.view, embed.media)) {
+      if (is$typedObject(embed.media, app.bsky.embed.images.view.$type)) {
         for (const image of embed.media.images) {
           const matches = matchMuteWords({
             mutedWords,
@@ -397,9 +445,9 @@ function matchAllMuteWords(
       }
 
       // quoted post gallery
-      if (isTypeOf(app.bsky.embed.gallery.view, embed.media)) {
+      if (is$typedObject(embed.media, app.bsky.embed.gallery.view.$type)) {
         for (const item of embed.media.items) {
-          if (isTypeOf(app.bsky.embed.gallery.viewImage, item)) {
+          if (is$typedObject(item, app.bsky.embed.gallery.viewImage.$type)) {
             const matches = matchMuteWords({
               mutedWords,
               text: item.alt,
@@ -413,7 +461,7 @@ function matchAllMuteWords(
         }
       }
 
-      if (isTypeOf(app.bsky.embed.external.view, embed.media)) {
+      if (is$typedObject(embed.media, app.bsky.embed.external.view.$type)) {
         const { external } = embed.media
         const matches = matchMuteWords({
           mutedWords,
