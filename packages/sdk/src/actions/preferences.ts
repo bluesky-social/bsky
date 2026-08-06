@@ -123,6 +123,14 @@ function validateSavedFeed(feed: SavedFeed): void {
  * the client's own record helpers), regardless of the client's `service`
  * default — preferences live on the PDS, not behind the AppView proxy.
  * Pass `service` to override.
+ *
+ * @remarks Why not default to proxying to the Bluesky API? The Bluesky API
+ * does not implement these endpoints — the reference PDS special-cases them,
+ * intercepting the proxy header and serving them locally, but that intercept
+ * is distro-dependent (it can be compiled/configured out, e.g. Tranquil PDS)
+ * and other AppViews don't get the same treatment. Targeting the account
+ * host directly is the honest description of where preferences live today.
+ * See the discussion on bluesky-social/bsky#1 for the full picture.
  */
 export interface PrefsServiceOptions {
   service?: Service | null
