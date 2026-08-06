@@ -21,7 +21,7 @@ let _tidLastTime = 0
 let _tidTimestampCount = 0
 let _tidClockid: number | null = null
 
-function nextTid(): string {
+export function nextTid(): string {
   const now = Math.max(Date.now(), _tidLastTime)
   if (now === _tidLastTime) {
     _tidTimestampCount++
@@ -36,5 +36,3 @@ function nextTid(): string {
   const str = `${s32encode(timestamp)}${s32encode(_tidClockid).padStart(2, '2')}`
   return str.padStart(13, '2')
 }
-
-export { nextTid }

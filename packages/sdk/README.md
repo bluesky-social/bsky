@@ -351,7 +351,7 @@ const res2 = await bskyClient.call(
 )
 // or, using the typed record convenience helper:
 const res2b = await bskyClient.list(app.bsky.feed.post, {
-  repo: alice.did,
+  repo: alice.did, // optional. Defaults to bskyClient.did (throws if unauthenticated)
 })
 
 const res3 = await bskyClient.call(app.bsky.feed.getTimeline, {

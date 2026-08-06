@@ -19,4 +19,4 @@ export const api = /*#__PURE__*/ Object.freeze({
     did: 'did:plc:ar7c4by46qjdydhdevvrndac',
     service: 'did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler',
   }),
-} as const)
+})

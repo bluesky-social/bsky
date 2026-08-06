@@ -21,13 +21,14 @@ import {
 } from '../lexicons/app/bsky/actor/defs.defs.js'
 import type { app } from '../lexicons/index.js'
 import { app as appLexicons } from '../lexicons/index.js'
+import { DEFAULT_LABEL_SETTINGS } from '../moderation/const/labels.js'
 import type {
   LabelPreference,
   ModerationPrefsLabeler,
 } from '../moderation/index.js'
-import { DEFAULT_LABEL_SETTINGS } from '../moderation/index.js'
 import { nextTid } from '../tid.js'
-import { sanitizeMutedWordValue, validateNux } from '../utils/index.js'
+import { sanitizeMutedWordValue } from '../utils/muted-words.js'
+import { validateNux } from '../utils/nux.js'
 import { is$typedObject } from '../utils/types.js'
 import type {
   BskyFeedViewPreference,
@@ -49,22 +50,30 @@ function serializedPrefsWrite<T>(
   const prev = prefsWriteChains.get(client) ?? Promise.resolve()
   const next = prev.then(fn, fn) // run regardless of predecessor outcome
   prefsWriteChains.set(client, next)
+  // drop the chain once it drains so settled writes don't accumulate as the
+  // resolved tail of the next chain (entries themselves are WeakMap-keyed)
+  const cleanup = () => {
+    if (prefsWriteChains.get(client) === next) {
+      prefsWriteChains.delete(client)
+    }
+  }
+  next.then(cleanup, cleanup)
   return next
 }
 
 // Label name remapping for legacy label names
-const LABEL_REMAP: Record<string, string> = {
-  nsfw: 'porn',
-  gore: 'graphic-media',
-  suggestive: 'sexual',
-}
+const LABEL_REMAP = /*#__PURE__*/ new Map<string, string>([
+  ['nsfw', 'porn'],
+  ['gore', 'graphic-media'],
+  ['suggestive', 'sexual'],
+])
 
 // Reverse remap for double-writing
-const LABEL_REMAP_REVERSE: Record<string, string[]> = {
-  porn: ['nsfw'],
-  'graphic-media': ['gore'],
-  sexual: ['suggestive'],
-}
+const LABEL_REMAP_REVERSE = /*#__PURE__*/ new Map<string, string[]>([
+  ['porn', ['nsfw']],
+  ['graphic-media', ['gore']],
+  ['sexual', ['suggestive']],
+])
 
 /**
  * Adjusts a stored contentLabelPref visibility on read: 'show' is a legacy
@@ -154,8 +163,7 @@ function prefsUpdater<I>(
 ): Action<I, void> {
   return async (client, input) => {
     const update = makeUpdate(input, client)
-    if (!update) return
-    await client.call(updatePreferences, update)
+    if (update) await client.call(updatePreferences, update)
   }
 }
 
@@ -322,10 +330,10 @@ export const getPreferences: Action<
     if (labelPref.labelerDid) continue // skip labeler-specific prefs for global map
     const visibility = normalizeVisibility(labelPref.visibility)
     // remap legacy label names
-    const mappedName = LABEL_REMAP[labelPref.label] ?? labelPref.label
+    const mappedName = LABEL_REMAP.get(labelPref.label) ?? labelPref.label
     labels[mappedName] = visibility
     // also set the original legacy name if it was remapped
-    if (LABEL_REMAP[labelPref.label]) {
+    if (LABEL_REMAP.has(labelPref.label)) {
       labels[labelPref.label] = visibility
     }
   }
@@ -472,7 +480,7 @@ export const setContentLabelPref: Action<
     // Double-write for legacy label aliases ONLY when global (no labelerDid)
     // (old agent.ts:911-914: `if (!labelPref.labelerDid)`)
     if (!labelerDid) {
-      const legacyAliases = LABEL_REMAP_REVERSE[key] ?? []
+      const legacyAliases = LABEL_REMAP_REVERSE.get(key) ?? []
       for (const alias of legacyAliases) {
         // Remove existing legacy alias pref
         const withoutAlias = newPrefs.filter((p) => {
@@ -592,7 +600,12 @@ export const addSavedFeeds: Action<
   Pick<SavedFeed, 'type' | 'value' | 'pinned'>[],
   SavedFeed[]
 > = async (client, feeds) => {
-  const newFeeds: SavedFeed[] = feeds.map((f) => ({ ...f, id: nextTid() }))
+  const newFeeds: SavedFeed[] = feeds.map(({ type, value, pinned }) => ({
+    type,
+    value,
+    pinned,
+    id: nextTid(),
+  }))
   newFeeds.forEach(validateSavedFeed)
   await updateSavedFeedsV2Prefs(client, (items) => [...items, ...newFeeds])
   return newFeeds

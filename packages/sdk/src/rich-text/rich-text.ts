@@ -94,7 +94,7 @@ F: 0 1 2 3 4 5 6 7 8 910   // string indices
 import type { Client, DidString, UriString } from '@atproto/lex'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
 import { app } from '../lexicons/index.js'
-import { ClientHandleResolver } from '../utils/index.js'
+import { ClientHandleResolver } from '../utils/handle-resolver.js'
 import { is$typedObject } from '../utils/types.js'
 import { detectFacets } from './detection.js'
 import { sanitizeRichText } from './sanitization.js'

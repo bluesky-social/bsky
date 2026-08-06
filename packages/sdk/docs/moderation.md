@@ -279,12 +279,11 @@ import { com } from '@bsky/sdk/lexicons'
 await client.call(
   com.atproto.moderation.createReport,
   {
-    reasonType: 'com.atproto.moderation.defs#reasonViolation',
+    reasonType: com.atproto.moderation.defs.reasonViolation.$token,
     reason: 'They were being such a jerk to me!',
-    subject: {
-      $type: 'com.atproto.admin.defs#repoRef',
+    subject: com.atproto.admin.defs.repoRef.$build({
       did: 'did:web:bob.com',
-    },
+    }),
   },
   { service: 'did:web:my-labeler.com#atproto_labeler' },
 )
