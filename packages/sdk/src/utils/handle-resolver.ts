@@ -1,4 +1,4 @@
-import { Client } from '@atproto/lex'
+import type { Client } from '@atproto/lex'
 import type { HandleString } from '@atproto/syntax'
 import type {
   AtprotoDid,
