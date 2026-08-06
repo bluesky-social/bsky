@@ -61,6 +61,7 @@
     "@atproto/lex": "^0.3.0",
     "@atproto/lex-password-session": "^0.1.8",
     "prettier": "^3.9.5",
+    "rolldown": "1.1.4",
     "vitest": "^4.1.10"
   },
   "scripts": {
@@ -69,6 +70,7 @@
     "prebuild": "pnpm run codegen && pnpm run codegen:labels",
     "build": "tsc --build tsconfig.build.json",
     "test": "vitest run",
-    "test:peer-matrix": "node ./scripts/peer-matrix.mjs"
+    "test:peer-matrix": "node ./scripts/peer-matrix.mjs",
+    "measure:bundle": "node ./scripts/measure-bundle.mjs"
   }
 }
