@@ -32,6 +32,18 @@
         },
         "blob": { "type": "blob" },
         "error": { "type": "string", "maxLength": 1024 },
+        "failureCode": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "A machine-readable code for why the video processing job failed.",
+          "knownValues": [
+            "validation_failure",
+            "encoding_failure",
+            "pds_upload_failure",
+            "pds_upload_unsupported_blob_size",
+            "generic_failure"
+          ]
+        },
         "message": { "type": "string", "maxLength": 1024 }
       }
     }

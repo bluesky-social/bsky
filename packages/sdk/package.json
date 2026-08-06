@@ -1,5 +1,5 @@
 {
-  "name": "@bsky.app/sdk",
+  "name": "@bsky/sdk",
   "version": "0.0.0",
   "license": "MIT OR Apache-2.0",
   "description": "Client library for Bluesky",
