@@ -405,35 +405,35 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
   const facets: Facet[] = []
   for (const ent of entities) {
     if (ent.type === 'link') {
-      facets.push({
-        $type: app.bsky.richtext.facet.$type,
-        index: {
-          byteStart: text.utf16IndexToUtf8Index(ent.index.start),
-          byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
-        },
-        features: [
-          {
-            $type: app.bsky.richtext.facet.link.$type,
-            // entity type checked above; value is entity string from input
-            uri: ent.value as UriString,
+      facets.push(
+        app.bsky.richtext.facet.$build({
+          index: {
+            byteStart: text.utf16IndexToUtf8Index(ent.index.start),
+            byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
           },
-        ],
-      })
+          features: [
+            app.bsky.richtext.facet.link.$build({
+              // entity type checked above; value is entity string from input
+              uri: ent.value as UriString,
+            }),
+          ],
+        }),
+      )
     } else if (ent.type === 'mention') {
-      facets.push({
-        $type: app.bsky.richtext.facet.$type,
-        index: {
-          byteStart: text.utf16IndexToUtf8Index(ent.index.start),
-          byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
-        },
-        features: [
-          {
-            $type: app.bsky.richtext.facet.mention.$type,
-            // entity type checked above; value is entity string from input
-            did: ent.value as DidString,
+      facets.push(
+        app.bsky.richtext.facet.$build({
+          index: {
+            byteStart: text.utf16IndexToUtf8Index(ent.index.start),
+            byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
           },
-        ],
-      })
+          features: [
+            app.bsky.richtext.facet.mention.$build({
+              // entity type checked above; value is entity string from input
+              did: ent.value as DidString,
+            }),
+          ],
+        }),
+      )
     }
   }
   return facets

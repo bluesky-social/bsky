@@ -25,19 +25,19 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
       }
 
       const start = text.utf16.indexOf(match[3], match.index) - 1
-      facets.push({
-        $type: app.bsky.richtext.facet.$type,
-        index: {
-          byteStart: text.utf16IndexToUtf8Index(start),
-          byteEnd: text.utf16IndexToUtf8Index(start + match[3].length + 1),
-        },
-        features: [
-          {
-            $type: app.bsky.richtext.facet.mention.$type,
-            did: match[3] as DidString, // boundary: detected text must be resolved
+      facets.push(
+        app.bsky.richtext.facet.$build({
+          index: {
+            byteStart: text.utf16IndexToUtf8Index(start),
+            byteEnd: text.utf16IndexToUtf8Index(start + match[3].length + 1),
           },
-        ],
-      })
+          features: [
+            app.bsky.richtext.facet.mention.$build({
+              did: match[3] as DidString, // boundary: detected text must be resolved
+            }),
+          ],
+        }),
+      )
     }
   }
   {
@@ -69,10 +69,9 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index.end),
         },
         features: [
-          {
-            $type: app.bsky.richtext.facet.link.$type,
+          app.bsky.richtext.facet.link.$build({
             uri: uri as UriString, // boundary: detected text, format verified by URL_REGEX
-          },
+          }),
         ],
       })
     }
@@ -102,10 +101,9 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index + 1 + tag.length),
         },
         features: [
-          {
-            $type: app.bsky.richtext.facet.tag.$type,
+          app.bsky.richtext.facet.tag.$build({
             tag: tag,
-          },
+          }),
         ],
       })
     }
@@ -130,10 +128,9 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index + 1 + ticker.length), // +1 for $
         },
         features: [
-          {
-            $type: app.bsky.richtext.facet.tag.$type,
+          app.bsky.richtext.facet.tag.$build({
             tag: '$' + ticker, // Store with $ prefix
-          },
+          }),
         ],
       })
     }

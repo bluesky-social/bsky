@@ -408,10 +408,9 @@ export const setAdultContentEnabled: Action<boolean, void> = prefsUpdater(
     }
     return [
       ...prefs,
-      {
-        $type: adultContentPref.$type,
+      adultContentPref.$build({
         enabled,
-      },
+      }),
     ]
   },
 )
@@ -434,12 +433,11 @@ export const setContentLabelPref: Action<
     // Add new pref for main key
     const newPrefs: Preferences = [
       ...filtered,
-      {
-        $type: contentLabelPref.$type,
+      contentLabelPref.$build({
         label: key,
         labelerDid,
         visibility: value,
-      },
+      }),
     ]
 
     // Double-write for legacy label aliases ONLY when global (no labelerDid)
@@ -454,12 +452,13 @@ export const setContentLabelPref: Action<
         })
         newPrefs.length = 0
         newPrefs.push(...withoutAlias)
-        newPrefs.push({
-          $type: contentLabelPref.$type,
-          label: alias,
-          labelerDid: undefined,
-          visibility: value,
-        })
+        newPrefs.push(
+          contentLabelPref.$build({
+            label: alias,
+            labelerDid: undefined,
+            visibility: value,
+          }),
+        )
       }
     }
 
@@ -506,10 +505,9 @@ async function updateSavedFeedsV2Prefs(
   let maybeMutatedSavedFeeds: SavedFeed[] = []
 
   const update = (prefs: Preferences) => {
-    const existingV2Pref = prefs.find((p) => isTypeOf(savedFeedsPrefV2, p)) ?? {
-      $type: savedFeedsPrefV2.$type,
-      items: [],
-    }
+    const existingV2Pref =
+      prefs.find((p) => isTypeOf(savedFeedsPrefV2, p)) ??
+      savedFeedsPrefV2.$build({ items: [] })
 
     const newSavedFeeds = cb(existingV2Pref.items)
     maybeMutatedSavedFeeds = newSavedFeeds
@@ -522,11 +520,12 @@ async function updateSavedFeedsV2Prefs(
 
     let updatedPrefs: Preferences = prefs
       .filter((p) => !isTypeOf(savedFeedsPrefV2, p))
-      .concat({
-        ...existingV2Pref,
-        $type: savedFeedsPrefV2.$type,
-        items: sortedItems,
-      })
+      .concat(
+        savedFeedsPrefV2.$build({
+          ...existingV2Pref,
+          items: sortedItems,
+        }),
+      )
 
     /*
      * If there's a v1 pref present, this account was migrated from v1 to v2.
@@ -542,12 +541,13 @@ async function updateSavedFeedsV2Prefs(
       )
       updatedPrefs = updatedPrefs
         .filter((p) => !isTypeOf(savedFeedsPref, p))
-        .concat({
-          ...existingV1Pref,
-          $type: savedFeedsPref.$type,
-          saved: [...new Set([...saved, ...v2Compat.saved])],
-          pinned: [...new Set([...pinned, ...v2Compat.pinned])],
-        })
+        .concat(
+          savedFeedsPref.$build({
+            ...existingV1Pref,
+            saved: [...new Set([...saved, ...v2Compat.saved])],
+            pinned: [...new Set([...pinned, ...v2Compat.pinned])],
+          }),
+        )
     }
 
     return updatedPrefs
@@ -642,11 +642,10 @@ export const addPinnedFeed: Action<AtUriString, void> = prefsUpdater(
     }
     return [
       ...prefs,
-      {
-        $type: savedFeedsPref.$type,
+      savedFeedsPref.$build({
         saved: newSaved,
         pinned: newPinned,
-      },
+      }),
     ]
   },
 )
@@ -677,11 +676,10 @@ export const setFeedViewPrefs: Action<
   const current: app.bsky.actor.defs.FeedViewPref = existing ?? {
     feed,
   }
-  const updated = {
+  const updated = feedViewPref.$build({
     ...current,
     ...updates,
-    $type: feedViewPref.$type,
-  }
+  })
 
   if (existing) {
     return prefs.map((p) => {
@@ -708,10 +706,9 @@ export const setThreadViewPrefs: Action<
   }
   return [
     ...prefs,
-    {
-      $type: threadViewPref.$type,
+    threadViewPref.$build({
       ...updated,
-    },
+    }),
   ]
 })
 
@@ -733,10 +730,9 @@ export const setPersonalDetails: Action<
     }
     return [
       ...prefs,
-      {
-        $type: personalDetailsPref.$type,
+      personalDetailsPref.$build({
         birthDate: birthDateStr,
-      },
+      }),
     ]
   }
 })
@@ -753,10 +749,9 @@ export const setInterestsPref: Action<{ tags: string[] }, void> = prefsUpdater(
       }
       return [
         ...prefs,
-        {
-          $type: interestsPref.$type,
+        interestsPref.$build({
           tags,
-        },
+        }),
       ]
     },
 )
@@ -818,18 +813,14 @@ export const addMutedWord: Action<
         mutedWordsPrefEntry.items,
       )
     } else {
-      mutedWordsPrefEntry = {
-        $type: mutedWordsPref.$type,
+      mutedWordsPrefEntry = mutedWordsPref.$build({
         items: [newMutedWord],
-      }
+      })
     }
 
     return prefs
       .filter((p) => p.$type !== mutedWordsPref.$type)
-      .concat({
-        ...mutedWordsPrefEntry,
-        $type: mutedWordsPref.$type,
-      })
+      .concat(mutedWordsPref.$build(mutedWordsPrefEntry))
   }
 })
 
@@ -893,10 +884,7 @@ export const updateMutedWord: Action<app.bsky.actor.defs.MutedWord, void> =
 
       return prefs
         .filter((p) => p.$type !== mutedWordsPref.$type)
-        .concat({
-          ...mutedWordsPrefEntry,
-          $type: mutedWordsPref.$type,
-        })
+        .concat(mutedWordsPref.$build(mutedWordsPrefEntry))
     }
 
     return prefs
@@ -925,10 +913,7 @@ export const removeMutedWord: Action<app.bsky.actor.defs.MutedWord, void> =
 
     return prefs
       .filter((p) => p.$type !== mutedWordsPref.$type)
-      .concat({
-        ...mutedWordsPrefEntry,
-        $type: mutedWordsPref.$type,
-      })
+      .concat(mutedWordsPref.$build(mutedWordsPrefEntry))
   })
 
 /**
@@ -957,10 +942,9 @@ export const hidePost: Action<AtUriString, void> = prefsUpdater(
     }
     return [
       ...prefs,
-      {
-        $type: hiddenPostsPref.$type,
+      hiddenPostsPref.$build({
         items: updated,
-      },
+      }),
     ]
   },
 )
@@ -994,10 +978,9 @@ export const addLabeler: Action<DidString, void> = prefsUpdater((did) => {
     }
     return [
       ...prefs,
-      {
-        $type: labelersPref.$type,
+      labelersPref.$build({
         labelers: updated,
-      },
+      }),
     ]
   }
 })
@@ -1028,10 +1011,9 @@ export const queueNudges: Action<string[], void> = prefsUpdater(
     }
     return [
       ...prefs,
-      {
-        $type: bskyAppStatePref.$type,
+      bskyAppStatePref.$build({
         queuedNudges: updated,
-      },
+      }),
     ]
   },
 )
@@ -1065,10 +1047,9 @@ export const setIsBetaUser: Action<boolean, void> = prefsUpdater(
     }
     return [
       ...prefs,
-      {
-        $type: bskyAppStatePref.$type,
+      bskyAppStatePref.$build({
         isBetaUser,
-      },
+      }),
     ]
   },
 )
@@ -1086,10 +1067,9 @@ export const setActiveProgressGuide: Action<
   }
   return [
     ...prefs,
-    {
-      $type: bskyAppStatePref.$type,
+    bskyAppStatePref.$build({
       activeProgressGuide: guide,
-    },
+    }),
   ]
 })
 
@@ -1115,10 +1095,9 @@ export const upsertNux: Action<app.bsky.actor.defs.Nux, void> = prefsUpdater(
       }
       return [
         ...prefs,
-        {
-          $type: bskyAppStatePref.$type,
+        bskyAppStatePref.$build({
           nuxs: updatedNuxs,
-        },
+        }),
       ]
     }
   },
@@ -1149,10 +1128,9 @@ export const setVerificationPrefs: Action<
   }
   return [
     ...prefs,
-    {
-      $type: verificationPrefs.$type,
+    verificationPrefs.$build({
       ...updates,
-    },
+    }),
   ]
 })
 
@@ -1164,12 +1142,11 @@ export const setPostInteractionSettings: Action<
 
   // Explicitly assign both fields (old agent.ts:1348-1350):
   // "undefined" means "everyone" - do not merge, replace
-  const pref = {
+  const pref = postInteractionSettingsPref.$build({
     ...existing,
-    $type: postInteractionSettingsPref.$type,
     threadgateAllowRules: settings.threadgateAllowRules,
     postgateEmbeddingRules: settings.postgateEmbeddingRules,
-  }
+  })
 
   return prefs
     .filter((p) => !isTypeOf(postInteractionSettingsPref, p))
@@ -1202,12 +1179,11 @@ export const updateLiveEventPreferences: Action<
       break
   }
 
-  const pref = {
+  const pref = liveEventPreferences.$build({
     ...existing,
-    $type: liveEventPreferences.$type,
     hiddenFeedIds: [...hiddenFeedIds],
     hideAllFeeds,
-  }
+  })
 
   return prefs.filter((p) => !isTypeOf(liveEventPreferences, p)).concat(pref)
 })
