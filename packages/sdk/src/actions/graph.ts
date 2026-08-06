@@ -19,8 +19,10 @@ export const muteActor: Action<
   },
   void
 > = async (client, { actor, onlyReposts, onlyQuoteposts }) => {
-  await client.xrpc(appLexicons.bsky.graph.muteActor.main, {
-    body: { actor, onlyReposts, onlyQuoteposts },
+  await client.call(appLexicons.bsky.graph.muteActor.main, {
+    actor,
+    onlyReposts,
+    onlyQuoteposts,
   })
 }
 
@@ -31,9 +33,7 @@ export const unmuteActor: Action<{ actor: AtIdentifierString }, void> = async (
   client,
   { actor },
 ) => {
-  await client.xrpc(appLexicons.bsky.graph.unmuteActor.main, {
-    body: { actor },
-  })
+  await client.call(appLexicons.bsky.graph.unmuteActor.main, { actor })
 }
 
 /**
@@ -43,9 +43,7 @@ export const muteActorList: Action<{ list: AtUriString }, void> = async (
   client,
   { list },
 ) => {
-  await client.xrpc(appLexicons.bsky.graph.muteActorList.main, {
-    body: { list },
-  })
+  await client.call(appLexicons.bsky.graph.muteActorList.main, { list })
 }
 
 /**
@@ -55,9 +53,7 @@ export const unmuteActorList: Action<{ list: AtUriString }, void> = async (
   client,
   { list },
 ) => {
-  await client.xrpc(appLexicons.bsky.graph.unmuteActorList.main, {
-    body: { list },
-  })
+  await client.call(appLexicons.bsky.graph.unmuteActorList.main, { list })
 }
 
 /**
@@ -81,10 +77,11 @@ export const unblockActorList: Action<{ list: AtUriString }, void> = async (
   client,
   { list },
 ) => {
-  const listRes = await client.xrpc(appLexicons.bsky.graph.getList.main, {
-    params: { list, limit: 1 },
+  const listRes = await client.call(appLexicons.bsky.graph.getList.main, {
+    list,
+    limit: 1,
   })
-  const blocked = listRes.body.list.viewer?.blocked
+  const blocked = listRes.list.viewer?.blocked
   if (blocked) {
     const urip = new AtUri(blocked)
     await client.delete(appLexicons.bsky.graph.listblock.main, {

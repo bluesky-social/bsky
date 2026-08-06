@@ -165,17 +165,18 @@ export const updatePreferences: Action<UpdatePreferencesInput, Preferences> = (
   const { update: cb, service = null } =
     typeof input === 'function' ? { update: input } : input
   return serializedPrefsWrite(client, async () => {
-    const res = await client.xrpc(appLexicons.bsky.actor.getPreferences.main, {
-      params: {},
-      service,
-    })
-    const current = res.body.preferences
+    const { preferences: current } = await client.call(
+      appLexicons.bsky.actor.getPreferences.main,
+      {},
+      { service },
+    )
     const result = cb(current)
     if (result === false) return current
-    await client.xrpc(appLexicons.bsky.actor.putPreferences.main, {
-      body: { preferences: result },
-      service,
-    })
+    await client.call(
+      appLexicons.bsky.actor.putPreferences.main,
+      { preferences: result },
+      { service },
+    )
     return result
   })
 }
@@ -189,11 +190,11 @@ export const getPreferences: Action<
   BskyPreferences
 > = async (client, input) => {
   const service = input?.service ?? null
-  const res = await client.xrpc(appLexicons.bsky.actor.getPreferences.main, {
-    params: {},
-    service,
-  })
-  const prefs = res.body.preferences
+  const { preferences: prefs } = await client.call(
+    appLexicons.bsky.actor.getPreferences.main,
+    {},
+    { service },
+  )
 
   // Migrate v1 saved feeds to v2 if needed. The migrated feeds are used for
   // this call's result directly; the write happens via overwriteSavedFeeds

@@ -10,10 +10,6 @@ import { app as appLexicons } from '../lexicons/index.js'
 export const updateSeenNotifications: Action<
   DatetimeString | undefined,
   void
-> = async (client, seenAt) => {
-  await client.xrpc(appLexicons.bsky.notification.updateSeen.main, {
-    body: {
-      seenAt: seenAt ?? currentDatetimeString(),
-    },
-  })
+> = async (client, seenAt = currentDatetimeString()) => {
+  await client.call(appLexicons.bsky.notification.updateSeen.main, { seenAt })
 }
