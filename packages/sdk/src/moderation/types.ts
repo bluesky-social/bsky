@@ -1,7 +1,7 @@
 import type { AtUriString, DidString } from '@atproto/syntax'
 import type { app, chat, com } from '../lexicons/index.js'
-import { KnownLabelValue } from './const/labels.js'
-import { MuteWordMatch } from './mutewords.js'
+import { type KnownLabelValue } from './const/labels.js'
+import { type MuteWordMatch } from './mutewords.js'
 
 // syntax
 // =

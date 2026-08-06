@@ -1,10 +1,10 @@
 import { app, com } from '../lexicons/index.js'
 import { is$typedObject } from '../utils/types.js'
 import {
-  InterpretedLabelValueDefinition,
-  LabelPreference,
-  LabelValueDefinitionFlag,
-  ModerationBehavior,
+  type InterpretedLabelValueDefinition,
+  type LabelPreference,
+  type LabelValueDefinitionFlag,
+  type ModerationBehavior,
 } from './types.js'
 
 function isObject(v: unknown): v is Record<string, unknown> {

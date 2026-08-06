@@ -1,7 +1,10 @@
 import { AtUri } from '@atproto/syntax'
 import type { app } from '../../lexicons/index.js'
 import { ModerationDecision } from '../decision.js'
-import { ModerationOpts, ModerationSubjectUserList } from '../types.js'
+import {
+  type ModerationOpts,
+  type ModerationSubjectUserList,
+} from '../types.js'
 import { decideAccount } from './account.js'
 import { decideProfile } from './profile.js'
 

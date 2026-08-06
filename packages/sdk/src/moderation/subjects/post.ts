@@ -1,8 +1,8 @@
 import { app } from '../../lexicons/index.js'
 import { is$typedObject } from '../../utils/types.js'
 import { ModerationDecision } from '../decision.js'
-import { MuteWordMatch, matchMuteWords } from '../mutewords.js'
-import { ModerationOpts, ModerationSubjectPost } from '../types.js'
+import { type MuteWordMatch, matchMuteWords } from '../mutewords.js'
+import { type ModerationOpts, type ModerationSubjectPost } from '../types.js'
 import { decideAccount } from './account.js'
 import { decideProfile } from './profile.js'
 

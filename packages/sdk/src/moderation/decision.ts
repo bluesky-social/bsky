@@ -1,19 +1,19 @@
 import type { app } from '../lexicons/index.js'
-import { KnownLabelValue, LABELS } from './const/labels.js'
-import { MuteWordMatch } from './mutewords.js'
+import { type KnownLabelValue, LABELS } from './const/labels.js'
+import { type MuteWordMatch } from './mutewords.js'
 import {
   BLOCK_BEHAVIOR,
   CUSTOM_LABEL_VALUE_RE,
   HIDE_BEHAVIOR,
-  InterpretedLabelValueDefinition,
-  Label,
-  LabelPreference,
-  LabelTarget,
+  type InterpretedLabelValueDefinition,
+  type Label,
+  type LabelPreference,
+  type LabelTarget,
   MUTEWORD_BEHAVIOR,
   MUTE_BEHAVIOR,
-  ModerationBehavior,
-  ModerationCause,
-  ModerationOpts,
+  type ModerationBehavior,
+  type ModerationCause,
+  type ModerationOpts,
   NOOP_BEHAVIOR,
 } from './types.js'
 import { ModerationUI } from './ui.js'

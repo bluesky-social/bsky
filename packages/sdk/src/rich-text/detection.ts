@@ -2,7 +2,7 @@ import type { DidString, UriString } from '@atproto/lex'
 import { graphemeLen } from '@atproto/lex'
 import TLDs from 'tlds' with { type: 'json' }
 import { app } from '../lexicons/index.js'
-import { UnicodeString } from './unicode.js'
+import { type UnicodeString } from './unicode.js'
 import {
   CASHTAG_REGEX,
   MENTION_REGEX,

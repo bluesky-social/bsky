@@ -1,5 +1,8 @@
 import { ModerationDecision } from '../decision.js'
-import { ModerationOpts, ModerationSubjectNotification } from '../types.js'
+import {
+  type ModerationOpts,
+  type ModerationSubjectNotification,
+} from '../types.js'
 import { decideAccount } from './account.js'
 import { decideProfile } from './profile.js'
 
