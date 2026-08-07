@@ -65,6 +65,14 @@ export default config(
     },
   },
   {
+    files: ['packages/sdk/scripts/**/*.ts'],
+    rules: {
+      // peer-smoke.ts runs in a scratch project against the packed tarball;
+      // its @bsky/sdk self-imports only resolve in-repo after a build
+      'import-x/no-unresolved': ['error', { ignore: ['^@bsky/sdk'] }],
+    },
+  },
+  {
     files: ['**/*.mjs', '**/scripts/**/*.js', '.github/scripts/**/*.ts'],
     languageOptions: {
       globals: {
