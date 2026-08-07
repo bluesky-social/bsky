@@ -6,23 +6,12 @@
       "type": "object",
       "required": ["jobId", "did", "state"],
       "properties": {
-        "jobId": { "type": "string", "minLength": 20, "maxLength": 20 },
+        "jobId": { "type": "string" },
         "did": { "type": "string", "format": "did" },
         "state": {
           "type": "string",
-          "maxLength": 64,
           "description": "The state of the video processing job. All values not listed as a known value indicate that the job is in process.",
-          "knownValues": [
-            "JOB_STATE_CREATED",
-            "JOB_STATE_ENCODING",
-            "JOB_STATE_ENCODED",
-            "JOB_STATE_SCANNING",
-            "JOB_STATE_SCANNED",
-            "JOB_STATE_UPLOADING",
-            "JOB_STATE_UPLOADED",
-            "JOB_STATE_COMPLETED",
-            "JOB_STATE_FAILED"
-          ]
+          "knownValues": ["JOB_STATE_COMPLETED", "JOB_STATE_FAILED"]
         },
         "progress": {
           "type": "integer",
@@ -31,10 +20,9 @@
           "description": "Progress within the current processing state."
         },
         "blob": { "type": "blob" },
-        "error": { "type": "string", "maxLength": 1024 },
+        "error": { "type": "string" },
         "failureCode": {
           "type": "string",
-          "maxLength": 64,
           "description": "A machine-readable code for why the video processing job failed.",
           "knownValues": [
             "validation_failure",
@@ -44,7 +32,7 @@
             "generic_failure"
           ]
         },
-        "message": { "type": "string", "maxLength": 1024 }
+        "message": { "type": "string" }
       }
     }
   }
