@@ -35,14 +35,38 @@
         }
       },
       "errors": [
-        { "name": "UploadNotFound", "description": "The job ID is unknown or aged out of retention; known terminal sessions are never reported as not found." },
-        { "name": "UploadExpired", "description": "The upload session expired before finalization began." },
-        { "name": "MissingParts", "description": "Not all parts are recorded; the error message lists the missing part numbers." },
-        { "name": "UploadNotReady", "description": "A finish is in progress; check getUploadStatus and retry." },
-        { "name": "UnsupportedContentType", "description": "The assembled object's detected content type is not supported." },
-        { "name": "UploadFailed", "description": "The session is known to have failed; the error carries its failure reason." },
-        { "name": "UploadAborted", "description": "The session is known to have been aborted." },
-        { "name": "ServiceOverloaded", "description": "The service is draining or temporarily at capacity; retry later." }
+        {
+          "name": "UploadNotFound",
+          "description": "The job ID is unknown or aged out of retention; known terminal sessions are never reported as not found."
+        },
+        {
+          "name": "UploadExpired",
+          "description": "The upload session expired before finalization began."
+        },
+        {
+          "name": "MissingParts",
+          "description": "Not all parts are recorded; the error message lists the missing part numbers."
+        },
+        {
+          "name": "UploadNotReady",
+          "description": "A finish is in progress; check getUploadStatus and retry."
+        },
+        {
+          "name": "UnsupportedContentType",
+          "description": "The assembled object's detected content type is not supported."
+        },
+        {
+          "name": "UploadFailed",
+          "description": "The session is known to have failed; the error carries its failure reason."
+        },
+        {
+          "name": "UploadAborted",
+          "description": "The session is known to have been aborted."
+        },
+        {
+          "name": "ServiceOverloaded",
+          "description": "The service is draining or temporarily at capacity; retry later."
+        }
       ]
     }
   }

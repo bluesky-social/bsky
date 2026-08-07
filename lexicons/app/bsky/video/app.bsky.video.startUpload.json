@@ -54,14 +54,38 @@
         }
       },
       "errors": [
-        { "name": "UnsupportedContentType", "description": "The declared MIME type is not supported." },
-        { "name": "VideoTooLarge", "description": "The exact file size exceeds the per-file cap or remaining daily byte allowance." },
-        { "name": "VideoTooLong", "description": "The advisory declared duration exceeds the limit." },
-        { "name": "BadAspectRatio", "description": "The advisory declared dimensions have an unsupported aspect ratio." },
-        { "name": "DailyLimitExceeded", "description": "The daily video or byte allowance, including active reservations, is exhausted." },
-        { "name": "TooManyOpenUploads", "description": "The account has reached its open multipart upload limit." },
-        { "name": "UploadForbidden", "description": "The account is not permitted to upload video." },
-        { "name": "ServiceOverloaded", "description": "The service is draining, at capacity, or temporarily unable to create the multipart upload." }
+        {
+          "name": "UnsupportedContentType",
+          "description": "The declared MIME type is not supported."
+        },
+        {
+          "name": "VideoTooLarge",
+          "description": "The exact file size exceeds the per-file cap or remaining daily byte allowance."
+        },
+        {
+          "name": "VideoTooLong",
+          "description": "The advisory declared duration exceeds the limit."
+        },
+        {
+          "name": "BadAspectRatio",
+          "description": "The advisory declared dimensions have an unsupported aspect ratio."
+        },
+        {
+          "name": "DailyLimitExceeded",
+          "description": "The daily video or byte allowance, including active reservations, is exhausted."
+        },
+        {
+          "name": "TooManyOpenUploads",
+          "description": "The account has reached its open multipart upload limit."
+        },
+        {
+          "name": "UploadForbidden",
+          "description": "The account is not permitted to upload video."
+        },
+        {
+          "name": "ServiceOverloaded",
+          "description": "The service is draining, at capacity, or temporarily unable to create the multipart upload."
+        }
       ]
     }
   }

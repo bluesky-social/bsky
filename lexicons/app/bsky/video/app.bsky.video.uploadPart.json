@@ -28,15 +28,42 @@
         }
       },
       "errors": [
-        { "name": "UploadNotFound", "description": "The job ID is unknown or aged out of retention; known terminal sessions are never reported as not found." },
-        { "name": "UploadExpired", "description": "The upload session expired before completion." },
-        { "name": "InvalidPartNumber", "description": "The part number is outside the upload's valid part range." },
-        { "name": "PartSizeMismatch", "description": "Content-Length does not exactly match the expected size for this part." },
-        { "name": "UploadNotReady", "description": "A finish is in progress; check getUploadStatus and retry." },
-        { "name": "UploadFailed", "description": "The session is known to have failed; the error carries its failure reason." },
-        { "name": "UploadAborted", "description": "The session is known to have been aborted." },
-        { "name": "UploadAlreadyCompleted", "description": "The session is known to have already completed." },
-        { "name": "ServiceOverloaded", "description": "The service is draining or temporarily at capacity; retry on another worker." }
+        {
+          "name": "UploadNotFound",
+          "description": "The job ID is unknown or aged out of retention; known terminal sessions are never reported as not found."
+        },
+        {
+          "name": "UploadExpired",
+          "description": "The upload session expired before completion."
+        },
+        {
+          "name": "InvalidPartNumber",
+          "description": "The part number is outside the upload's valid part range."
+        },
+        {
+          "name": "PartSizeMismatch",
+          "description": "Content-Length does not exactly match the expected size for this part."
+        },
+        {
+          "name": "UploadNotReady",
+          "description": "A finish is in progress; check getUploadStatus and retry."
+        },
+        {
+          "name": "UploadFailed",
+          "description": "The session is known to have failed; the error carries its failure reason."
+        },
+        {
+          "name": "UploadAborted",
+          "description": "The session is known to have been aborted."
+        },
+        {
+          "name": "UploadAlreadyCompleted",
+          "description": "The session is known to have already completed."
+        },
+        {
+          "name": "ServiceOverloaded",
+          "description": "The service is draining or temporarily at capacity; retry on another worker."
+        }
       ]
     }
   }

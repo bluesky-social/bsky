@@ -41,8 +41,14 @@
         }
       },
       "errors": [
-        { "name": "UploadNotFound", "description": "The job ID is unknown or aged out of retention; known terminal sessions return their outcome and are never reported as not found." },
-        { "name": "UploadNotReady", "description": "A finish is in progress; check getUploadStatus and retry." }
+        {
+          "name": "UploadNotFound",
+          "description": "The job ID is unknown or aged out of retention; known terminal sessions return their outcome and are never reported as not found."
+        },
+        {
+          "name": "UploadNotReady",
+          "description": "A finish is in progress; check getUploadStatus and retry."
+        }
       ]
     }
   }
