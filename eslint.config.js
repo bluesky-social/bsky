@@ -1,10 +1,11 @@
 import js from '@eslint/js'
+import { defineConfig } from 'eslint/config'
 import prettier from 'eslint-config-prettier'
 import { flatConfigs as importX } from 'eslint-plugin-import-x'
 import n from 'eslint-plugin-n'
-import { config, configs as tseslint } from 'typescript-eslint'
+import { configs as tseslint } from 'typescript-eslint'
 
-export default config(
+export default defineConfig(
   {
     ignores: [
       '**/dist/',
@@ -23,7 +24,7 @@ export default config(
   {
     plugins: { n },
     settings: {
-      'import-x/internal-regex': '^@bsky\\.app/',
+      'import-x/internal-regex': '^@bsky/',
       'import-x/resolver': {
         typescript: true,
       },
