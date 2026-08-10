@@ -13,11 +13,13 @@
           "properties": {
             "sizeBytes": {
               "type": "integer",
-              "description": "Exact byte size of the file, not a hint."
+              "minimum": 1,
+              "description": "Exact byte size of the complete upload-ready video file before it is split into parts."
             },
             "mimeType": {
               "type": "string",
-              "maxLength": 256,
+              "minLength": 3,
+              "maxLength": 255,
               "description": "Declared MIME type of the video."
             },
             "name": {
@@ -46,7 +48,7 @@
           "type": "object",
           "required": ["jobId", "partSizeBytes", "partCount", "expiresAt"],
           "properties": {
-            "jobId": { "type": "string", "minLength": 20, "maxLength": 20 },
+            "jobId": { "type": "string", "minLength": 1, "maxLength": 256 },
             "partSizeBytes": { "type": "integer" },
             "partCount": { "type": "integer" },
             "expiresAt": { "type": "string", "format": "datetime" }

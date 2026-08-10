@@ -11,7 +11,7 @@
           "type": "object",
           "required": ["jobId"],
           "properties": {
-            "jobId": { "type": "string", "minLength": 20, "maxLength": 20 }
+            "jobId": { "type": "string", "minLength": 1, "maxLength": 256 }
           }
         }
       },
@@ -23,8 +23,8 @@
           "properties": {
             "completedJobId": {
               "type": "string",
-              "minLength": 20,
-              "maxLength": 20,
+              "minLength": 1,
+              "maxLength": 256,
               "description": "The processing job to poll with getJobStatus; on deduplication this may differ from the input jobId."
             },
             "jobStatus": {

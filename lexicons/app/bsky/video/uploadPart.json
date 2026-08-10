@@ -9,8 +9,8 @@
         "type": "params",
         "required": ["jobId", "partNumber"],
         "properties": {
-          "jobId": { "type": "string", "minLength": 20, "maxLength": 20 },
-          "partNumber": { "type": "integer" }
+          "jobId": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "partNumber": { "type": "integer", "minimum": 1 }
         }
       },
       "input": {
@@ -22,7 +22,7 @@
           "type": "object",
           "required": ["partNumber", "sizeBytes"],
           "properties": {
-            "partNumber": { "type": "integer" },
+            "partNumber": { "type": "integer", "minimum": 1 },
             "sizeBytes": { "type": "integer" }
           }
         }

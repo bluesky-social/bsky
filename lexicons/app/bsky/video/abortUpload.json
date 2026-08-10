@@ -11,7 +11,7 @@
           "type": "object",
           "required": ["jobId"],
           "properties": {
-            "jobId": { "type": "string", "minLength": 20, "maxLength": 20 }
+            "jobId": { "type": "string", "minLength": 1, "maxLength": 256 }
           }
         }
       },
@@ -28,8 +28,8 @@
             },
             "completedJobId": {
               "type": "string",
-              "minLength": 20,
-              "maxLength": 20,
+              "minLength": 1,
+              "maxLength": 256,
               "description": "Present only when state is completed."
             },
             "failureReason": {
