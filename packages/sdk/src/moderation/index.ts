@@ -7,12 +7,12 @@ import { decideProfile } from './subjects/profile.js'
 import { decideStatus } from './subjects/status.js'
 import { decideUserList } from './subjects/user-list.js'
 import {
-  ModerationOpts,
-  ModerationSubjectFeedGenerator,
-  ModerationSubjectNotification,
-  ModerationSubjectPost,
-  ModerationSubjectProfile,
-  ModerationSubjectUserList,
+  type ModerationOpts,
+  type ModerationSubjectFeedGenerator,
+  type ModerationSubjectNotification,
+  type ModerationSubjectPost,
+  type ModerationSubjectProfile,
+  type ModerationSubjectUserList,
 } from './types.js'
 
 export { ModerationUI } from './ui.js'
@@ -22,6 +22,17 @@ export {
   interpretLabelValueDefinition,
   interpretLabelValueDefinitions,
 } from './util.js'
+export { DEFAULT_LABEL_SETTINGS, LABELS } from './const/labels.js'
+export type { KnownLabelValue } from './const/labels.js'
+export type {
+  InterpretedLabelValueDefinition,
+  LabelPreference,
+  ModerationBehavior,
+  ModerationCause,
+  ModerationOpts,
+  ModerationPrefs,
+  ModerationPrefsLabeler,
+} from './types.js'
 
 export function moderateProfile(
   subject: ModerationSubjectProfile,

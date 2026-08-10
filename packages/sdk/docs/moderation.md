@@ -17,7 +17,7 @@ Every moderation function takes a set of options which look like this:
   // the logged-in user's DID
   userDid: 'did:plc:1234...',
 
-  moderationPrefs: {
+  prefs: {
     // is adult content allowed?
     adultContentEnabled: true,
 
@@ -60,7 +60,7 @@ This should match the following interfaces:
 
 ```typescript
 export interface ModerationPrefsLabeler {
-  did: string
+  did: DidString
   labels: Record<string, LabelPreference>
 }
 
@@ -68,12 +68,12 @@ export interface ModerationPrefs {
   adultContentEnabled: boolean
   labels: Record<string, LabelPreference>
   labelers: ModerationPrefsLabeler[]
-  mutedWords: AppBskyActorDefs.MutedWord[]
-  hiddenPosts: string[]
+  mutedWords: app.bsky.actor.defs.MutedWord[]
+  hiddenPosts: AtUriString[]
 }
 
 export interface ModerationOpts {
-  userDid: string | undefined
+  userDid: DidString | undefined
   prefs: ModerationPrefs
   /**
    * Map of labeler did -> custom definitions
@@ -82,10 +82,13 @@ export interface ModerationOpts {
 }
 ```
 
-You can quickly grab the `ModerationPrefs` using the `agent.getPreferences()` method:
+You can quickly grab the `ModerationPrefs` using the `getPreferences` action:
 
 ```typescript
-const prefs = await agent.getPreferences()
+import { getPreferences } from '@bsky/sdk'
+import { moderatePost } from '@bsky/sdk/moderation'
+
+const prefs = await client.call(getPreferences)
 moderatePost(post, {
   userDid: /*...*/,
   prefs: prefs.moderationPrefs,
@@ -97,15 +100,19 @@ To gather the label definitions (`labelDefs`) see the _Labelers_ section below.
 
 ## Labelers
 
-Labelers are services that provide moderation labels. Your application will typically have 1+ top-level labelers set with the ability to do "takedowns" on content. This is controlled via this static function, though the default is to use Bluesky's moderation:
+Labelers are services that provide moderation labels. Your application will typically have 1+ top-level labelers set with the ability to do "takedowns" on content. This is controlled via the `appLabelers` client option. When no labeler headers are sent at all, the Bluesky API applies its own moderation service by default — so this only needs to be set when introducing other labelers:
 
 ```typescript
-BskyAgent.configure({
+import { Client } from '@atproto/lex'
+
+const client = new Client(session, {
   appLabelers: ['did:web:my-labeler.com'],
 })
 ```
 
-Users may also add their own labelers. The active labelers are controlled via an HTTP header which is automatically set by the agent when `getPreferences` is called, or when the labeler preferences are changed.
+(`Client.configure({ appLabelers })` sets the same thing globally for all client instances; prefer the per-client option.)
+
+Users may also add their own labelers. The active labelers are controlled via an HTTP header which is set by the client from its labelers configuration (`client.setLabelers()`, `client.addLabelers()`). Use the `addLabeler`/`removeLabeler` actions to persist a user's labeler subscriptions in their preferences.
 
 Labelers publish a `app.bsky.labeler.service` record that looks like this:
 
@@ -139,20 +146,37 @@ Labelers publish a `app.bsky.labeler.service` record that looks like this:
 }
 ```
 
-The label value definition are custom labels which only apply to that labeler. Your client needs to sync those definitions in order to correctly interpret them. To do that, call `app.bsky.labeler.getService()` (or the `getServices` batch variant) periodically to fetch their definitions. We recommend caching the response (at time our writing the official client uses a TTL of 6 hours).
+The label value definitions are custom labels which only apply to that labeler. Your client needs to sync those definitions in order to correctly interpret them. To do that, call `app.bsky.labeler.getServices` with `detailed: true` periodically to fetch their definitions. We recommend caching the response (at time of our writing the official client uses a TTL of 6 hours).
 
 Here is how to do this:
 
 ```typescript
-import { AtpAgent } from '@atproto/api'
+import { Client } from '@atproto/lex'
+import { getPreferences } from '@bsky/sdk'
+import { app } from '@bsky/sdk/lexicons'
+import {
+  type InterpretedLabelValueDefinition,
+  interpretLabelValueDefinitions,
+  moderatePost,
+} from '@bsky/sdk/moderation'
 
-const agent = new AtpAgent({ service: 'https://example.com' })
-// assume `agent` is a signed in session
-const prefs = await agent.getPreferences()
-const labelDefs = await agent.getLabelDefinitions(prefs)
+// assume `client` is backed by a signed-in session
+const prefs = await client.call(getPreferences)
+
+const services = await client.call(app.bsky.labeler.getServices, {
+  dids: prefs.moderationPrefs.labelers.map((labeler) => labeler.did),
+  detailed: true,
+})
+
+const labelDefs: Record<string, InterpretedLabelValueDefinition[]> = {}
+for (const view of services.views) {
+  if (app.bsky.labeler.defs.labelerViewDetailed.isTypeOf(view)) {
+    labelDefs[view.creator.did] = interpretLabelValueDefinitions(view)
+  }
+}
 
 moderatePost(post, {
-  userDid: agent.session.did,
+  userDid: client.assertDid,
   prefs: prefs.moderationPrefs,
   labelDefs,
 })
@@ -167,10 +191,10 @@ import {
   moderateProfile,
   moderatePost,
   moderateNotification,
-  moderateFeedGen,
+  moderateFeedGenerator,
   moderateUserList,
-  moderateLabeler,
-} from '@atproto/api'
+  moderateStatus,
+} from '@bsky/sdk/moderation'
 ```
 
 Each of these follows the same API signature:
@@ -247,14 +271,30 @@ for (const inform of mod.ui('contentList').informs) {
 
 ## Sending moderation reports
 
-Any Labeler is capable of receiving moderation reports. As a result, you need to specify which labeler should receive the report. You do this with the `Atproto-Proxy` header:
+Any Labeler is capable of receiving moderation reports. As a result, you need to specify which labeler should receive the report. You do this with the `service` option (the `atproto-proxy` header), overridable per request:
 
 ```typescript
-agent
-  .withProxy('atproto_labeler', 'did:web:my-labeler.com')
-  .createModerationReport({
-    reasonType: 'com.atproto.moderation.defs#reasonViolation',
+import { com } from '@bsky/sdk/lexicons'
+
+await client.call(
+  com.atproto.moderation.createReport,
+  {
+    reasonType: com.atproto.moderation.defs.reasonViolation.$token,
     reason: 'They were being such a jerk to me!',
-    subject: { did: 'did:web:bob.com' },
-  })
+    subject: com.atproto.admin.defs.repoRef.$build({
+      did: 'did:web:bob.com',
+    }),
+  },
+  { service: 'did:web:my-labeler.com#atproto_labeler' },
+)
+```
+
+The Bluesky moderation service's address is available via the `api` export from the SDK:
+
+```typescript
+import { api } from '@bsky/sdk'
+
+await client.call(com.atproto.moderation.createReport, report, {
+  service: api.moderation.service, // did:plc:ar7c4by46qjdydhdevvrndac#atproto_labeler
+})
 ```

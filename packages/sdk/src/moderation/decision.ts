@@ -1,19 +1,19 @@
-import { AppBskyGraphDefs } from '../client/index.js'
-import { KnownLabelValue, LABELS } from './const/labels.js'
-import { MuteWordMatch } from './mutewords.js'
+import type { app } from '../lexicons/index.js'
+import { type KnownLabelValue, LABELS } from './const/labels.js'
+import { type MuteWordMatch } from './mutewords.js'
 import {
   BLOCK_BEHAVIOR,
   CUSTOM_LABEL_VALUE_RE,
   HIDE_BEHAVIOR,
-  InterpretedLabelValueDefinition,
-  Label,
-  LabelPreference,
-  LabelTarget,
+  type InterpretedLabelValueDefinition,
+  type Label,
+  type LabelPreference,
+  type LabelTarget,
   MUTEWORD_BEHAVIOR,
   MUTE_BEHAVIOR,
-  ModerationBehavior,
-  ModerationCause,
-  ModerationOpts,
+  type ModerationBehavior,
+  type ModerationCause,
+  type ModerationOpts,
   NOOP_BEHAVIOR,
 } from './types.js'
 import { ModerationUI } from './ui.js'
@@ -219,7 +219,7 @@ export class ModerationDecision {
   }
 
   addBlockingByList(
-    blockingByList: AppBskyGraphDefs.ListViewBasic | undefined,
+    blockingByList: app.bsky.graph.defs.ListViewBasic | undefined,
   ) {
     if (blockingByList) {
       this.causes.push({
@@ -253,6 +253,7 @@ export class ModerationDecision {
   addLabel(target: LabelTarget, label: Label, opts: ModerationOpts) {
     // look up the label definition (LABELS lookup may miss: label.val is an
     // arbitrary string while LABELS is keyed by KnownLabelValue)
+    // cast required for object key indexing; returns undefined if not a known label
     const knownLabelDef: InterpretedLabelValueDefinition | undefined =
       LABELS[label.val as KnownLabelValue]
     const labelDef = CUSTOM_LABEL_VALUE_RE.test(label.val)
@@ -362,7 +363,7 @@ export class ModerationDecision {
     }
   }
 
-  addMutedByList(mutedByList: AppBskyGraphDefs.ListViewBasic | undefined) {
+  addMutedByList(mutedByList: app.bsky.graph.defs.ListViewBasic | undefined) {
     if (mutedByList) {
       this.causes.push({
         type: 'muted',

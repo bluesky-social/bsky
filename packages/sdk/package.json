@@ -2,12 +2,12 @@
   "name": "@bsky/sdk",
   "version": "0.0.0",
   "license": "MIT OR Apache-2.0",
-  "description": "Client library for Bluesky",
+  "description": "Bluesky SDK for use with @atproto/lex",
   "keywords": [
-    "atproto",
     "bluesky",
-    "api",
-    "sdk"
+    "atproto",
+    "sdk",
+    "lexicon"
   ],
   "homepage": "https://bsky.app",
   "repository": {
@@ -16,15 +16,33 @@
     "directory": "packages/sdk"
   },
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./lexicons": {
+      "types": "./dist/lexicons-export.d.ts",
+      "default": "./dist/lexicons-export.js"
+    },
+    "./moderation": {
+      "types": "./dist/moderation/index.d.ts",
+      "default": "./dist/moderation/index.js"
+    },
+    "./richtext": {
+      "types": "./dist/rich-text/index.d.ts",
+      "default": "./dist/rich-text/index.js"
+    },
+    "./utils": {
+      "types": "./dist/utils/index.d.ts",
+      "default": "./dist/utils/index.js"
     }
   },
   "files": [
     "dist",
-    "OAUTH.md",
+    "lexicons",
+    "lexicons.json",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -32,20 +50,27 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@atproto/common-web": "^0.5.3",
-    "@atproto/lexicon": "^0.7.4",
-    "@atproto/syntax": "^0.6.4",
-    "@atproto/xrpc": "^0.8.3",
-    "await-lock": "^3.0.0",
-    "multiformats": "^13.0.0",
-    "tlds": "^1.234.0",
-    "zod": "^3.23.8"
+    "@atproto-labs/handle-resolver": "^0.4.6",
+    "@atproto/syntax": "^0.7.2",
+    "tlds": "^1.261.0"
+  },
+  "peerDependencies": {
+    "@atproto/lex": "^0.3.0"
   },
   "devDependencies": {
-    "prettier": "^3.9.4"
+    "@atproto/lex": "^0.3.0",
+    "@atproto/lex-password-session": "^0.1.8",
+    "prettier": "^3.9.5",
+    "rolldown": "1.1.4",
+    "vitest": "^4.1.10"
   },
   "scripts": {
+    "codegen": "lex build --clear --index-file --out ./src/lexicons --exclude 'app.bsky.unspecced.*' 'tools.ozone.*' 'chat.bsky.convo.exportAccountData'",
     "codegen:labels": "node ./scripts/generate-code.mjs",
-    "build": "tsc --build tsconfig.build.json"
+    "prebuild": "pnpm run codegen && pnpm run codegen:labels",
+    "build": "tsc --build tsconfig.build.json",
+    "test": "vitest run",
+    "test:peer-matrix": "node ./scripts/peer-matrix.mjs",
+    "measure:bundle": "node ./scripts/measure-bundle.mjs"
   }
 }

@@ -1,29 +1,35 @@
+import { app, com } from '../lexicons/index.js'
+import { is$typedObject } from '../utils/types.js'
 import {
-  AppBskyEmbedRecord,
-  AppBskyEmbedRecordWithMedia,
-  AppBskyLabelerDefs,
-  ComAtprotoLabelDefs,
-} from '../client/index.js'
-import { asPredicate } from '../client/util.js'
-import {
-  InterpretedLabelValueDefinition,
-  LabelPreference,
-  LabelValueDefinitionFlag,
-  ModerationBehavior,
+  type InterpretedLabelValueDefinition,
+  type LabelPreference,
+  type LabelValueDefinitionFlag,
+  type ModerationBehavior,
 } from './types.js'
 
-export function isQuotedPost(embed: unknown): embed is AppBskyEmbedRecord.View {
-  return Boolean(embed && AppBskyEmbedRecord.isView(embed))
+function isObject(v: unknown): v is Record<string, unknown> {
+  return v != null && typeof v === 'object'
+}
+
+export function isQuotedPost(
+  embed: unknown,
+): embed is app.bsky.embed.record.View {
+  return (
+    isObject(embed) && is$typedObject(embed, app.bsky.embed.record.view.$type)
+  )
 }
 
 export function isQuotedPostWithMedia(
   embed: unknown,
-): embed is AppBskyEmbedRecordWithMedia.View {
-  return Boolean(embed && AppBskyEmbedRecordWithMedia.isView(embed))
+): embed is app.bsky.embed.recordWithMedia.View {
+  return (
+    isObject(embed) &&
+    is$typedObject(embed, app.bsky.embed.recordWithMedia.view.$type)
+  )
 }
 
 export function interpretLabelValueDefinition(
-  def: ComAtprotoLabelDefs.LabelValueDefinition,
+  def: com.atproto.label.defs.LabelValueDefinition,
   definedBy: string | undefined,
 ): InterpretedLabelValueDefinition {
   const behaviors: {
@@ -82,6 +88,7 @@ export function interpretLabelValueDefinition(
 
   let defaultSetting: LabelPreference = 'warn'
   if (def.defaultSetting === 'hide' || def.defaultSetting === 'ignore') {
+    // cast safe: 'hide' | 'ignore' are LabelPreference values; checked by condition
     defaultSetting = def.defaultSetting as LabelPreference
   }
 
@@ -101,10 +108,12 @@ export function interpretLabelValueDefinition(
 }
 
 export function interpretLabelValueDefinitions(
-  labelerView: AppBskyLabelerDefs.LabelerViewDetailed,
+  labelerView: app.bsky.labeler.defs.LabelerViewDetailed,
 ): InterpretedLabelValueDefinition[] {
   return (labelerView.policies?.labelValueDefinitions || [])
-    .filter(asPredicate(ComAtprotoLabelDefs.validateLabelValueDefinition))
+    .filter((v): v is com.atproto.label.defs.LabelValueDefinition =>
+      com.atproto.label.defs.labelValueDefinition.matches(v),
+    )
     .map((labelValDef) =>
       interpretLabelValueDefinition(labelValDef, labelerView.creator.did),
     )

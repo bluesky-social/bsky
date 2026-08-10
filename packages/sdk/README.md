@@ -1,32 +1,30 @@
-# ATP API
+# @bsky/sdk
 
-This API is a client for ATProtocol servers. It communicates using HTTP. It includes:
+Bluesky SDK built on [@atproto/lex](https://github.com/bluesky-social/atproto/tree/main/packages/lex). Provides Bluesky lexicon definitions, typed actions, moderation utilities, rich-text helpers, and string utilities.
 
-- ✔️ APIs for ATProto and Bluesky.
-- ✔️ Validation and complete typescript types.
-- ✔️ Session management.
-- ✔️ A RichText library.
+## Install
 
-> [!Note]
->
-> We recommend using [lex](https://github.com/bluesky-social/atproto/tree/main/packages/lex/lex), our type-safe SDK with Lexicon code generation, for all new projects.
+```sh
+npm install @bsky/sdk @atproto/lex
+```
+
+`@atproto/lex` provides the `Client` class that powers all API calls. `@bsky/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
 
 ## Getting started
 
-First install the package:
-
-```sh
-yarn add @atproto/api
-```
-
-Then in your application:
-
 ```typescript
-import { Agent, CredentialSession } from '@atproto/api'
+import { Client } from '@atproto/lex'
+import { PasswordSession } from '@atproto/lex-password-session'
+import { post } from '@bsky/sdk'
 
-const session = new CredentialSession(new URL('https://bsky.social'))
-await session.login(account)
-const agent = new Agent(session)
+const session = await PasswordSession.login({
+  service: 'https://bsky.social',
+  identifier: 'your.bsky.social', // your handle
+  password: 'xxxx-xxxx-xxxx-xxxx', // an app password, generated in the Bluesky app
+})
+const client = new Client(session)
+
+await client.call(post, { text: 'Hello, world!' })
 ```
 
 ## Usage
@@ -41,8 +39,8 @@ manage sessions:
 
 #### App password based session management
 
-Username / password based authentication can be performed using the `Agent`
-class.
+Username / password based authentication can be performed using the
+`PasswordSession` class from `@atproto/lex-password-session`.
 
 > [!CAUTION]
 >
@@ -51,26 +49,28 @@ class.
 > `@atproto/oauth-client-*` packages).
 
 ```typescript
-import { Agent, CredentialSession, type AtpAgentLoginOpts } from '@atproto/api'
+import { Client } from '@atproto/lex'
+import {
+  PasswordSession,
+  type SessionData,
+} from '@atproto/lex-password-session'
 
-// Configure connection to the server with authentification
-const account: AtpAgentLoginOpts = {
-  identifier: 'your.bsky.social',
-  password: 'xxxx-xxxx-xxxx-xxxx',
-}
+const session = await PasswordSession.login({
+  service: 'https://bsky.social',
+  identifier: 'your.bsky.social', // your handle
+  password: 'xxxx-xxxx-xxxx-xxxx', // an app password, generated in the Bluesky app
+  onUpdated: (data: SessionData) => saveToStorage(data),
+  onDeleted: (data: SessionData) => clearStorage(data.did),
+})
+const client = new Client(session)
+console.log(`Authenticated as: ${client.assertDid}`)
 
-async function authenticate(account: AtpAgentLoginOpts): Promise<Agent> {
-  const session = new CredentialSession(new URL('https://example.com'))
-  await session.login(account)
-  const agent = new Agent(session)
-  return agent
-}
-
-;(async () => {
-  console.log('Authenticating...')
-  const agent = await authenticate(account)
-  console.log(`Authenticated as from: ${agent.sessionManager.did}`)
-})()
+// Next time, resume with the persisted session data to avoid storing
+// user credentials:
+const resumed = await PasswordSession.resume(loadFromStorage(), {
+  onUpdated: (data: SessionData) => saveToStorage(data),
+  onDeleted: (data: SessionData) => clearStorage(data.did),
+})
 ```
 
 #### OAuth based session management
@@ -86,11 +86,11 @@ are available:
   Lower level; compatible with most JS engines.
 
 Every `@atproto/oauth-client-*` implementation has a different way to obtain an
-`OAuthSession` instance that can be used to instantiate an `Agent` (from
-`@atproto/api`). Here is an example restoring a previously saved session:
+OAuth session instance that can be used to instantiate a `Client`. Here is an
+example restoring a previously saved session:
 
 ```typescript
-import { Agent } from '@atproto/api'
+import { Client } from '@atproto/lex'
 import { OAuthClient } from '@atproto/oauth-client'
 
 const oauthClient = new OAuthClient({
@@ -99,86 +99,103 @@ const oauthClient = new OAuthClient({
 
 const oauthSession = await oauthClient.restore('did:plc:123')
 
-// Instantiate the api Agent using an OAuthSession
-const agent = new Agent(oauthSession)
+// Instantiate the lex Client using an OAuth session
+const client = new Client(oauthSession)
+```
+
+### Authenticated and public clients
+
+Use the `api.*` constants for addressing Bluesky services:
+
+```typescript
+import { Client } from '@atproto/lex'
+import { api } from '@bsky/sdk'
+
+// Bluesky API (authenticated queries, proxied through the account host;
+// record writes and mutations automatically target the account host directly)
+const bskyClient = new Client(session, { service: api.app.service })
+
+// Bluesky API (unauthenticated public queries)
+const publicBskyClient = new Client(api.app.urlPublic)
 ```
 
 ### API calls
 
-The agent includes methods for many common operations, including:
+The SDK exports actions for many common operations. Invoke an action against a
+client with `client.call(action, input)`:
 
 ```typescript
+import {
+  blockActorList,
+  deleteFollow,
+  deleteLike,
+  deletePost,
+  deleteRepost,
+  follow,
+  getPreferences,
+  like,
+  muteActor,
+  muteActorList,
+  post,
+  repost,
+  unblockActorList,
+  unmuteActor,
+  unmuteActorList,
+  updateSeenNotifications,
+  upsertProfile,
+} from '@bsky/sdk'
+
 // The DID of the user currently authenticated (or undefined)
-agent.did
-agent.accountDid // Throws if the user is not authenticated
+bskyClient.did
+bskyClient.assertDid // Throws if the user is not authenticated
 
 // Feeds and content
-await agent.getTimeline(params, opts)
-await agent.getAuthorFeed(params, opts)
-await agent.getPostThread(params, opts)
-await agent.getPost(params)
-await agent.getPosts(params, opts)
-await agent.getLikes(params, opts)
-await agent.getRepostedBy(params, opts)
-await agent.post(record)
-await agent.deletePost(postUri)
-await agent.like(uri, cid)
-await agent.deleteLike(likeUri)
-await agent.repost(uri, cid)
-await agent.deleteRepost(repostUri)
-await agent.uploadBlob(data, opts)
+await bskyClient.call(post, { text: 'Hello, world!' })
+await bskyClient.call(deletePost, postUri)
+await bskyClient.call(like, { uri, cid })
+await bskyClient.call(deleteLike, likeUri)
+await bskyClient.call(repost, { uri, cid })
+await bskyClient.call(deleteRepost, repostUri)
 
 // Social graph
-await agent.getFollows(params, opts)
-await agent.getFollowers(params, opts)
-await agent.follow(did)
-await agent.deleteFollow(followUri)
+await bskyClient.call(follow, { did })
+await bskyClient.call(deleteFollow, followUri)
+await bskyClient.call(muteActor, { actor })
+await bskyClient.call(unmuteActor, { actor })
+await bskyClient.call(muteActorList, { list })
+await bskyClient.call(unmuteActorList, { list })
+await bskyClient.call(blockActorList, { list })
+await bskyClient.call(unblockActorList, { list })
 
 // Actors
-await agent.getProfile(params, opts)
-await agent.upsertProfile(updateFn)
-await agent.getProfiles(params, opts)
-await agent.getSuggestions(params, opts)
-await agent.searchActors(params, opts)
-await agent.searchActorsTypeahead(params, opts)
-await agent.mute(did)
-await agent.unmute(did)
-await agent.muteModList(listUri)
-await agent.unmuteModList(listUri)
-await agent.blockModList(listUri)
-await agent.unblockModList(listUri)
+await bskyClient.call(upsertProfile, (existing) => ({
+  ...existing,
+  displayName: 'Alice',
+}))
 
 // Notifications
-await agent.listNotifications(params, opts)
-await agent.countUnreadNotifications(params, opts)
-await agent.updateSeenNotifications()
+await bskyClient.call(updateSeenNotifications, seenAt)
 
-// Identity
-await agent.resolveHandle(params, opts)
-await agent.updateHandle(params, opts)
-
-// Legacy: Session management should be performed through the SessionManager
-// rather than the Agent instance.
-if (agent instanceof AtpAgent) {
-  // AtpAgent instances support using different sessions during their lifetime
-  await agent.createAccount({ ... }) // session a
-  await agent.login({ ... }) // session b
-  await agent.resumeSession(savedSession) // session c
-}
+// Preferences
+const prefs = await bskyClient.call(getPreferences)
 ```
+
+Queries without a dedicated action are one `xrpc` call away using the generated
+lexicons — see [Advanced API calls](#advanced-api-calls).
 
 ### Validation and types
 
-The package includes a complete types system which includes validation and type-guards. For example, to validate a post record:
+The lexicons include a complete types system with validation and type-guards.
+For example, to validate a post record:
 
 ```typescript
-import { AppBskyFeedPost } from '@atproto/api'
+import { app } from '@bsky/sdk/lexicons'
 
-const post = {...}
-if (AppBskyFeedPost.isRecord(post)) {
-  // typescript now recognizes `post` as a AppBskyFeedPost.Record
+const post = { ... }
+if (app.bsky.feed.post.$isTypeOf(post)) {
+  // typescript now recognizes `post` may be an app.bsky.feed.post.Main
   // however -- we still need to validate it
-  const res = AppBskyFeedPost.validateRecord(post)
+  const res = app.bsky.feed.post.main.safeValidate(post)
   if (res.success) {
     // a valid record
   } else {
@@ -195,18 +212,19 @@ Some records (ie posts) use the `app.bsky.richtext` lexicon. At the moment richt
 ℹ️ It is **strongly** recommended to use this package's `RichText` library. Javascript encodes strings in utf16 while the protocol (and most other programming environments) use utf8. Converting between the two is challenging, but `RichText` handles that for you.
 
 ```typescript
-import { RichText } from '@atproto/api'
+import { currentDatetimeString } from '@atproto/lex'
+import { RichText } from '@bsky/sdk/richtext'
 
-// creating richtext
-const rt = new RichText({
-  text: 'Hello @alice.com, check out this link: https://example.com',
-})
-await rt.detectFacets(agent) // automatically detects mentions and links
+// creating richtext — detects mentions and links, resolving mentions to DIDs
+const rt = await RichText.resolve(
+  'Hello @alice.com, check out this link: https://example.com',
+  { resolver: client },
+)
 const postRecord = {
   $type: 'app.bsky.feed.post',
   text: rt.text,
   facets: rt.facets,
-  createdAt: new Date().toISOString(),
+  createdAt: currentDatetimeString(),
 }
 
 // rendering as markdown
@@ -243,20 +261,23 @@ Applying the moderation system is a challenging task, but we've done our best to
 For more information, see the [Moderation Documentation](./docs/moderation.md).
 
 ```typescript
-import { moderatePost } from '@atproto/api'
+import { getPreferences } from '@bsky/sdk'
+import { moderatePost } from '@bsky/sdk/moderation'
 
 // First get the user's moderation prefs and their label definitions
 // =
 
-const prefs = await agent.getPreferences()
-const labelDefs = await agent.getLabelDefinitions(prefs)
+const prefs = await bskyClient.call(getPreferences)
+const labelDefs = {
+  /* see the Moderation Documentation for gathering labelDefs */
+}
 
 // We call the appropriate moderation function for the content
 // =
 
 const postMod = moderatePost(postView, {
-  userDid: agent.session.did,
-  moderationPrefs: prefs.moderationPrefs,
+  userDid: bskyClient.assertDid,
+  prefs: prefs.moderationPrefs,
   labelDefs,
 })
 
@@ -280,7 +301,7 @@ if (postMod.ui('contentList').alert || postMod.ui('contentList').inform) {
 
 // viewed directly
 if (postMod.ui('contentView').filter) {
-  // don't include in feeds
+  // don't render the view
 }
 if (postMod.ui('contentView').blur) {
   // render the whole object behind a cover (use postMod.ui('contentView').blurs to explain)
@@ -306,60 +327,76 @@ if (postMod.ui('contentMedia').blur) {
 
 ### Advanced API calls
 
-The methods above are convenience wrappers. It covers most but not all available methods.
+The actions above are convenience wrappers. They cover most but not all
+available methods.
 
-The AT Protocol identifies methods and records with reverse-DNS names. You can use them on the agent as well:
+The AT Protocol identifies methods and records with reverse-DNS names. You can
+call any of them using the generated lexicons and the client's `call` and
+record helpers:
 
 ```typescript
-const res1 = await agent.com.atproto.repo.createRecord({
-  did: alice.did,
-  collection: 'app.bsky.feed.post',
-  record: {
-    $type: 'app.bsky.feed.post',
-    text: 'Hello, world!',
-    createdAt: new Date().toISOString(),
-  },
+import { currentDatetimeString } from '@atproto/lex'
+import { app, com } from '@bsky/sdk/lexicons'
+
+// Record helpers always target the user's account host
+const res1 = await bskyClient.createRecord({
+  $type: 'app.bsky.feed.post',
+  text: 'Hello, world!',
+  createdAt: currentDatetimeString(),
 })
-const res2 = await agent.com.atproto.repo.listRecords({
-  repo: alice.did,
-  collection: 'app.bsky.feed.post',
+const res2 = await bskyClient.call(
+  com.atproto.repo.listRecords,
+  { repo: alice.did, collection: 'app.bsky.feed.post' },
+  { service: null }, // target the account host rather than the Bluesky API
+)
+// or, using the typed record convenience helper:
+const res2b = await bskyClient.list(app.bsky.feed.post, {
+  repo: alice.did, // optional. Defaults to bskyClient.did (throws if unauthenticated)
 })
 
-const res3 = await agent.app.bsky.feed.post.create(
-  { repo: alice.did },
-  {
-    text: 'Hello, world!',
-    createdAt: new Date().toISOString(),
-  },
-)
-const res4 = await agent.app.bsky.feed.post.list({ repo: alice.did })
+const res3 = await bskyClient.call(app.bsky.feed.getTimeline, {
+  limit: 20,
+})
+// res3: app.bsky.feed.getTimeline.OutputSchema
 ```
 
-### Non-browser configuration
-
-If your environment doesn't have a built-in `fetch` implementation, you'll need
-to provide one. This will typically be done through a polyfill.
+Namespace roots exported from `/lexicons`: `app`, `com`, `chat`.
 
 ### Bring your own fetch
 
-If you want to provide your own `fetch` implementation, you can do so by
-instantiating the sessionManager with a custom fetch implementation:
+If you want to provide your own `fetch` implementation — for logging, mocking,
+retries, or environments without a built-in `fetch` — pass it when constructing
+the `Client`:
 
 ```typescript
-import { AtpAgent } from '@atproto/api'
+import { Client } from '@atproto/lex'
 
-const myFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+const myFetch: typeof globalThis.fetch = async (input, init) => {
   console.log('requesting', input)
   const response = await globalThis.fetch(input, init)
   console.log('got response', response)
   return response
 }
 
-const agent = new AtpAgent({
+const client = new Client({
   service: 'https://example.com',
   fetch: myFetch,
 })
 ```
+
+## Subpaths
+
+| Import                 | Contents                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| `@bsky/sdk`            | `api` constants, actions, `DEFAULT_LABEL_SETTINGS`                                   |
+| `@bsky/sdk/lexicons`   | Generated lexicon definitions (`app`, `com`, `chat`)                                 |
+| `@bsky/sdk/moderation` | `moderatePost`, `moderateProfile`, and friends; `ModerationDecision`, `ModerationUI` |
+| `@bsky/sdk/richtext`   | `RichText` builder                                                                   |
+| `@bsky/sdk/utils`      | Age assurance helpers, `sanitizeMutedWordValue`, nux validation                      |
+
+## Upgrading from @atproto/api
+
+See [skills/upgrade-from-atproto-api/SKILL.md](../../skills/upgrade-from-atproto-api/SKILL.md) for a full migration guide, including all removed APIs and their replacements.
 
 ## License
 

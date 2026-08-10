@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig/tests.json",
+  "include": ["./src", "./tests"],
+  "compilerOptions": {
+    "types": ["node"],
+    "noUnusedLocals": false,
+  },
+}

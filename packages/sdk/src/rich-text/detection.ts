@@ -1,6 +1,8 @@
+import type { DidString, UriString } from '@atproto/lex'
+import { graphemeLen } from '@atproto/lex'
 import TLDs from 'tlds' with { type: 'json' }
-import { AppBskyRichtextFacet } from '../client/index.js'
-import { UnicodeString } from './unicode.js'
+import { app } from '../lexicons/index.js'
+import { type UnicodeString } from './unicode.js'
 import {
   CASHTAG_REGEX,
   MENTION_REGEX,
@@ -9,7 +11,7 @@ import {
   URL_REGEX,
 } from './util.js'
 
-export type Facet = AppBskyRichtextFacet.Main
+export type Facet = app.bsky.richtext.facet.Main
 
 export function detectFacets(text: UnicodeString): Facet[] | undefined {
   let match
@@ -23,19 +25,19 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
       }
 
       const start = text.utf16.indexOf(match[3], match.index) - 1
-      facets.push({
-        $type: 'app.bsky.richtext.facet',
-        index: {
-          byteStart: text.utf16IndexToUtf8Index(start),
-          byteEnd: text.utf16IndexToUtf8Index(start + match[3].length + 1),
-        },
-        features: [
-          {
-            $type: 'app.bsky.richtext.facet#mention',
-            did: match[3], // must be resolved afterwards
+      facets.push(
+        app.bsky.richtext.facet.$build({
+          index: {
+            byteStart: text.utf16IndexToUtf8Index(start),
+            byteEnd: text.utf16IndexToUtf8Index(start + match[3].length + 1),
           },
-        ],
-      })
+          features: [
+            app.bsky.richtext.facet.mention.$build({
+              did: match[3] as DidString, // boundary: detected text must be resolved
+            }),
+          ],
+        }),
+      )
     }
   }
   {
@@ -67,10 +69,9 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index.end),
         },
         features: [
-          {
-            $type: 'app.bsky.richtext.facet#link',
-            uri,
-          },
+          app.bsky.richtext.facet.link.$build({
+            uri: uri as UriString, // boundary: detected text, format verified by URL_REGEX
+          }),
         ],
       })
     }
@@ -86,7 +87,11 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
       // strip ending punctuation and any spaces
       tag = tag.trim().replace(TRAILING_PUNCTUATION_REGEX, '')
 
-      if (tag.length === 0 || tag.length > 64) continue
+      // tag.length (UTF-16) is always >= graphemeLen(tag), so only pay for
+      // the grapheme count when the UTF-16 length already exceeds the limit.
+      // (upstream atproto#2657)
+      if (tag.length === 0 || (tag.length > 64 && graphemeLen(tag) > 64))
+        continue
 
       const index = match.index + leading.length
 
@@ -96,10 +101,9 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index + 1 + tag.length),
         },
         features: [
-          {
-            $type: 'app.bsky.richtext.facet#tag',
+          app.bsky.richtext.facet.tag.$build({
             tag: tag,
-          },
+          }),
         ],
       })
     }
@@ -124,10 +128,9 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index + 1 + ticker.length), // +1 for $
         },
         features: [
-          {
-            $type: 'app.bsky.richtext.facet#tag',
+          app.bsky.richtext.facet.tag.$build({
             tag: '$' + ticker, // Store with $ prefix
-          },
+          }),
         ],
       })
     }

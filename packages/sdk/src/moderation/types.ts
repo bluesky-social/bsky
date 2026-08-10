@@ -1,13 +1,7 @@
-import {
-  AppBskyActorDefs,
-  AppBskyFeedDefs,
-  AppBskyGraphDefs,
-  AppBskyNotificationListNotifications,
-  ChatBskyActorDefs,
-  ComAtprotoLabelDefs,
-} from '../client/index.js'
-import { KnownLabelValue } from './const/labels.js'
-import { MuteWordMatch } from './mutewords.js'
+import type { AtUriString, DidString } from '@atproto/syntax'
+import type { app, chat, com } from '../lexicons/index.js'
+import { type KnownLabelValue } from './const/labels.js'
+import { type MuteWordMatch } from './mutewords.js'
 
 // syntax
 // =
@@ -54,7 +48,7 @@ export const NOOP_BEHAVIOR: ModerationBehavior = {}
 // labels
 // =
 
-export type Label = ComAtprotoLabelDefs.Label
+export type Label = com.atproto.label.defs.Label
 export type LabelTarget = 'account' | 'profile' | 'content'
 export type LabelPreference = 'ignore' | 'warn' | 'hide'
 
@@ -62,7 +56,7 @@ export type LabelValueDefinitionFlag =
   'no-override' | 'adult' | 'unauthed' | 'no-self'
 
 export interface InterpretedLabelValueDefinition
-  extends ComAtprotoLabelDefs.LabelValueDefinition {
+  extends com.atproto.label.defs.LabelValueDefinition {
   definedBy?: string | undefined // did of labeler or undefined for global
   configurable: boolean
   defaultSetting: LabelPreference // type narrowing
@@ -83,20 +77,20 @@ export type LabelDefinitionMap = Record<
 // =
 
 export type ModerationSubjectProfile =
-  | AppBskyActorDefs.ProfileViewBasic
-  | AppBskyActorDefs.ProfileView
-  | AppBskyActorDefs.ProfileViewDetailed
-  | ChatBskyActorDefs.ProfileViewBasic
+  | app.bsky.actor.defs.ProfileViewBasic
+  | app.bsky.actor.defs.ProfileView
+  | app.bsky.actor.defs.ProfileViewDetailed
+  | chat.bsky.actor.defs.ProfileViewBasic
 
-export type ModerationSubjectPost = AppBskyFeedDefs.PostView
+export type ModerationSubjectPost = app.bsky.feed.defs.PostView
 
 export type ModerationSubjectNotification =
-  AppBskyNotificationListNotifications.Notification
+  app.bsky.notification.listNotifications.Notification
 
-export type ModerationSubjectFeedGenerator = AppBskyFeedDefs.GeneratorView
+export type ModerationSubjectFeedGenerator = app.bsky.feed.defs.GeneratorView
 
 export type ModerationSubjectUserList =
-  AppBskyGraphDefs.ListViewBasic | AppBskyGraphDefs.ListView
+  app.bsky.graph.defs.ListViewBasic | app.bsky.graph.defs.ListView
 
 export type ModerationSubject =
   | ModerationSubjectProfile
@@ -110,7 +104,7 @@ export type ModerationSubject =
 
 export type ModerationCauseSource =
   | { type: 'user' }
-  | { type: 'list'; list: AppBskyGraphDefs.ListViewBasic }
+  | { type: 'list'; list: app.bsky.graph.defs.ListViewBasic }
   | { type: 'labeler'; did: string }
 
 export type ModerationCause =
@@ -165,7 +159,7 @@ export type ModerationCause =
     }
 
 export interface ModerationPrefsLabeler {
-  did: string
+  did: DidString
   labels: Record<string, LabelPreference>
 }
 
@@ -173,12 +167,12 @@ export interface ModerationPrefs {
   adultContentEnabled: boolean
   labels: Record<string, LabelPreference>
   labelers: ModerationPrefsLabeler[]
-  mutedWords: AppBskyActorDefs.MutedWord[]
-  hiddenPosts: string[]
+  mutedWords: app.bsky.actor.defs.MutedWord[]
+  hiddenPosts: AtUriString[]
 }
 
 export interface ModerationOpts {
-  userDid: string | undefined
+  userDid: DidString | undefined
   prefs: ModerationPrefs
   /**
    * Map of labeler did -> custom definitions

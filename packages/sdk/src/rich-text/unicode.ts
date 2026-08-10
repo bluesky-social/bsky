@@ -7,10 +7,10 @@
  * and utf16, and that's precisely what this library handles.
  */
 
-import { graphemeLen } from '@atproto/common-web'
+import { graphemeLen } from '@atproto/lex'
 
-const encoder = new TextEncoder()
-const decoder = new TextDecoder()
+const encoder = /*#__PURE__*/ new TextEncoder()
+const decoder = /*#__PURE__*/ new TextDecoder()
 
 export class UnicodeString {
   utf16: string

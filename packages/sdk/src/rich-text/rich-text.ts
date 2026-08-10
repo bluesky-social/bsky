@@ -91,20 +91,20 @@ F: 0 1 2 3 4 5 6 7 8 910   // string indices
    ^-------^               // target slice {start: 0, end: 5}
  */
 
-import {
-  AppBskyFeedPost,
-  AppBskyRichtextFacet,
-  AtpBaseClient,
-} from '../client/index.js'
+import type { Client, DidString, UriString } from '@atproto/lex'
+import type { HandleResolver } from '@atproto-labs/handle-resolver'
+import { app } from '../lexicons/index.js'
+import { ClientHandleResolver } from '../utils/handle-resolver.js'
+import { is$typedObject } from '../utils/types.js'
 import { detectFacets } from './detection.js'
 import { sanitizeRichText } from './sanitization.js'
 import { UnicodeString } from './unicode.js'
 
-export type Facet = AppBskyRichtextFacet.Main
-export type FacetLink = AppBskyRichtextFacet.Link
-export type FacetMention = AppBskyRichtextFacet.Mention
-export type FacetTag = AppBskyRichtextFacet.Tag
-export type Entity = AppBskyFeedPost.Entity
+export type Facet = app.bsky.richtext.facet.Main
+export type FacetLink = app.bsky.richtext.facet.Link
+export type FacetMention = app.bsky.richtext.facet.Mention
+export type FacetTag = app.bsky.richtext.facet.Tag
+export type Entity = app.bsky.feed.post.Entity
 
 export interface RichTextProps {
   text: string
@@ -126,7 +126,9 @@ export class RichTextSegment {
   ) {}
 
   get link(): FacetLink | undefined {
-    return this.facet?.features.find(AppBskyRichtextFacet.isLink)
+    return this.facet?.features.find((f) =>
+      is$typedObject(f, app.bsky.richtext.facet.link.$type),
+    )
   }
 
   isLink() {
@@ -134,7 +136,9 @@ export class RichTextSegment {
   }
 
   get mention(): FacetMention | undefined {
-    return this.facet?.features.find(AppBskyRichtextFacet.isMention)
+    return this.facet?.features.find((f) =>
+      is$typedObject(f, app.bsky.richtext.facet.mention.$type),
+    )
   }
 
   isMention() {
@@ -142,7 +146,9 @@ export class RichTextSegment {
   }
 
   get tag(): FacetTag | undefined {
-    return this.facet?.features.find(AppBskyRichtextFacet.isTag)
+    return this.facet?.features.find((f) =>
+      is$typedObject(f, app.bsky.richtext.facet.tag.$type),
+    )
   }
 
   isTag() {
@@ -153,6 +159,23 @@ export class RichTextSegment {
 export class RichText {
   unicodeText: UnicodeString
   facets?: Facet[]
+
+  /**
+   * Creates a RichText from plain text with facets (links, mentions, tags)
+   * auto-detected and mentions resolved to DIDs.
+   *
+   * Equivalent to constructing a RichText and calling
+   * {@link RichText.detectFacets}.
+   */
+  static async resolve(
+    text: string,
+    opts: RichTextOpts & { resolver: HandleResolver | Client },
+  ): Promise<RichText> {
+    const { resolver, ...rtOpts } = opts
+    const rt = new RichText({ text }, rtOpts)
+    await rt.detectFacets(resolver)
+    return rt
+  }
 
   constructor(props: RichTextProps, opts?: RichTextOpts) {
     this.unicodeText = new UnicodeString(props.text)
@@ -183,13 +206,13 @@ export class RichText {
   clone() {
     return new RichText({
       text: this.unicodeText.utf16,
-      facets: cloneDeep(this.facets),
+      facets: structuredClone(this.facets),
     })
   }
 
   copyInto(target: RichText) {
     target.unicodeText = this.unicodeText
-    target.facets = cloneDeep(this.facets)
+    target.facets = structuredClone(this.facets)
   }
 
   *segments(): Generator<RichTextSegment, void, void> {
@@ -339,26 +362,33 @@ export class RichText {
    * Detects facets such as links and mentions
    * Note: Overwrites the existing facets with auto-detected facets
    */
-  async detectFacets(agent: AtpBaseClient) {
+  async detectFacets(resolverOrClient: HandleResolver | Client): Promise<void> {
+    // Duck-type rather than instanceof so Client is a type-only import —
+    // avoids runtime coupling to a specific @atproto/lex version.
+    const resolver = isHandleResolver(resolverOrClient)
+      ? resolverOrClient
+      : new ClientHandleResolver(resolverOrClient)
     this.facets = detectFacets(this.unicodeText)
     if (this.facets) {
       const promises: Promise<void>[] = []
       for (const facet of this.facets) {
         for (const feature of facet.features) {
-          if (AppBskyRichtextFacet.isMention(feature)) {
+          if (is$typedObject(feature, app.bsky.richtext.facet.mention.$type)) {
             promises.push(
-              agent.com.atproto.identity
-                .resolveHandle({ handle: feature.did })
-                .then((res) => res?.data.did)
-                .catch((_) => undefined)
+              resolver
+                .resolve(feature.did)
+                .catch(() => null)
                 .then((did) => {
-                  feature.did = did || ''
+                  // TODO consider stripping out the facet when the mention
+                  // could not be resolved, rather than setting an empty did.
+                  if (did) feature.did = did
+                  else feature.did = '' as DidString // unresolved mention — resolver returned null; consumers treat '' as unresolved
                 }),
             )
           }
         }
       }
-      await Promise.allSettled(promises)
+      await Promise.all(promises)
       this.facets.sort(facetSort)
     }
   }
@@ -376,6 +406,12 @@ export class RichText {
   }
 }
 
+function isHandleResolver(
+  value: HandleResolver | Client,
+): value is HandleResolver {
+  return typeof (value as HandleResolver).resolve === 'function'
+}
+
 const facetSort = (a: Facet, b: Facet) => a.index.byteStart - b.index.byteStart
 
 const facetFilter = (facet: Facet) =>
@@ -386,33 +422,36 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
   const facets: Facet[] = []
   for (const ent of entities) {
     if (ent.type === 'link') {
-      facets.push({
-        $type: 'app.bsky.richtext.facet',
-        index: {
-          byteStart: text.utf16IndexToUtf8Index(ent.index.start),
-          byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
-        },
-        features: [{ $type: 'app.bsky.richtext.facet#link', uri: ent.value }],
-      })
+      facets.push(
+        app.bsky.richtext.facet.$build({
+          index: {
+            byteStart: text.utf16IndexToUtf8Index(ent.index.start),
+            byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
+          },
+          features: [
+            app.bsky.richtext.facet.link.$build({
+              // entity type checked above; value is entity string from input
+              uri: ent.value as UriString,
+            }),
+          ],
+        }),
+      )
     } else if (ent.type === 'mention') {
-      facets.push({
-        $type: 'app.bsky.richtext.facet',
-        index: {
-          byteStart: text.utf16IndexToUtf8Index(ent.index.start),
-          byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
-        },
-        features: [
-          { $type: 'app.bsky.richtext.facet#mention', did: ent.value },
-        ],
-      })
+      facets.push(
+        app.bsky.richtext.facet.$build({
+          index: {
+            byteStart: text.utf16IndexToUtf8Index(ent.index.start),
+            byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
+          },
+          features: [
+            app.bsky.richtext.facet.mention.$build({
+              // entity type checked above; value is entity string from input
+              did: ent.value as DidString,
+            }),
+          ],
+        }),
+      )
     }
   }
   return facets
-}
-
-function cloneDeep<T>(v: T): T {
-  if (typeof v === 'undefined') {
-    return v
-  }
-  return JSON.parse(JSON.stringify(v))
 }
