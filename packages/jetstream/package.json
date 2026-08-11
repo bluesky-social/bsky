@@ -1,5 +1,5 @@
 {
-  "name": "@bsky.app/jetstream",
+  "name": "@bsky/jetstream",
   "version": "0.0.0",
   "license": "MIT OR Apache-2.0",
   "description": "Client library for Jetstream (atproto event streaming)",
