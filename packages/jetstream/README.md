@@ -28,7 +28,7 @@ Using a lexicon as your collection filter will validate and type the events for 
 
 ```ts
 import { Jetstream } from '@bsky/jetstream'
-import { app } from '@bsky.app/sdk/lexicons'
+import { app } from '@bsky/sdk/lexicons'
 
 const js = new Jetstream('https://jetstream1.us-east.bsky.network')
 
@@ -43,7 +43,7 @@ For indexing workloads, `LexIndexer` dispatches schema-validated records to per-
 
 ```ts
 import { Jetstream, LexIndexer, MemoryCursorStore } from '@bsky/jetstream'
-import { app } from '@bsky.app/sdk/lexicons'
+import { app } from '@bsky/sdk/lexicons'
 
 const js = new Jetstream('https://jetstream1.us-east.bsky.network')
 
