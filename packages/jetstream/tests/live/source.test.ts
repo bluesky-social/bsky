@@ -170,7 +170,27 @@ test('a seq-domain dedupFloor drops events at or below it', async () => {
   expect(got).toEqual([6])
 })
 
-test('an #info advisory reaches onError and the stream continues', async () => {
+test('an #info advisory reaches onInfo (not onError) and the stream continues', async () => {
+  const { transport } = scriptedTransport([
+    [infoFrame('OutdatedCursor'), commitFrame(1)],
+  ])
+  const errors: Error[] = []
+  const infos: Array<{ name: string; message?: string }> = []
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    transport,
+    onError: (e) => errors.push(e),
+    onInfo: (info) => infos.push(info),
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1])
+  expect(errors).toEqual([])
+  expect(infos).toEqual([{ name: 'OutdatedCursor', message: 'clamped' }])
+})
+
+test('an #info advisory is dropped silently when no onInfo is registered', async () => {
   const { transport } = scriptedTransport([
     [infoFrame('OutdatedCursor'), commitFrame(1)],
   ])
@@ -184,8 +204,7 @@ test('an #info advisory reaches onError and the stream continues', async () => {
     got.push(ev.seq)
   }
   expect(got).toEqual([1])
-  expect(errors).toHaveLength(1)
-  expect(errors[0].message).toContain('OutdatedCursor')
+  expect(errors).toEqual([])
 })
 
 test('an error frame is reported and the transport may redial', async () => {

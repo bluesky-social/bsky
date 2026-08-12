@@ -36,6 +36,12 @@ export interface LiveEventsOpts {
   transport?: LiveTransport
   signal?: AbortSignal
   onError?: (err: Error) => void
+  /**
+   * Seq-less server advisories (`#info` frames, e.g. `OutdatedCursor`). v2
+   * only — the v1 wire has no `#info` frame. Not an error: when omitted, an
+   * advisory is dropped silently rather than routed to onError.
+   */
+  onInfo?: (info: { name: string; message?: string }) => void
   version?: 1 | 2 // default 2; 1 uses the frozen /subscribe wire + v1 decoder
   validateWire?: boolean // strict wire validation: throws MalformedError (fatal), never routed to onError
 }
@@ -138,11 +144,9 @@ export async function* liveEvents(
     }
     if (ev === SKIP_FRAME) continue
     if ('info' in ev) {
-      // Seq-less advisory: reported, never fatal, and it does not move the
-      // cursor.
-      opts.onError?.(
-        new Error(`jetstream info: ${ev.info.name}: ${ev.info.message ?? ''}`),
-      )
+      // Seq-less advisory: never fatal, and it does not move the cursor. Not
+      // an error, so drop it silently when no onInfo is registered.
+      opts.onInfo?.(ev.info)
       continue
     }
     // v1 note: seq is time_us from v1's monotonic clock (strictly increasing,
