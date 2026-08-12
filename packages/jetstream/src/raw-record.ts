@@ -1,4 +1,4 @@
-import { type JsonValue, jsonToLex, type TypedLexMap } from '@atproto/lex'
+import { type JsonValue, type TypedLexMap, jsonToLex } from '@atproto/lex'
 import { MalformedError } from './errors.js'
 
 /** Parsed wire JSON, NOT converted to lex values ({$link}/{$bytes} intact). */
