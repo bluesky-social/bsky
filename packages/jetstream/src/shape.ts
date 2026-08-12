@@ -40,6 +40,7 @@ export class RecordValidationError extends Error {
 
 export interface ShapeFlags {
   raw?: boolean
+  validateWire?: boolean
 }
 
 type AnyRaw = RawEventV1 | RawEvent<RawRecordJson>
@@ -61,7 +62,13 @@ export async function* shape(
         // overload's result (TypedEvent) already sits inside the declared
         // union (TypedEventV1 | TypedEvent), so a result-side cast would be a
         // no-op that could silently swallow a future mismatch.
-        const t = typedEventFromRaw(e as RawEvent<RawRecordJson>, schemasByNsid)
+        const t = typedEventFromRaw(
+          e as RawEvent<RawRecordJson>,
+          schemasByNsid,
+          {
+            strict: flags.validateWire === true,
+          },
+        )
         if (skipInvalid(t, schemasByNsid, onError)) continue
         yield t
       }

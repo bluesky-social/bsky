@@ -67,7 +67,10 @@ function oneBatch(events: RawEventV1[]): AsyncIterable<EventBatch<RawEventV1>> {
 
 describe('shape', () => {
   const b1: EventBatch<RawEventV1> = {
-    events: [rawCreate(1, {}), rawCreate(2, {})],
+    events: [
+      rawCreate(1, { $type: 'app.test.rec' }),
+      rawCreate(2, { $type: 'app.test.rec' }),
+    ],
     lastCursor: 2,
   }
 
@@ -89,7 +92,7 @@ describe('shape', () => {
       'delete',
     )
     if (out[0].kind === 'commit' && out[0].commit.operation !== 'delete') {
-      expect(out[0].commit.record).toEqual({})
+      expect(out[0].commit.record).toEqual({ $type: 'app.test.rec' })
     }
   })
 })

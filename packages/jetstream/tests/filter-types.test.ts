@@ -1,10 +1,12 @@
-import { type InferOutput, type NsidString, l, record } from '@atproto/lex'
-import { expectTypeOf, test } from 'vitest'
 import {
-  type DeleteCommit,
-  type TypedEvent,
-  type UnvalidatedRecord,
-} from '../src/event.js'
+  type InferOutput,
+  type NsidString,
+  type TypedLexMap,
+  l,
+  record,
+} from '@atproto/lex'
+import { expectTypeOf, test } from 'vitest'
+import { type DeleteCommit, type TypedEvent } from '../src/event.js'
 import { type TypedCommitFor, type TypedEventFor } from '../src/filter-types.js'
 
 // likeSchema is consumed only via `typeof likeSchema`; the runtime value is
@@ -37,7 +39,7 @@ test('validateRecord: false keeps the collection literal, floor-types the record
   }>
   expectTypeOf<Commit['collection']>().toEqualTypeOf<'app.test.like'>()
   expectTypeOf<PutOf<Commit>['record']>().toEqualTypeOf<
-    UnvalidatedRecord<'app.test.like'>
+    TypedLexMap<'app.test.like'>
   >()
   // unvalidated commits keep validationError (decode failures flow through)
   expectTypeOf<PutOf<Commit>>().toHaveProperty('validationError')
@@ -47,7 +49,7 @@ test('string literal filter floor-types the record with its literal', () => {
   type Commit = TypedCommitFor<'app.test.post'>
   expectTypeOf<Commit['collection']>().toEqualTypeOf<'app.test.post'>()
   expectTypeOf<PutOf<Commit>['record']>().toEqualTypeOf<
-    UnvalidatedRecord<'app.test.post'>
+    TypedLexMap<'app.test.post'>
   >()
   // string filters are unvalidated: validationError stays available
   expectTypeOf<PutOf<Commit>>().toHaveProperty('validationError')
@@ -57,7 +59,7 @@ test('wildcard filter maps to a template-literal collection', () => {
   type Commit = TypedCommitFor<'app.test.*'>
   expectTypeOf<Commit['collection']>().toEqualTypeOf<`app.test.${string}`>()
   expectTypeOf<PutOf<Commit>['record']>().toEqualTypeOf<
-    UnvalidatedRecord<`app.test.${string}`>
+    TypedLexMap<`app.test.${string}`>
   >()
 })
 
@@ -65,7 +67,7 @@ test('a bare NsidString filter (no literal) floor-types with the brand', () => {
   type Commit = TypedCommitFor<NsidString>
   expectTypeOf<Commit['collection']>().toEqualTypeOf<NsidString>()
   expectTypeOf<PutOf<Commit>['record']>().toEqualTypeOf<
-    UnvalidatedRecord<NsidString>
+    TypedLexMap<NsidString>
   >()
 })
 
@@ -82,7 +84,7 @@ test('mixed filters form a correlated union narrowed by collection', () => {
     }
     if (ev.commit.collection === 'app.test.post') {
       expectTypeOf(ev.commit.record).toEqualTypeOf<
-        UnvalidatedRecord<'app.test.post'>
+        TypedLexMap<'app.test.post'>
       >()
     }
   }

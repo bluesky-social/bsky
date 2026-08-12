@@ -1,4 +1,8 @@
-import { type InferOutput, type RecordSchema } from '@atproto/lex'
+import {
+  type InferOutput,
+  type RecordSchema,
+  type TypedLexMap,
+} from '@atproto/lex'
 import { type CollectionFilter } from './engine/collections.js'
 import {
   type Account,
@@ -10,7 +14,6 @@ import {
   type TypedEvent,
   type TypedEventV1,
   type TypedPutCommit,
-  type UnvalidatedRecord,
 } from './event.js'
 
 // Unwrap Main<S> = S | { main: S } to the schema itself.
@@ -28,10 +31,10 @@ type ValidatedCommit<C extends string, R> =
 // 'app.test.*' → `app.test.${string}`; literal NSIDs keep their literal;
 // non-literal string degrades to string.
 type StringFilterCommit<F extends string> = F extends `${infer P}.*`
-  ? UnvalidatedCommit<`${P}.${string}`, UnvalidatedRecord<`${P}.${string}`>>
+  ? UnvalidatedCommit<`${P}.${string}`, TypedLexMap<`${P}.${string}`>>
   : string extends F
-    ? UnvalidatedCommit<string, UnvalidatedRecord>
-    : UnvalidatedCommit<F, UnvalidatedRecord<F>>
+    ? UnvalidatedCommit<string, TypedLexMap>
+    : UnvalidatedCommit<F, TypedLexMap<F>>
 
 // The commit shape(s) contributed by ONE filter. Distributes over a union of
 // filters (F[number]) to build the correlated union: checking
@@ -40,7 +43,7 @@ export type TypedCommitFor<F extends CollectionFilter> = F extends string
   ? StringFilterCommit<F>
   : F extends { collection: infer M; validateRecord: false }
     ? MainOf<M> extends infer S extends RecordSchema
-      ? UnvalidatedCommit<S['$type'], UnvalidatedRecord<S['$type']>>
+      ? UnvalidatedCommit<S['$type'], TypedLexMap<S['$type']>>
       : never
     : F extends { collection: infer M }
       ? MainOf<M> extends infer S extends RecordSchema

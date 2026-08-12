@@ -10,17 +10,14 @@ import {
   type RecordKeyString,
   type RecordSchema,
   type TidString,
+  type TypedLexMap,
   atUri,
   getMain,
 } from '@atproto/lex'
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
-import {
-  type EventBatch,
-  type RawEvent,
-  type UnvalidatedRecord,
-} from './event.js'
+import { type EventBatch, type RawEvent } from './event.js'
 import { eventUri } from './event.js'
 
 // Shared per-run context handed to every handler as the second arg. Allocated
@@ -170,11 +167,11 @@ export class LexIndexer implements JetstreamConsumer {
     validateRecord?: true
   }): this
   // Options form, non-validating. The literal `false` selects the
-  // UnvalidatedRecord handler typing: no runtime record checks — the $type
-  // floor is trusted from the server's collection routing, not verified.
+  // TypedLexMap handler typing: no schema checks — only the $type floor
+  // (already enforced by record conversion) is guaranteed.
   commit<S extends RecordSchema>(opts: {
     collection: Main<S>
-    handlers: CommitHandlers<UnvalidatedRecord<S['$type']>>
+    handlers: CommitHandlers<TypedLexMap<S['$type']>>
     validateRecord: false
   }): this
   commit<S extends RecordSchema>(

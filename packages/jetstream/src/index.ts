@@ -30,7 +30,6 @@ export type {
   TypedCommit,
   TypedEvent,
   TypedEventV1,
-  UnvalidatedRecord,
 } from './event.js'
 export type {
   TypedCommitFor,

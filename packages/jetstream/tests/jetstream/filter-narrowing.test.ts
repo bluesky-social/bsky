@@ -2,15 +2,12 @@ import {
   type DidString,
   type InferOutput,
   type NsidString,
+  type TypedLexMap,
   l,
   record,
 } from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import {
-  Jetstream,
-  type RawRecordJson,
-  type UnvalidatedRecord,
-} from '../../src/index.js'
+import { Jetstream, type RawRecordJson } from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 
 const likeSchema = record(
@@ -68,7 +65,7 @@ describe('live() filter narrowing (public API)', () => {
         }
         if (ev.commit.collection === 'app.test.post') {
           expectTypeOf(ev.commit.record).toEqualTypeOf<
-            UnvalidatedRecord<'app.test.post'>
+            TypedLexMap<'app.test.post'>
           >()
           posts.push(ev.seq)
         }
@@ -86,7 +83,7 @@ describe('live() filter narrowing (public API)', () => {
       ]),
     })) {
       if (ev.kind === 'commit' && ev.commit.operation !== 'delete') {
-        expectTypeOf(ev.commit.record).toEqualTypeOf<unknown>()
+        expectTypeOf(ev.commit.record).toEqualTypeOf<TypedLexMap>()
         expectTypeOf(ev.commit.collection).toEqualTypeOf<NsidString>()
       }
     }

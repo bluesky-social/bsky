@@ -58,7 +58,7 @@ export class Jetstream {
     // covers both wires' possibilities.
     return shape(
       this.liveRawBatches(opts),
-      opts,
+      { ...opts, validateWire: this.opts.validateWire },
       schemasByNsid,
       opts.onError,
     ) as AsyncGenerator<RawEventV1 | WideTypedEventV1>

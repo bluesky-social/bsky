@@ -6,6 +6,7 @@ import {
   type NsidString,
   type RecordKeyString,
   type TidString,
+  type TypedLexMap,
 } from '@atproto/lex'
 import { type RawRecord, type RawRecordJson } from './raw-record.js'
 
@@ -45,17 +46,10 @@ export interface EventBaseV1 {
   timeUs: number
 }
 
-/**
- * The record shape earned by collection filtering alone (no schema
- * validation): the server routed the event by collection, and a record's
- * $type is its collection NSID — we trust that rather than re-checking at
- * runtime. TType carries the collection literal when the filter provides one.
- */
-export type UnvalidatedRecord<TType extends string = string> = {
-  $type: TType
-} & Record<string, unknown>
-
-export interface TypedPutCommit<R = unknown, C extends string = NsidString> {
+export interface TypedPutCommit<
+  R = TypedLexMap,
+  C extends string = NsidString,
+> {
   operation: 'create' | 'update'
   collection: C
   rkey: RecordKeyString
@@ -72,7 +66,7 @@ export interface DeleteCommit<C extends string = NsidString> {
   rev: TidString
 }
 
-export type TypedCommit<R = unknown> = TypedPutCommit<R> | DeleteCommit
+export type TypedCommit<R = TypedLexMap> = TypedPutCommit<R> | DeleteCommit
 
 export interface Identity {
   did: DidString
@@ -94,13 +88,13 @@ export interface Sync {
   time?: DatetimeString
 }
 
-export type TypedEvent<R = unknown> =
+export type TypedEvent<R = TypedLexMap> =
   | (EventBase & { kind: 'commit'; commit: TypedCommit<R> })
   | (EventBase & { kind: 'identity'; identity: Identity })
   | (EventBase & { kind: 'account'; account: Account })
   | (EventBase & { kind: 'sync'; sync: Sync })
 
-export type TypedEventV1<R = unknown> =
+export type TypedEventV1<R = TypedLexMap> =
   | (EventBaseV1 & { kind: 'commit'; commit: TypedCommit<R> })
   | (EventBaseV1 & { kind: 'identity'; identity: Identity })
   | (EventBaseV1 & { kind: 'account'; account: Account })

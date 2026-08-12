@@ -6,19 +6,22 @@ import {
   type TypedEvent,
   type TypedEventV1,
 } from './event.js'
-import { type RawRecordJson } from './raw-record.js'
+import { type RawRecordJson, parseRawRecord } from './raw-record.js'
 
 export function typedEventFromRaw(
   raw: RawEventV1,
   schemasByNsid: Map<string, RecordSchema>,
+  opts?: { strict?: boolean },
 ): TypedEventV1
 export function typedEventFromRaw(
   raw: RawEvent<RawRecordJson>,
   schemasByNsid: Map<string, RecordSchema>,
+  opts?: { strict?: boolean },
 ): TypedEvent
 export function typedEventFromRaw(
   raw: RawEventV1 | RawEvent<RawRecordJson>,
   schemasByNsid: Map<string, RecordSchema>,
+  opts?: { strict?: boolean },
 ): TypedEventV1 | TypedEvent {
   if (raw.kind !== 'commit') return raw
   // Delete first: DeleteCommit carries no `record`, so the put-commit handling
@@ -28,26 +31,32 @@ export function typedEventFromRaw(
   }
   const rawCommit = raw.commit
   const { collection, rkey, rev, operation } = rawCommit
-  // v1 put commit: the wire carried parsed JSON — there is no CBOR to decode.
-  // cid is the wire string (read for free via the delegating getter below).
-  const record: unknown = rawCommit.record
+  let record: unknown
   let validationError: Error | undefined
+  // The raw record is wire-faithful; convert it to lex data here. A failure
+  // surfaces the same way a decode failure always did.
+  try {
+    record = parseRawRecord(rawCommit.record, opts)
+  } catch (err) {
+    record = undefined
+    validationError = err instanceof Error ? err : new Error(String(err))
+  }
   const schema = schemasByNsid.get(collection)
-  if (schema) {
+  if (schema && validationError === undefined) {
     const result = schema.safeValidate(record)
-    if (!result.success) {
+    if (result.success) {
+      // Adopt the validated value: lex-schema may apply defaults or coercions,
+      // and returning the pre-coercion record would drop them.
+      record = result.value
+    } else {
       validationError = new Error(
         `record validation failed for ${collection}`,
-        {
-          cause: result.reason,
-        },
+        { cause: result.reason },
       )
     }
   }
-  // cid delegates via a getter, mirroring the source package where the v2 raw
-  // layer computes it lazily; v1's cid is a plain string, read for free
-  // through the same getter. Keeping the delegation means the future v2 port
-  // changes nothing here.
+  // cid delegates via a getter so the archive path's lazy hash is not forced
+  // for every typed event. v2 live's cid is a plain string, free either way.
   const commit = {
     operation,
     collection,
