@@ -1,12 +1,10 @@
 import { LexError } from '@atproto/lex'
 
-// The one wire-frame malformation code this package reports; there is no
-// server taxonomy to match here, so a single fixed code is enough.
-const MALFORMED_CODE = 'Malformed'
-
-export class MalformedError extends LexError<typeof MALFORMED_CODE> {
+// Deliberately a plain Error, not a LexError: malformed wire data is a
+// client-side decode failure, not part of any lex/xrpc error taxonomy.
+export class MalformedError extends Error {
   constructor(message: string, options?: ErrorOptions) {
-    super(MALFORMED_CODE, message, options)
+    super(message, options)
     this.name = 'MalformedError'
   }
 }

@@ -4,7 +4,8 @@ import { type PlanEntry } from './plan.js'
  * A recoverable download failure (network/transport error or transient HTTP
  * status) for a segment or block. Backfill consumers catch this and recover
  * by re-planning the residual seq range; contrast MalformedError (corrupt
- * bytes), which is terminal.
+ * bytes), which is terminal. A plain Error, like MalformedError: this is a
+ * client-side failure classification, not part of the lex/xrpc taxonomy.
  */
 export class DownloadError extends Error {
   readonly entry?: PlanEntry
