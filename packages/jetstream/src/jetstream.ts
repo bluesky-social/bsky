@@ -1,5 +1,6 @@
 import { type DidString } from '@atproto/lex'
 import { defaultDecompressor, defaultSha256 } from '#runtime'
+import { assertValidApiKey, bearerAuth, withBearer } from './auth.js'
 import { type JetstreamConsumer } from './consumer.js'
 import { backfillBatches } from './engine/backfill-pipeline.js'
 import {
@@ -13,7 +14,10 @@ import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventFor, type WideTypedEvent } from './filter-types.js'
 import { cutoverReplay } from './live/cutover.js'
 import { rawBatchStream } from './live/pipeline.js'
-import { type LiveTransport } from './live/transport.js'
+import {
+  type LiveTransport,
+  type LiveTransportHeaders,
+} from './live/transport.js'
 import { type RawRecordCbor, type RawRecordJson } from './raw-record.js'
 import { JetstreamRunner } from './runner.js'
 import { type Decompressor, type Sha256 } from './runtime/interface.js'
@@ -41,6 +45,14 @@ export interface JetstreamOpts {
    * conversion there is always non-strict regardless of `validateWire`.
    */
   validateWire?: boolean
+  /**
+   * API key sent as `Authorization: Bearer <apiKey>` on every request —
+   * archive downloads and the live websocket handshake alike. A request that
+   * already carries an Authorization header keeps it. Validated at
+   * construction: an absent key is legal (no auth sent); a present-but-
+   * malformed one is not.
+   */
+  apiKey?: string
   /**
    * fetch used for archive requests (planSnapshot/getSegment/getBlock) by
    * snapshot() and replay(). Defaults to the global fetch.
@@ -169,8 +181,26 @@ export class Jetstream {
 
   constructor(service: string | JetstreamOpts) {
     const opts = typeof service === 'string' ? { service } : service
+    // Fail fast on a malformed key: deferring the check to request time
+    // either leaks the key into a thrown message or silently disables auth.
+    if (opts.apiKey !== undefined) assertValidApiKey(opts.apiKey)
     this.service = opts.service
     this.opts = opts
+  }
+
+  // Resolved per call, not cached, so fetch/apiKey are read at use time.
+  #resolveFetch(): typeof fetch {
+    const base = this.opts.fetchImpl ?? fetch
+    return this.opts.apiKey ? withBearer(base, this.opts.apiKey) : base
+  }
+
+  // Never returns an object with an undefined value — LiveTransportHeaders
+  // rejects that at the type level (it would normalize to the wire string
+  // "undefined").
+  #authHeaders(): LiveTransportHeaders | undefined {
+    return this.opts.apiKey
+      ? { authorization: bearerAuth(this.opts.apiKey) }
+      : undefined
   }
 
   live<const F extends readonly CollectionFilter[] = readonly []>(
@@ -247,10 +277,11 @@ export class Jetstream {
       outstandingHwmBytes: this.opts.outstandingHwmBytes,
       tailHwmBytes: this.opts.tailHwmBytes,
       blockConcurrency: this.opts.blockConcurrency,
-      fetchImpl: this.opts.fetchImpl ?? fetch,
+      fetchImpl: this.#resolveFetch(),
       decompressor: this.opts.decompressor ?? defaultDecompressor(),
       sha256: this.opts.sha256 ?? defaultSha256(),
       transport: opts.liveTransport,
+      headers: this.#authHeaders(),
       signal: opts.signal,
       onError: opts.onError,
       onLiveError: opts.onLiveError,
@@ -267,7 +298,12 @@ export class Jetstream {
   liveRawBatches(
     opts: LiveOpts,
   ): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>> {
-    return rawBatchStream(this.service, opts, 2, this.opts.validateWire)
+    return rawBatchStream(
+      this.service,
+      { ...opts, headers: this.#authHeaders() },
+      2,
+      this.opts.validateWire,
+    )
   }
 
   // The raw batch stream underlying snapshot(); the runner drives it
@@ -278,7 +314,7 @@ export class Jetstream {
     const host = this.service
     const signal = opts.signal
     if (signal?.aborted) return
-    const fetchImpl = this.opts.fetchImpl ?? fetch
+    const fetchImpl = this.#resolveFetch()
     // Resolved before any network work; on a runtime with no defaults this
     // throws here, at the first pull, with a supply-your-own message.
     const decompressor = this.opts.decompressor ?? defaultDecompressor()

@@ -7,6 +7,23 @@ import {
   websocket,
 } from '@atproto/ws-client'
 
+// The WHATWG HeadersInit shape, spelled out because the ambient name isn't
+// in scope under this project's lib set. Narrower than undici's in one
+// deliberate way: values are `string`, not `string | undefined` — so
+// `{ authorization: undefined }` is a type error rather than a header that
+// normalizes to the wire as "undefined".
+export type LiveTransportHeaders =
+  Record<string, string> | [string, string][] | Headers
+
+export interface LiveTransportOpts {
+  /**
+   * Headers for the connection handshake (e.g. Authorization). Captured once
+   * per stream() call — not re-read on internal reconnects, which is fine
+   * for a static credential like an API key.
+   */
+  headers?: LiveTransportHeaders
+}
+
 export interface LiveTransport {
   // Yields raw frames (bytes or text). getUrl() is called once per
   // (re)connection so the resume cursor reflects the highest-delivered seq at
@@ -15,6 +32,7 @@ export interface LiveTransport {
   stream(
     getUrl: () => string,
     signal: AbortSignal,
+    opts?: LiveTransportOpts,
   ): AsyncIterable<Uint8Array | string>
 }
 
@@ -101,16 +119,36 @@ export function resolveWebsocketOptions(
   }
 }
 
+// Per-stream headers (apiKey auth) merge over the factory's own
+// options.headers: same-name entries from the stream win. undefined in,
+// undefined out — the browser transport throws on ANY headers (upgrade
+// headers are Node-only), so an empty Headers must not appear when neither
+// side set one.
+function mergeHeaders(
+  base: WebSocketOptions<'text'>['headers'],
+  extra: LiveTransportHeaders | undefined,
+): WebSocketOptions<'text'>['headers'] {
+  if (!extra) return base
+  if (!base) return extra
+  const merged = new Headers(base)
+  for (const [name, value] of new Headers(extra)) merged.set(name, value)
+  return merged
+}
+
 export function websocketTransport(
   options?: WebsocketTransportOptions,
 ): LiveTransport {
   const resolved = resolveWebsocketOptions(options)
   return {
-    stream(getUrl, signal) {
+    stream(getUrl, signal, opts) {
       // getUrl is passed straight through: websocket() re-resolves a function
       // url on every (re)connection, which is exactly the resume-cursor
       // contract stream() requires.
-      return websocket(getUrl, { ...resolved, signal })
+      return websocket(getUrl, {
+        ...resolved,
+        signal,
+        headers: mergeHeaders(resolved.headers, opts?.headers),
+      })
     },
   }
 }

@@ -13,6 +13,8 @@ export type { RawRecord, RawRecordCbor, RawRecordJson } from './raw-record.js'
 export { websocketTransport } from './live/transport.js'
 export type {
   LiveTransport,
+  LiveTransportHeaders,
+  LiveTransportOpts,
   WebsocketTransportOptions,
 } from './live/transport.js'
 export type {

@@ -7,7 +7,11 @@ import { type Decompressor, type Sha256 } from '../runtime/interface.js'
 import { DownloadError } from '../xrpc/errors.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
 import { liveEvents } from './source.js'
-import { type LiveTransport, handshakeRejectionStatus } from './transport.js'
+import {
+  type LiveTransport,
+  type LiveTransportHeaders,
+  handshakeRejectionStatus,
+} from './transport.js'
 
 export interface CutoverParams {
   host: string
@@ -23,6 +27,7 @@ export interface CutoverParams {
   decompressor: Decompressor
   sha256: Sha256
   transport?: LiveTransport
+  headers?: LiveTransportHeaders // live handshake headers (e.g. Authorization)
   signal?: AbortSignal
   onError?: (err: Error) => void
   onLiveError?: (err: Error) => void
@@ -171,6 +176,7 @@ export async function* cutoverReplay(
         cursor: cutover,
         dedupFloor,
         transport: ctx.transport,
+        headers: ctx.headers,
         signal: ctx.signal,
         onError: ctx.onLiveError,
         validateWire: ctx.validateWire,
