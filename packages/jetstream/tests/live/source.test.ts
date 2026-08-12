@@ -124,6 +124,39 @@ test('a timestamp-domain cursor is wire-only and never seeds the dedup floor', a
   expect(urls[1]).toContain('cursor=2')
 })
 
+test('a dedupFloor exactly at the timestamp-domain threshold is not seeded', async () => {
+  // 1e15 itself is still the timestamp domain (>=), so it must not seed
+  // lastSeq — seeding it would make every real (small integer) seq compare
+  // as a duplicate forever.
+  const threshold = 1e15
+  const { transport } = scriptedTransport([[commitFrame(1), commitFrame(2)]])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    dedupFloor: threshold,
+    transport,
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1, 2])
+})
+
+test('a dedupFloor just below the timestamp-domain threshold seeds the floor', async () => {
+  // 1e15 - 1 is still in the seq domain, so it seeds lastSeq like any other
+  // seq-domain floor and every event compares against it.
+  const belowThreshold = 1e15 - 1
+  const { transport } = scriptedTransport([[commitFrame(1), commitFrame(2)]])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    dedupFloor: belowThreshold,
+    transport,
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([])
+})
+
 test('a seq-domain dedupFloor drops events at or below it', async () => {
   const { transport } = scriptedTransport([[commitFrame(5), commitFrame(6)]])
   const got: number[] = []
