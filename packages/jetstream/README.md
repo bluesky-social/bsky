@@ -10,12 +10,12 @@ Install the Jetstream client:
 npm install @bsky/jetstream
 ```
 
-This package currently supports Jetstream's WebSocket-based live mode. Consuming events looks like:
+This package currently supports Jetstream's WebSocket-based live mode. `Jetstream` speaks the v2 wire: `live(opts)` tails `/xrpc/network.bsky.jetstream.subscribeEvents` from the cursor (or the tip), forever. Consuming events looks like:
 
 ```ts
 import { Jetstream } from '@bsky/jetstream'
 
-const js = new Jetstream('https://jetstream1.us-east.bsky.network')
+const js = new Jetstream('https://your-jetstream-host.example')
 
 for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
   if (evt.kind === 'commit' && evt.commit.operation === 'create') {
@@ -24,13 +24,18 @@ for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
 }
 ```
 
+`collections` constrains **commit** events only — identity, account, and sync
+events flow regardless — so a commits-only stream also needs
+`kinds: ['commit']`. `kinds` accepts `commit`, `identity`, `account`, and
+`sync`, and omitting it means all kinds.
+
 Using a lexicon as your collection filter will validate and type the events for you:
 
 ```ts
 import { Jetstream } from '@bsky/jetstream'
 import { app } from '@bsky/sdk/lexicons'
 
-const js = new Jetstream('https://jetstream1.us-east.bsky.network')
+const js = new Jetstream('https://your-jetstream-host.example')
 
 for await (const evt of js.live({ collections: [app.bsky.feed.post] })) {
   if (evt.kind === 'commit' && evt.commit.operation === 'create') {
@@ -39,13 +44,24 @@ for await (const evt of js.live({ collections: [app.bsky.feed.post] })) {
 }
 ```
 
+Typed records are converted lex data — `Cid`, `Uint8Array`, and `BlobRef`
+values rather than wire JSON's `{$link}` / `{$bytes}` shapes. Pass
+`live({ raw: true })` when you want the wire-faithful record instead (its
+`$link`/`$bytes` markers intact).
+
+A validating collection filter (a lexicon, or `{ collection, validateRecord:
+true }`, the default) routes a schema-invalid record away from delivery.
+Passing `validateRecord: false` only drops the _schema_ check — a record that
+isn't a `$type`'d map still fails conversion and is skipped, reported via
+`onError` (or, for `LexIndexer`, `onValidationError`) rather than delivered.
+
 For indexing workloads, `LexIndexer` dispatches schema-validated records to per-collection handlers with bounded concurrency and per-record ordering, and `JetstreamRunner` drives it with durable cursor tracking:
 
 ```ts
 import { Jetstream, LexIndexer, MemoryCursorStore } from '@bsky/jetstream'
 import { app } from '@bsky/sdk/lexicons'
 
-const js = new Jetstream('https://jetstream1.us-east.bsky.network')
+const js = new Jetstream('https://your-jetstream-host.example')
 
 const indexer = new LexIndexer()
   .commit(app.bsky.feed.like, {
@@ -66,6 +82,34 @@ const cursor = new MemoryCursorStore()
 await js.runner(indexer).live({ cursor })
 ```
 
+### Cursors
+
+`live()`'s cursor is a v2 `seq`. Values `>= 1e15` are read by the server as
+unix-microsecond timestamps instead, and the SDK treats such a value as
+wire-only: it never seeds the dedup floor, so the first delivered event
+establishes it. When the server clamps a stale timestamp it sends an
+`OutdatedCursor` advisory, reported through `onError` without ending the
+stream.
+
+Cursors are **not portable between versions**: a v1 cursor is a `time_us`
+value and a v2 cursor is a `seq`. Never replay a stored cursor against the
+other version.
+
+### Legacy v1 instances
+
+The public `jetstream*.bsky.network` hosts speak the frozen v1 wire. Use
+`JetstreamV1`, which offers `live()` only — v1 has no sealed archive, no
+`kinds` filter, and no runner/indexer path.
+
+```ts
+import { JetstreamV1 } from '@bsky/jetstream'
+
+const js = new JetstreamV1('https://jetstream1.us-east.bsky.network')
+for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
+  console.log(evt.seq, evt.kind)
+}
+```
+
 ## Connection behavior
 
 This package runs on Node.js and in the browser.
@@ -82,7 +126,7 @@ To observe or tune connection behavior, configure a transport with
 ```ts
 import { Jetstream, websocketTransport } from '@bsky/jetstream'
 
-const js = new Jetstream('https://jetstream2.us-east.bsky.network')
+const js = new Jetstream('https://your-jetstream-host.example')
 for await (const ev of js.live({
   collections: ['app.bsky.feed.post'],
   liveTransport: websocketTransport({

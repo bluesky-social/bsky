@@ -18,9 +18,19 @@ export interface JetstreamOpts {
   /**
    * Strict wire validation. By default the branded string types on events are
    * optimistic — "the server said so." With validateWire: true, every decode
-   * boundary checks its wire schema (lex-schema format validators); any
-   * violation — including otherwise-skipped malformed frames — throws
-   * MalformedError, fatal in every mode.
+   * boundary checks its wire schema (lex-schema format validators).
+   *
+   * The two boundaries this touches fail differently. A wire-FRAME violation
+   * (a malformed envelope, otherwise silently skipped) throws MalformedError,
+   * fatal in every mode. A RECORD-conversion violation — a put commit's
+   * record failing to convert to lex data or failing schema validation — is
+   * never fatal: it is reported per record (via the per-call `onError`, or
+   * `LexIndexer`'s `onValidationError`) and that one event is skipped.
+   *
+   * Note: `runner()`'s stream (`LexIndexer` over `liveRawBatches()`) gets
+   * strict wire decode from this flag, but never strict record conversion —
+   * `LexIndexer.run` calls `typedEventFromRaw` with no `opts`, so record
+   * conversion there is always non-strict regardless of `validateWire`.
    */
   validateWire?: boolean
 }
@@ -42,6 +52,12 @@ export interface LiveOpts<
   raw?: boolean
 }
 
+/**
+ * A Jetstream instance speaking the v2 wire
+ * (`/xrpc/network.bsky.jetstream.subscribeEvents`). Live streaming via
+ * `live()`, plus `runner()` for indexer-driven consumption. Cursors are `seq`
+ * values — not portable to or from a v1 host (see `JetstreamV1`).
+ */
 export class Jetstream {
   readonly service: string
   readonly opts: JetstreamOpts
