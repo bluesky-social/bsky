@@ -5,6 +5,10 @@ import { Jetstream, JetstreamRunner } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
 const NSID = 'network.bsky.jetstream.subscribeEvents'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
 
 // fake transport emitting v2 delete-commit frames then ending
 function fakeTransport(seqs: number[]): LiveTransport {
@@ -18,7 +22,7 @@ function fakeTransport(seqs: number[]): LiveTransport {
             seq,
             did: 'did:plc:a',
             time: '2024-09-09T19:46:02.329308Z',
-            rev: 'v',
+            rev: TID,
             operation: 'delete',
             collection: 'app.test.rec',
             rkey: 'r' + seq,

@@ -4,6 +4,11 @@ import { Jetstream, LexIndexer, MemoryCursorStore } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
 const NSID = 'network.bsky.jetstream.subscribeEvents'
+const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
 
 const likeSchema = record(
   'tid',
@@ -22,8 +27,8 @@ function likeFrame(seq: number, subject: string): string {
       operation: 'create',
       collection: 'app.test.like',
       rkey: 'r' + seq,
-      rev: 'v',
-      cid: 'cid' + seq,
+      rev: TID,
+      cid: CID,
       record: { $type: 'app.test.like', subject },
     },
   })

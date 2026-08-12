@@ -7,6 +7,9 @@ import { type LiveTransport } from '../../src/live/transport.js'
 const NSID = 'network.bsky.jetstream.subscribeEvents'
 const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
 const TIME = '2024-09-09T19:46:02.329308Z'
+// A well-formed TID (13-char base32-sortable) — required so the strict-mode
+// test below (which is about `did`, not `rev`) doesn't spuriously fail on it.
+const TID = '3jzfcijpj2z2a'
 
 const deleteFrame = (seq: number): string =>
   JSON.stringify({
@@ -16,7 +19,7 @@ const deleteFrame = (seq: number): string =>
       seq,
       did: 'did:plc:a',
       time: TIME,
-      rev: 'rev',
+      rev: TID,
       operation: 'delete',
       collection: 'app.test.rec',
       rkey: `r${seq}`,
@@ -31,7 +34,7 @@ const putFrame = (seq: number, rec: unknown): string =>
       seq,
       did: 'did:plc:a',
       time: TIME,
-      rev: 'rev',
+      rev: TID,
       operation: 'create',
       collection: 'app.test.rec',
       rkey: `r${seq}`,
@@ -48,7 +51,7 @@ const syncFrame = (seq: number): string =>
       seq,
       did: 'did:plc:a',
       time: TIME,
-      sync: { did: 'did:plc:a', rev: 'rev' },
+      sync: { did: 'did:plc:a', rev: TID },
     },
   })
 
@@ -186,7 +189,7 @@ describe('Jetstream.live (v2)', () => {
         seq: 1,
         did: 'not-a-did',
         time: TIME,
-        rev: 'rev',
+        rev: TID,
         operation: 'delete',
         collection: 'app.test.rec',
         rkey: 'r1',

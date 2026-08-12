@@ -12,6 +12,11 @@ import { websocketTransport } from '../../src/live/transport.js'
 // coverage isn't lost.
 
 const NSID = 'network.bsky.jetstream.subscribeEvents'
+const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
 
 const v1Frame = (time_us: number) =>
   JSON.stringify({
@@ -36,12 +41,12 @@ const v2Frame = (seq: number) =>
       seq,
       did: 'did:plc:a',
       time: '2024-09-09T19:46:02.329308Z',
-      rev: 'r',
+      rev: TID,
       operation: 'create',
       collection: 'app.bsky.feed.like',
       rkey: `rk${seq}`,
       record: { $type: 'app.bsky.feed.like' },
-      cid: 'cid1',
+      cid: CID,
     },
   })
 
