@@ -1,22 +1,15 @@
-import { type DidString } from '@atproto/lex-schema'
+import { type DidString } from '@atproto/lex'
 import { type JetstreamConsumer } from './consumer.js'
 import {
   type CollectionFilter,
   parseCollectionFilters,
 } from './engine/collections.js'
-import {
-  type Account,
-  type DeleteCommit,
-  type EventBase,
-  type EventBatch,
-  type Identity,
-  type RawEventV1,
-  type TypedPutCommit,
-} from './event.js'
+import { type EventBatch, type Kind, type RawEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
-import { type TypedEventFor } from './filter-types.js'
-import { liveEvents } from './live/source.js'
+import { type TypedEventFor, type WideTypedEvent } from './filter-types.js'
+import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
+import { type RawRecordJson } from './raw-record.js'
 import { JetstreamRunner } from './runner.js'
 import { shape } from './shape.js'
 
@@ -25,9 +18,19 @@ export interface JetstreamOpts {
   /**
    * Strict wire validation. By default the branded string types on events are
    * optimistic — "the server said so." With validateWire: true, every decode
-   * boundary checks its wire schema (lex-schema format validators); any
-   * violation — including otherwise-skipped malformed frames — throws
-   * MalformedError, fatal in every mode.
+   * boundary checks its wire schema (lex-schema format validators).
+   *
+   * The two boundaries this touches fail differently. A wire-FRAME violation
+   * (a malformed envelope, otherwise silently skipped) throws MalformedError,
+   * fatal in every mode. A RECORD-conversion violation — a put commit's
+   * record failing to convert to lex data or failing schema validation — is
+   * never fatal: it is reported per record (via the per-call `onError`, or
+   * `LexIndexer`'s `onValidationError`) and that one event is skipped.
+   *
+   * Note: `runner()`'s stream (`LexIndexer` over `liveRawBatches()`) gets
+   * strict wire decode from this flag, but never strict record conversion —
+   * `LexIndexer.run` calls `typedEventFromRaw` with no `opts`, so record
+   * conversion there is always non-strict regardless of `validateWire`.
    */
   validateWire?: boolean
 }
@@ -37,24 +40,30 @@ export interface LiveOpts<
 > {
   collections?: F
   dids?: DidString[]
+  /**
+   * Event kinds to receive. Omitted means all kinds. The collections filter
+   * constrains only commits, so a commits-only stream needs kinds: ['commit'].
+   */
+  kinds?: Kind[]
   cursor?: CursorStore
   signal?: AbortSignal
   onError?: (err: Error) => void
+  /**
+   * Seq-less server advisories (`#info` frames, e.g. `OutdatedCursor`). Not
+   * an error: when omitted, an advisory is dropped silently rather than
+   * routed to onError.
+   */
+  onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
   raw?: boolean
 }
 
-// Widest typed event accepted by the impl signature: collection is `string`
-// (not narrowed to NsidString) so TypedEventFor<F> is assignable here for any
-// CollectionFilter tuple F. record: unknown covers validated and unvalidated.
-type WideTypedEvent =
-  | (EventBase & {
-      kind: 'commit'
-      commit: TypedPutCommit<unknown, string> | DeleteCommit<string>
-    })
-  | (EventBase & { kind: 'identity'; identity: Identity })
-  | (EventBase & { kind: 'account'; account: Account })
-
+/**
+ * A Jetstream instance speaking the v2 wire
+ * (`/xrpc/network.bsky.jetstream.subscribeEvents`). Live streaming via
+ * `live()`, plus `runner()` for indexer-driven consumption. Cursors are `seq`
+ * values — not portable to or from a v1 host (see `JetstreamV1`).
+ */
 export class Jetstream {
   readonly service: string
   readonly opts: JetstreamOpts
@@ -68,10 +77,21 @@ export class Jetstream {
   live<const F extends readonly CollectionFilter[] = readonly []>(
     opts?: LiveOpts<F> & { raw?: false },
   ): AsyncGenerator<TypedEventFor<F>>
-  live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEventV1>
-  live(opts: LiveOpts = {}): AsyncGenerator<RawEventV1 | WideTypedEvent> {
+  live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEvent<RawRecordJson>>
+  live(
+    opts: LiveOpts = {},
+  ): AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent> {
     const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
-    return shape(this.liveRawBatches(opts), opts, schemasByNsid, opts.onError)
+    // shape() is version-generic (one implementation serves both wires); this
+    // Jetstream is v2-backed, so its output is honestly RawEvent<RawRecordJson>
+    // | WideTypedEvent at runtime even though shape()'s declared return type
+    // covers both wires' possibilities.
+    return shape(
+      this.liveRawBatches(opts),
+      { ...opts, validateWire: this.opts.validateWire },
+      schemasByNsid,
+      opts.onError,
+    ) as AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent>
   }
 
   runner(consumer: JetstreamConsumer): JetstreamRunner {
@@ -83,24 +103,9 @@ export class Jetstream {
   // buffering — live delivery stays realtime. EventBatch is used only as the
   // standard internal interface, looking ahead to v2 modes (snapshot/replay)
   // where batches carry real grouping.
-  async *liveRawBatches(
+  liveRawBatches(
     opts: LiveOpts,
-  ): AsyncGenerator<EventBatch<RawEventV1>> {
-    const host = this.service
-    const { nsids } = parseCollectionFilters(opts.collections ?? [])
-    const start = await opts.cursor?.load()
-    for await (const ev of liveEvents({
-      host,
-      collections: nsids,
-      dids: opts.dids,
-      cursor: start,
-      dedupFloor: start, // a resume cursor is also the dedup floor
-      transport: opts.liveTransport,
-      signal: opts.signal,
-      onError: opts.onError,
-      validateWire: this.opts.validateWire,
-    })) {
-      yield { events: [ev], lastCursor: ev.seq }
-    }
+  ): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>> {
+    return rawBatchStream(this.service, opts, 2, this.opts.validateWire)
   }
 }

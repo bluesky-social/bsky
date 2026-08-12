@@ -1,23 +1,38 @@
 import { expect, test } from 'vitest'
 import { type LiveTransport, liveEvents } from '../../src/live/source.js'
 
-const commitFrame = (time_us: number) =>
+const NSID = 'network.bsky.jetstream.subscribeEvents'
+const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
+
+const commitFrame = (seq: number): string =>
   JSON.stringify({
-    did: 'did:plc:a',
-    time_us,
-    kind: 'commit',
-    commit: {
-      rev: 'r',
+    $type: 'message',
+    payload: {
+      $type: `${NSID}#commit`,
+      seq,
+      did: 'did:plc:a',
+      time: '2024-09-09T19:46:02.329308Z',
+      rev: TID,
       operation: 'create',
       collection: 'app.bsky.feed.post',
-      rkey: `k${time_us}`,
-      record: { $type: 'app.bsky.feed.post', text: String(time_us) },
-      cid: 'cid1',
+      rkey: `k${seq}`,
+      cid: CID,
+      record: { $type: 'app.bsky.feed.post', text: String(seq) },
     },
   })
 
-// A transport that replays scripted "sessions": each session is a list of
-// frames; a new session begins on each getUrl() call (i.e. each reconnect).
+const infoFrame = (name: string): string =>
+  JSON.stringify({
+    $type: 'message',
+    payload: { $type: `${NSID}#info`, name, message: 'clamped' },
+  })
+
+// Replays scripted sessions; a new session begins on each getUrl() call, which
+// is how a reconnect looks from here.
 function scriptedTransport(sessions: string[][]): {
   transport: LiveTransport
   urls: string[]
@@ -28,49 +43,50 @@ function scriptedTransport(sessions: string[][]): {
     async *stream(getUrl) {
       while (i < sessions.length) {
         urls.push(getUrl())
-        const frames = sessions[i++]
-        for (const f of frames) yield new TextEncoder().encode(f)
-        // session ends -> loop calls getUrl again (simulates reconnect) until sessions exhausted
+        for (const f of sessions[i++]) yield f
       }
     },
   }
   return { transport, urls }
 }
 
-test('yields decoded events and dedups across a reconnect', async () => {
-  // session 1: seqs 1,2 ; session 2 (reconnect, inclusive replay): 2,3,4
+test('defaults to the v2 endpoint and params', async () => {
+  const { transport, urls } = scriptedTransport([[commitFrame(1)]])
+  for await (const _ of liveEvents({
+    host: 'https://h',
+    collections: ['app.bsky.feed.post'],
+    dids: ['did:plc:a' as never],
+    kinds: ['commit', 'identity'],
+    transport,
+  })) {
+    void _
+  }
+  expect(urls[0]).toContain(`/xrpc/${NSID}`)
+  expect(urls[0]).toContain('collections=app.bsky.feed.post')
+  expect(urls[0]).toContain('dids=did%3Aplc%3Aa')
+  expect(urls[0]).toContain('kinds=commit')
+  expect(urls[0]).toContain('kinds=identity')
+  // The v1 vocabulary must never appear: v2 answers those names with a 400.
+  expect(urls[0]).not.toContain('wantedCollections')
+  expect(urls[0]).not.toContain('wantedDids')
+  expect(urls[0]).not.toContain('/subscribe?')
+  expect(urls[0]).toMatch(/^wss:/)
+})
+
+test('decodes events and dedups across a reconnect', async () => {
   const { transport, urls } = scriptedTransport([
     [commitFrame(1), commitFrame(2)],
-    [commitFrame(2), commitFrame(3), commitFrame(4)],
+    [commitFrame(2), commitFrame(3)],
   ])
   const got: number[] = []
   for await (const ev of liveEvents({ host: 'https://h', transport })) {
     got.push(ev.seq)
   }
-  expect(got).toEqual([1, 2, 3, 4]) // the replayed seq 2 is deduped
-  // second session's url resumes from the highest delivered seq (2)
+  expect(got).toEqual([1, 2, 3])
   expect(urls[1]).toContain('cursor=2')
 })
 
-test('builds the subscribe url with filters (no extended param)', async () => {
-  const { transport, urls } = scriptedTransport([[commitFrame(1)]])
-  for await (const _ of liveEvents({
-    host: 'https://h',
-    collections: ['app.bsky.feed.post'],
-    dids: ['did:plc:a'],
-    transport,
-  })) {
-    void _
-  }
-  expect(urls[0]).toContain('/subscribe')
-  expect(urls[0]).not.toContain('subscribe-v2')
-  expect(urls[0]).not.toContain('extended')
-  expect(urls[0]).toContain('wantedCollections=app.bsky.feed.post')
-  expect(urls[0]).toContain('wantedDids=did%3Aplc%3Aa')
-  expect(urls[0]).toMatch(/^wss:/) // https -> wss
-})
-
-test('cursor undefined omits the param (live from tip); 0 sends cursor=0', async () => {
+test('cursor undefined omits the param; 0 sends cursor=0', async () => {
   const a = scriptedTransport([[commitFrame(1)]])
   for await (const _ of liveEvents({
     host: 'https://h',
@@ -89,16 +105,200 @@ test('cursor undefined omits the param (live from tip); 0 sends cursor=0', async
   expect(b.urls[0]).toContain('cursor=0')
 })
 
-test('signal-driven teardown: aborting the signal stops iteration', async () => {
+test('a timestamp-domain cursor is wire-only and never seeds the dedup floor', async () => {
+  // >= 1e15 is a unix-µs timestamp to the server, not a seq. Seeding the floor
+  // with it would make every real seq compare as a duplicate.
+  const ts = 1_700_000_000_000_000
+  const { transport, urls } = scriptedTransport([
+    [commitFrame(1), commitFrame(2)],
+    [commitFrame(3)],
+  ])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    cursor: ts,
+    dedupFloor: ts,
+    transport,
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1, 2, 3])
+  expect(urls[0]).toContain(`cursor=${ts}`)
+  // Once something is delivered the resume cursor is a real seq.
+  expect(urls[1]).toContain('cursor=2')
+})
+
+test('a dedupFloor exactly at the timestamp-domain threshold is not seeded', async () => {
+  // 1e15 itself is still the timestamp domain (>=), so it must not seed
+  // lastSeq — seeding it would make every real (small integer) seq compare
+  // as a duplicate forever.
+  const threshold = 1e15
+  const { transport } = scriptedTransport([[commitFrame(1), commitFrame(2)]])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    dedupFloor: threshold,
+    transport,
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1, 2])
+})
+
+test('a dedupFloor just below the timestamp-domain threshold seeds the floor', async () => {
+  // 1e15 - 1 is still in the seq domain, so it seeds lastSeq like any other
+  // seq-domain floor and every event compares against it.
+  const belowThreshold = 1e15 - 1
+  const { transport } = scriptedTransport([[commitFrame(1), commitFrame(2)]])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    dedupFloor: belowThreshold,
+    transport,
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([])
+})
+
+test('a seq-domain dedupFloor drops events at or below it', async () => {
+  const { transport } = scriptedTransport([[commitFrame(5), commitFrame(6)]])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    dedupFloor: 5,
+    transport,
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([6])
+})
+
+test('an #info advisory reaches onInfo (not onError) and the stream continues', async () => {
+  const { transport } = scriptedTransport([
+    [infoFrame('OutdatedCursor'), commitFrame(1)],
+  ])
+  const errors: Error[] = []
+  const infos: Array<{ name: string; message?: string }> = []
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    transport,
+    onError: (e) => errors.push(e),
+    onInfo: (info) => infos.push(info),
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1])
+  expect(errors).toEqual([])
+  expect(infos).toEqual([{ name: 'OutdatedCursor', message: 'clamped' }])
+})
+
+test('an #info advisory is dropped silently when no onInfo is registered', async () => {
+  const { transport } = scriptedTransport([
+    [infoFrame('OutdatedCursor'), commitFrame(1)],
+  ])
+  const errors: Error[] = []
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    transport,
+    onError: (e) => errors.push(e),
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1])
+  expect(errors).toEqual([])
+})
+
+test('an error frame is reported and the transport may redial', async () => {
+  const errorFrame = JSON.stringify({
+    $type: 'error',
+    error: 'ConsumerTooSlow',
+    message: 'too slow',
+  })
+  const { transport } = scriptedTransport([[errorFrame], [commitFrame(1)]])
+  const errors: Error[] = []
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    transport,
+    onError: (e) => errors.push(e),
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1])
+  expect(errors[0].name).toBe('XrpcSubscriptionError')
+})
+
+test('validateWire makes a malformed frame fatal', async () => {
+  const bad = JSON.stringify({
+    $type: 'message',
+    payload: {
+      $type: `${NSID}#commit`,
+      seq: 1,
+      did: 'not-a-did',
+      time: '2024-09-09T19:46:02.329308Z',
+      rev: TID,
+      operation: 'create',
+      collection: 'app.bsky.feed.post',
+      rkey: 'k1',
+      cid: CID,
+      record: { $type: 'app.bsky.feed.post' },
+    },
+  })
+  const { transport } = scriptedTransport([[bad]])
+  await expect(async () => {
+    for await (const _ of liveEvents({
+      host: 'https://h',
+      transport,
+      validateWire: true,
+    }))
+      void _
+  }).rejects.toThrow(/wire validation failed/)
+})
+
+test('rejects the kinds filter on v1', async () => {
+  const { transport } = scriptedTransport([[commitFrame(1)]])
+  await expect(async () => {
+    for await (const _ of liveEvents({
+      host: 'https://h',
+      transport,
+      version: 1,
+      kinds: ['commit'],
+    }))
+      void _
+  }).rejects.toThrow(/does not support the kinds filter/)
+})
+
+test('rejects parameter lists the server would refuse pre-upgrade', async () => {
+  const { transport } = scriptedTransport([[commitFrame(1)]])
+  const run = async (opts: Parameters<typeof liveEvents>[0]) => {
+    for await (const _ of liveEvents(opts)) void _
+  }
+  await expect(
+    run({
+      host: 'https://h',
+      transport,
+      dids: Array.from({ length: 10_001 }, (_, i) => `did:plc:${i}` as never),
+    }),
+  ).rejects.toThrow(RangeError)
+  await expect(
+    run({
+      host: 'https://h',
+      transport,
+      collections: Array.from({ length: 101 }, (_, i) => `app.test.c${i}`),
+    }),
+  ).rejects.toThrow(RangeError)
+})
+
+test('signal abort stops iteration', async () => {
   const ac = new AbortController()
-  // Transport that yields one frame, then checks the signal before yielding more.
-  // This keeps the test deterministic: no real timers, no races.
   const transport: LiveTransport = {
     async *stream(_getUrl, signal) {
-      yield new TextEncoder().encode(commitFrame(1))
-      // After the first frame is consumed the test aborts; honour it here.
+      yield commitFrame(1)
       if (signal.aborted) return
-      yield new TextEncoder().encode(commitFrame(2))
+      yield commitFrame(2)
     },
   }
   const got: number[] = []
@@ -108,45 +308,7 @@ test('signal-driven teardown: aborting the signal stops iteration', async () => 
     signal: ac.signal,
   })) {
     got.push(ev.seq)
-    // Abort after the first event; the transport will see signal.aborted on next iteration.
     ac.abort()
   }
-  expect(got).toEqual([1]) // only the pre-abort frame was delivered; loop terminated
-})
-
-test('dedupFloor drops events at or below it; undefined lets seq 0 pass', async () => {
-  const a = scriptedTransport([[commitFrame(0), commitFrame(1)]])
-  const gotA: number[] = []
-  for await (const ev of liveEvents({
-    host: 'https://h',
-    dedupFloor: undefined,
-    transport: a.transport,
-  }))
-    gotA.push(ev.seq)
-  expect(gotA).toEqual([0, 1]) // seq 0 passes when floor is undefined
-
-  const b = scriptedTransport([[commitFrame(0), commitFrame(1)]])
-  const gotB: number[] = []
-  for await (const ev of liveEvents({
-    host: 'https://h',
-    dedupFloor: 0,
-    transport: b.transport,
-  }))
-    gotB.push(ev.seq)
-  expect(gotB).toEqual([1]) // seq 0 dropped when floor is 0
-})
-
-test('dedup on reconnect overlap is exact (unique monotonic time_us)', async () => {
-  const { transport } = scriptedTransport([
-    [commitFrame(100), commitFrame(101)],
-  ])
-  const events = []
-  for await (const ev of liveEvents({
-    host: 'https://h',
-    dedupFloor: 100, // as if 100 already delivered
-    transport,
-  })) {
-    events.push(ev)
-  }
-  expect(events.map((e) => e.seq)).toEqual([101]) // 100 dropped (<= floor)
+  expect(got).toEqual([1])
 })

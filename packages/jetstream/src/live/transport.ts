@@ -1,6 +1,7 @@
 import {
   CloseCode,
   CloseError,
+  SocketError,
   type WebSocketOptions,
   defaultShouldReconnect,
   websocket,
@@ -37,11 +38,34 @@ export type WebsocketTransportOptions = Omit<
   idleTimeoutMs?: number | false
 }
 
+// ws raises `Unexpected server response: <status>` when an upgrade is refused
+// and discards the response body, so the XRPC error envelope naming
+// CursorTooOld is unreachable from here — only the status is available.
+// Matching on someone else's message text is a stopgap until ws-client
+// surfaces the handshake response; the unit tests fail loudly if it changes.
+const HANDSHAKE_REJECTION_RE = /Unexpected server response: (\d{3})/
+
+export function handshakeRejectionStatus(error: unknown): number | undefined {
+  // ws-client wraps the raw ws error in a SocketError, one level deep.
+  if (!(error instanceof SocketError)) return undefined
+  const cause = error.cause
+  if (!(cause instanceof Error)) return undefined
+  const match = HANDSHAKE_REJECTION_RE.exec(cause.message)
+  return match ? Number(match[1]) : undefined
+}
+
 // A jetstream server closing 1000 (restart, load-shed) should not end the
 // consumer's stream — the resume cursor makes the redial seamless. Everything
 // else keeps ws-client's classification: protocol closes
 // (1002/1003/1007/1009), DataModeError, and local resource errors stay fatal.
 export function jetstreamShouldReconnect(error: unknown): boolean {
+  // A 4xx refusal is permanent for this request; 5xx is transient and keeps
+  // the default treatment.
+  const status = handshakeRejectionStatus(error)
+  if (status !== undefined) {
+    if (status >= 400 && status < 500) return false
+    if (status >= 500) return true
+  }
   return (
     (error instanceof CloseError && error.code === CloseCode.Normal) ||
     defaultShouldReconnect(error)
@@ -59,6 +83,11 @@ export function resolveWebsocketOptions(
     shouldReconnect = jetstreamShouldReconnect,
     ...rest
   } = options
+  if (Number.isNaN(idleTimeoutMs)) {
+    throw new RangeError(
+      'idleTimeoutMs must be > 0; use false to disable idle detection',
+    )
+  }
   if (idleTimeoutMs !== false && idleTimeoutMs <= 0) {
     throw new RangeError(
       'idleTimeoutMs must be > 0; use false to disable idle detection',

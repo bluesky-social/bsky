@@ -7,7 +7,16 @@ import { websocketTransport } from '../../src/live/transport.js'
 // End-to-end over a real websocket: jetstream frames are text frames, which
 // the transport (dataMode 'text') yields as strings. Exercises the real
 // websocketTransport so the decoder's string handling can't regress even
-// when fake-transport tests pass.
+// when fake-transport tests pass. v2 is the default wire (and gets most of
+// the coverage below); one v1 case is kept so the frozen wire's real-socket
+// coverage isn't lost.
+
+const NSID = 'network.bsky.jetstream.subscribeEvents'
+const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
 
 const v1Frame = (time_us: number) =>
   JSON.stringify({
@@ -21,6 +30,23 @@ const v1Frame = (time_us: number) =>
       rkey: `rk${time_us}`,
       record: { $type: 'app.bsky.feed.like' },
       cid: 'cid1',
+    },
+  })
+
+const v2Frame = (seq: number) =>
+  JSON.stringify({
+    $type: 'message',
+    payload: {
+      $type: `${NSID}#commit`,
+      seq,
+      did: 'did:plc:a',
+      time: '2024-09-09T19:46:02.329308Z',
+      rev: TID,
+      operation: 'create',
+      collection: 'app.bsky.feed.like',
+      rkey: `rk${seq}`,
+      record: { $type: 'app.bsky.feed.like' },
+      cid: CID,
     },
   })
 
@@ -69,6 +95,7 @@ describe('websocketTransport (real websocket)', () => {
         host: srv.host,
         transport: websocketTransport({ shouldReconnect: false }),
         onError: (err) => errors.push(err),
+        version: 1,
       })) {
         events.push(ev)
       }
@@ -83,11 +110,11 @@ describe('websocketTransport (real websocket)', () => {
   it('reconnects on a clean 1000 close by default, resuming from the cursor', async () => {
     const srv = await serveScript([
       (ws) => {
-        ws.send(v1Frame(100))
+        ws.send(v2Frame(100))
         ws.close(1000)
       },
       (ws) => {
-        ws.send(v1Frame(200))
+        ws.send(v2Frame(200))
         // stay open; the test ends by aborting
       },
     ])
@@ -97,7 +124,8 @@ describe('websocketTransport (real websocket)', () => {
       await expect(
         (async () => {
           // Default transport on purpose: pins that liveEvents' default IS
-          // websocketTransport() with the jetstream reconnect policy.
+          // websocketTransport() with the jetstream reconnect policy. Default
+          // version too: v2 is the default wire.
           for await (const ev of liveEvents({
             host: srv.host,
             signal: ac.signal,
@@ -120,12 +148,12 @@ describe('websocketTransport (real websocket)', () => {
     const srv = await serveScript([
       (ws) => {
         conns.push(ws)
-        ws.send(v1Frame(100))
+        ws.send(v2Frame(100))
         // terminated from the test body after the frame is observed —
         // avoids racing the frame against the drop
       },
       (ws) => {
-        ws.send(v1Frame(200))
+        ws.send(v2Frame(200))
       },
     ])
     try {
@@ -160,7 +188,7 @@ describe('websocketTransport (real websocket)', () => {
         // (IdleTimeoutError is retryable -> redial, not stream end)
       },
       (ws) => {
-        ws.send(v1Frame(100))
+        ws.send(v2Frame(100))
       },
     ])
     try {

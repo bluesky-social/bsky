@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { type Ack, type JetstreamConsumer } from '../../src/consumer.js'
-import { type EventBatch, type RawEventV1 } from '../../src/event.js'
+import { type EventBatch, type RawEvent } from '../../src/event.js'
 
-function rawDelete(seq: number): RawEventV1 {
+function rawDelete(seq: number): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: '2024-09-09T19:46:02.329308Z',
     kind: 'commit',
     commit: {
       operation: 'delete',
@@ -17,7 +17,7 @@ function rawDelete(seq: number): RawEventV1 {
   }
 }
 
-async function* batches(...bs: EventBatch<RawEventV1>[]) {
+async function* batches(...bs: EventBatch<RawEvent>[]) {
   for (const b of bs) yield b
 }
 

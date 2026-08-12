@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { type EventBatch, type RawEventV1 } from '../../src/event.js'
+import { type EventBatch, type RawEvent } from '../../src/event.js'
 import { type CursorStore } from '../../src/execute/cursor-store.js'
 import { trackedStream } from '../../src/run-tracker.js'
 
-function rawDelete(seq: number): RawEventV1 {
+function rawDelete(seq: number): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: '2024-09-09T19:46:02.329308Z',
     kind: 'commit',
     commit: {
       operation: 'delete',
@@ -18,7 +18,7 @@ function rawDelete(seq: number): RawEventV1 {
   }
 }
 
-async function* batches(...bs: EventBatch<RawEventV1>[]) {
+async function* batches(...bs: EventBatch<RawEvent>[]) {
   for (const b of bs) yield b
 }
 
@@ -56,7 +56,7 @@ describe('trackedStream', () => {
       store,
     )
     // Pull all (registers track(1),track(2),track(3) in order)
-    const events: RawEventV1[] = []
+    const events: RawEvent[] = []
     for await (const batch of ts.stream) events.push(...batch.events)
 
     // Ack out of order: 1, then 3 (2 still pending) — watermark must stay at 1

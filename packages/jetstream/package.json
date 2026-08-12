@@ -30,7 +30,7 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@atproto/lex-schema": "^0.2.2",
+    "@atproto/lex": "^0.3.0",
     "@atproto/ws-client": "^0.2.0"
   },
   "scripts": {

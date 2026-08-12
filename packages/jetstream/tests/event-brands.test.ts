@@ -4,13 +4,13 @@ import type {
   DidString,
   HandleString,
   NsidString,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { expectTypeOf, test } from 'vitest'
 import type { CollectionFilter } from '../src/engine/collections.js'
 import type {
   Identity,
   RawEventV1,
-  RawPutCommitV1,
+  RawPutCommit,
   TypedEvent,
 } from '../src/event.js'
 import type { LiveOpts } from '../src/jetstream.js'
@@ -18,7 +18,7 @@ import type { IdentityEvent, PutEvent } from '../src/lex-indexer.js'
 
 test('event envelope fields carry lex string format brands', () => {
   expectTypeOf<RawEventV1['did']>().toEqualTypeOf<DidString>()
-  expectTypeOf<RawPutCommitV1['collection']>().toEqualTypeOf<NsidString>()
+  expectTypeOf<RawPutCommit['collection']>().toEqualTypeOf<NsidString>()
   expectTypeOf<Identity['handle']>().toEqualTypeOf<HandleString | undefined>()
   expectTypeOf<Identity['time']>().toEqualTypeOf<DatetimeString | undefined>()
 })
@@ -32,8 +32,8 @@ test('a plain string does not satisfy the branded fields', () => {
   expectTypeOf<string>().not.toMatchTypeOf<DidString>()
   expectTypeOf<string>().not.toMatchTypeOf<NsidString>()
   // free aliases intentionally accept plain string
-  expectTypeOf<string>().toMatchTypeOf<RawPutCommitV1['cid']>()
-  expectTypeOf<string>().toMatchTypeOf<RawPutCommitV1['rkey']>()
+  expectTypeOf<string>().toMatchTypeOf<RawPutCommit['cid']>()
+  expectTypeOf<string>().toMatchTypeOf<RawPutCommit['rkey']>()
 })
 
 test('indexer handler events carry brands', () => {

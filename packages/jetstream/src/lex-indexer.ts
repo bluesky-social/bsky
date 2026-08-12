@@ -10,17 +10,14 @@ import {
   type RecordKeyString,
   type RecordSchema,
   type TidString,
+  type TypedLexMap,
   atUri,
   getMain,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
-import {
-  type EventBatch,
-  type RawEventV1,
-  type UnvalidatedRecord,
-} from './event.js'
+import { type EventBatch, type Kind, type RawEvent } from './event.js'
 import { eventUri } from './event.js'
 
 // Shared per-run context handed to every handler as the second arg. Allocated
@@ -55,7 +52,8 @@ export type DelEvent = {
 }
 // Same flat shape as PutEvent but carries the decode/validation `error` instead
 // of a decoded `record`. Routed here (not to `put`) when a create/update record
-// fails to schema-validate, so `put`'s `record` is always a valid decoded R.
+// fails to convert (e.g. missing $type) or fails to schema-validate, so
+// `put`'s `record` is always a valid decoded R.
 export type ValidationErrorEvent = {
   did: DidString
   seq: number
@@ -80,6 +78,12 @@ export type AccountEvent = {
   time?: DatetimeString
   seq: number
 }
+export type SyncEvent = {
+  did: DidString
+  rev: TidString
+  time?: DatetimeString
+  seq: number
+}
 
 export interface CommitHandlers<R> {
   put?: (e: PutEvent<R>, ctx: HandlerContext) => unknown | Promise<unknown>
@@ -88,7 +92,7 @@ export interface CommitHandlers<R> {
 
 export interface LexIndexerOpts {
   concurrency?: number
-  keyOf?: (evt: RawEventV1) => string
+  keyOf?: (evt: RawEvent) => string
 }
 
 const isThenable = (v: unknown): v is PromiseLike<unknown> =>
@@ -132,13 +136,16 @@ interface AnyCommitHandlers {
 
 export class LexIndexer implements JetstreamConsumer {
   readonly concurrency: number
-  readonly #keyOf: ((evt: RawEventV1) => string) | undefined
+  readonly #keyOf: ((evt: RawEvent) => string) | undefined
   readonly #collections = new Map<NsidString, AnyCommitHandlers>()
   #identityHandler:
     | ((e: IdentityEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
     | undefined
   #accountHandler:
     | ((e: AccountEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
+    | undefined
+  #syncHandler:
+    | ((e: SyncEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
     | undefined
   #validationErrorHandler:
     | ((
@@ -156,6 +163,20 @@ export class LexIndexer implements JetstreamConsumer {
     return [...this.#collections.keys()]
   }
 
+  // Derived from registrations, like `collections`. onValidationError is
+  // commit-related but implies nothing on its own — it only ever fires for a
+  // collection already registered via commit(). Nothing registered must
+  // return undefined, not []: an empty array is still a concrete kinds list
+  // to a caller reading the type, and undefined is the honest "no filter."
+  get kinds(): Kind[] | undefined {
+    const kinds: Kind[] = []
+    if (this.#collections.size > 0) kinds.push('commit')
+    if (this.#identityHandler) kinds.push('identity')
+    if (this.#accountHandler) kinds.push('account')
+    if (this.#syncHandler) kinds.push('sync')
+    return kinds.length > 0 ? kinds : undefined
+  }
+
   // Simple form: register a collection with schema-validated records
   // (validateRecord defaults to true).
   commit<S extends RecordSchema>(
@@ -170,11 +191,11 @@ export class LexIndexer implements JetstreamConsumer {
     validateRecord?: true
   }): this
   // Options form, non-validating. The literal `false` selects the
-  // UnvalidatedRecord handler typing: no runtime record checks — the $type
-  // floor is trusted from the server's collection routing, not verified.
+  // TypedLexMap handler typing: no schema checks — only the $type floor
+  // (already enforced by record conversion) is guaranteed.
   commit<S extends RecordSchema>(opts: {
     collection: Main<S>
-    handlers: CommitHandlers<UnvalidatedRecord<S['$type']>>
+    handlers: CommitHandlers<TypedLexMap<S['$type']>>
     validateRecord: false
   }): this
   commit<S extends RecordSchema>(
@@ -232,6 +253,13 @@ export class LexIndexer implements JetstreamConsumer {
     return this
   }
 
+  sync(
+    fn: (e: SyncEvent, ctx: HandlerContext) => unknown | Promise<unknown>,
+  ): this {
+    this.#syncHandler = fn
+    return this
+  }
+
   onValidationError(
     fn: (
       e: ValidationErrorEvent,
@@ -243,11 +271,11 @@ export class LexIndexer implements JetstreamConsumer {
   }
 
   async run(
-    stream: AsyncIterable<EventBatch<RawEventV1>>,
+    stream: AsyncIterable<EventBatch<RawEvent>>,
     ctx: ConsumerContext,
   ): Promise<void> {
     const concurrency = Math.max(1, this.concurrency)
-    const keyOf = this.#keyOf ?? ((evt: RawEventV1) => eventUri(evt))
+    const keyOf = this.#keyOf ?? ((evt: RawEvent) => eventUri(evt))
     // schemasByNsid drives typedEventFromRaw's validation; a collection
     // registered with validateRecord: false is deliberately OMITTED so its
     // records skip schema.safeValidate (routing is unaffected — handlers are
@@ -297,7 +325,7 @@ export class LexIndexer implements JetstreamConsumer {
     // PERF: plain function (not async) — a sync user handler completes without
     // any promise allocation; the CALLER inspects the return for a thenable.
     // Each branch returns the handler's result directly (may be a thenable).
-    const handle = (evt: RawEventV1): unknown => {
+    const handle = (evt: RawEvent): unknown => {
       if (evt.kind === 'identity') {
         if (this.#identityHandler) {
           return this.#identityHandler(
@@ -320,6 +348,20 @@ export class LexIndexer implements JetstreamConsumer {
               active: evt.account.active,
               status: evt.account.status,
               time: evt.account.time,
+              seq: evt.seq,
+            },
+            hctx,
+          )
+        }
+        return undefined
+      }
+      if (evt.kind === 'sync') {
+        if (this.#syncHandler) {
+          return this.#syncHandler(
+            {
+              did: evt.sync.did,
+              rev: evt.sync.rev,
+              time: evt.sync.time,
               seq: evt.seq,
             },
             hctx,
@@ -358,8 +400,9 @@ export class LexIndexer implements JetstreamConsumer {
       if (typed.kind !== 'commit' || typed.commit.operation === 'delete')
         return undefined
       if (typed.commit.validationError !== undefined) {
-        // Invalid record: fails schema-validation. Never reaches put; route to
-        // the optional handler, otherwise ack-and-skip.
+        // Invalid record: failed conversion (e.g. missing $type) or
+        // schema-validation. Never reaches put; route to the optional
+        // handler, otherwise ack-and-skip.
         if (this.#validationErrorHandler) {
           const did = typed.did
           const tc = typed.commit
@@ -419,7 +462,7 @@ export class LexIndexer implements JetstreamConsumer {
     // stopped-skip passes skipAck=true so the slot is released WITHOUT acking
     // (acking a skipped event would advance the watermark past unprocessed
     // events). Always releases the slot exactly once.
-    const settle = (evt: RawEventV1, err: unknown, skipAck = false): void => {
+    const settle = (evt: RawEvent, err: unknown, skipAck = false): void => {
       if (err === undefined) {
         if (!skipAck) ctx.ack(evt)
       } else {
@@ -437,7 +480,7 @@ export class LexIndexer implements JetstreamConsumer {
     // when a tail exists, acquire/release pairing (settle runs once per
     // dispatched event), fail-fast without acking the failed event. The async
     // fallback below is the original chain semantics.
-    const dispatch = (evt: RawEventV1): void => {
+    const dispatch = (evt: RawEvent): void => {
       // NOTE: keyOf is deliberately NOT guarded — a key-computation failure is
       // an implementer bug (broken custom keyOf) and should throw hard out of
       // run() rather than be settled like a handler error. The default

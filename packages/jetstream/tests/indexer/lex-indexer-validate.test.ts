@@ -1,7 +1,8 @@
-import { l, record } from '@atproto/lex-schema'
+import { type TypedLexMap, l, record } from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { type EventBatch, type RawEventV1 } from '../../src/event.js'
-import { LexIndexer, type UnvalidatedRecord } from '../../src/index.js'
+import { type EventBatch, type RawEvent } from '../../src/event.js'
+import { LexIndexer } from '../../src/index.js'
+import { type RawRecordJson } from '../../src/raw-record.js'
 
 const likeSchema = record(
   'tid',
@@ -9,11 +10,11 @@ const likeSchema = record(
   l.object({ subject: l.string() }),
 )
 
-function putWithRecord(seq: number, rec: unknown): RawEventV1 {
+function putWithRecord(seq: number, rec: RawRecordJson): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: '2024-09-09T19:46:02.329308Z',
     kind: 'commit',
     commit: {
       operation: 'create',
@@ -26,7 +27,7 @@ function putWithRecord(seq: number, rec: unknown): RawEventV1 {
   }
 }
 
-function oneBatch(events: RawEventV1[]): AsyncIterable<EventBatch<RawEventV1>> {
+function oneBatch(events: RawEvent[]): AsyncIterable<EventBatch<RawEvent>> {
   return (async function* () {
     yield { events, lastCursor: events[events.length - 1]?.seq ?? 0 }
   })()
@@ -54,7 +55,7 @@ describe('commit validateRecord', () => {
     expect(invalid).toEqual([2])
   })
 
-  it('validateRecord: false: no runtime checks — schema-invalid and $type-less records both reach put', async () => {
+  it('validateRecord: false: no schema checks — schema-invalid records still reach put', async () => {
     const puts: number[] = []
     const invalid: number[] = []
     const idx = new LexIndexer()
@@ -63,9 +64,7 @@ describe('commit validateRecord', () => {
         validateRecord: false,
         handlers: {
           put: (e) => {
-            expectTypeOf(e.record).toEqualTypeOf<
-              UnvalidatedRecord<'app.test.like'>
-            >()
+            expectTypeOf(e.record).toEqualTypeOf<TypedLexMap<'app.test.like'>>()
             puts.push(e.seq)
           },
         },
@@ -74,17 +73,22 @@ describe('commit validateRecord', () => {
     await idx.run(
       oneBatch([
         putWithRecord(1, { $type: 'app.test.like', subject: 123 }), // schema-invalid: OK
-        putWithRecord(2, { hello: 'no $type' }), // no floor check: also reaches put
+        putWithRecord(2, { $type: 'app.test.like', extra: 'no schema check' }), // schema-invalid: OK
+        putWithRecord(3, { hello: 'no $type' }), // conversion floor still applies
       ]),
       { ack: () => {} },
     )
+    // validateRecord: false skips SCHEMA checks, but the $type floor (record
+    // conversion, established independent of any collection's schema) still
+    // applies: a $type-less record fails conversion and routes to
+    // onValidationError, never put.
     expect(puts).toEqual([1, 2])
-    expect(invalid).toEqual([])
+    expect(invalid).toEqual([3])
   })
 
   it('validateRecord: false still routes ONLY the registered collection', async () => {
     const puts: number[] = []
-    const other: RawEventV1 = {
+    const other: RawEvent = {
       ...putWithRecord(3, { $type: 'app.test.other' }),
     }
     ;(other as { commit: { collection: string } }).commit.collection =
@@ -106,11 +110,11 @@ describe('commit validateRecord', () => {
     const idx = new LexIndexer().commit(likeSchema, {
       put: (e) => {
         // The simple form keeps the schema-inferred record type (which carries
-        // a branded $type plus the typed fields), NOT the loose
-        // UnvalidatedRecord. Assert the load-bearing distinction: the typed
-        // `subject: string` is present and the record is not UnvalidatedRecord.
+        // a branded $type plus the typed fields), NOT the loose unvalidated
+        // TypedLexMap. Assert the load-bearing distinction: the typed
+        // `subject: string` is present and the record is not a bare TypedLexMap.
         expectTypeOf(e.record.subject).toEqualTypeOf<string>()
-        expectTypeOf(e.record).not.toEqualTypeOf<UnvalidatedRecord>()
+        expectTypeOf(e.record).not.toEqualTypeOf<TypedLexMap>()
         puts.push(e.seq)
       },
     })

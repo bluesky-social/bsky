@@ -1,4 +1,4 @@
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, it, test } from 'vitest'
 import { parseCollectionFilters } from '../src/engine/collections.js'
 import {
@@ -6,9 +6,10 @@ import {
   type RawEventV1,
   type TypedEvent,
 } from '../src/event.js'
+import { type RawRecordJson } from '../src/raw-record.js'
 import { RecordValidationError, shape } from '../src/shape.js'
 
-function rawCreate(seq: number, record: unknown): RawEventV1 {
+function rawCreate(seq: number, record: RawRecordJson): RawEventV1 {
   return {
     did: 'did:plc:a',
     seq,
@@ -41,7 +42,7 @@ const likeSchema = record(
   l.object({ subject: l.string() }),
 )
 
-function putEvent(seq: number, rec: unknown): RawEventV1 {
+function putEvent(seq: number, rec: RawRecordJson): RawEventV1 {
   return {
     did: 'did:plc:a',
     seq,
@@ -66,7 +67,10 @@ function oneBatch(events: RawEventV1[]): AsyncIterable<EventBatch<RawEventV1>> {
 
 describe('shape', () => {
   const b1: EventBatch<RawEventV1> = {
-    events: [rawCreate(1, {}), rawCreate(2, {})],
+    events: [
+      rawCreate(1, { $type: 'app.test.rec' }),
+      rawCreate(2, { $type: 'app.test.rec' }),
+    ],
     lastCursor: 2,
   }
 
@@ -88,7 +92,7 @@ describe('shape', () => {
       'delete',
     )
     if (out[0].kind === 'commit' && out[0].commit.operation !== 'delete') {
-      expect(out[0].commit.record).toEqual({})
+      expect(out[0].commit.record).toEqual({ $type: 'app.test.rec' })
     }
   })
 })
@@ -132,6 +136,27 @@ test('unregistered collections are never skipped and never reported', async () =
   }
   expect(out.map((e) => e.seq)).toEqual([1])
   expect(errors).toHaveLength(0)
+})
+
+test('conversion failures are skipped and reported even for unregistered collections', async () => {
+  // Regression: a record that fails CONVERSION (no $type here) must never
+  // reach a consumer as `record: undefined` — the static type promises a
+  // record is present — regardless of whether the collection has a
+  // registered schema. Unlike a schema-validation failure, this is not
+  // gated on schemasByNsid.has(collection).
+  const errors: Error[] = []
+  const out: TypedEvent[] = []
+  for await (const ev of shape(
+    oneBatch([putEvent(1, { hello: 'no $type' })]),
+    {},
+    new Map(), // no schema registered for app.test.like
+    (err) => errors.push(err),
+  )) {
+    out.push(ev as TypedEvent)
+  }
+  expect(out).toHaveLength(0)
+  expect(errors).toHaveLength(1)
+  expect(errors[0]).toBeInstanceOf(RecordValidationError)
 })
 
 test('raw paths never skip', async () => {

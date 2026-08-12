@@ -2,11 +2,12 @@ import {
   type DidString,
   type InferOutput,
   type NsidString,
+  type TypedLexMap,
   l,
   record,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { Jetstream, type UnvalidatedRecord } from '../../src/index.js'
+import { JetstreamV1, type RawRecordJson } from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 
 const likeSchema = record(
@@ -44,7 +45,7 @@ function fakeTransport(frames: string[]): LiveTransport {
 
 describe('live() filter narrowing (public API)', () => {
   it('mixed filters: correlated narrowing + validation skip, end to end', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     const likes: Like[] = []
     const posts: number[] = []
     for await (const ev of jetstream.live({
@@ -64,7 +65,7 @@ describe('live() filter narrowing (public API)', () => {
         }
         if (ev.commit.collection === 'app.test.post') {
           expectTypeOf(ev.commit.record).toEqualTypeOf<
-            UnvalidatedRecord<'app.test.post'>
+            TypedLexMap<'app.test.post'>
           >()
           posts.push(ev.seq)
         }
@@ -75,21 +76,21 @@ describe('live() filter narrowing (public API)', () => {
   })
 
   it('no collections filter still yields plain TypedEvent', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     for await (const ev of jetstream.live({
       liveTransport: fakeTransport([
         frame(1, 'app.test.like', { $type: 'app.test.like', subject: 'ok' }),
       ]),
     })) {
       if (ev.kind === 'commit' && ev.commit.operation !== 'delete') {
-        expectTypeOf(ev.commit.record).toEqualTypeOf<unknown>()
+        expectTypeOf(ev.commit.record).toEqualTypeOf<TypedLexMap>()
         expectTypeOf(ev.commit.collection).toEqualTypeOf<NsidString>()
       }
     }
   })
 
   it('raw mode is untouched by schema filters (no skip, RawEventV1 shape)', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     const seqs: number[] = []
     for await (const ev of jetstream.live({
       raw: true,
@@ -100,7 +101,7 @@ describe('live() filter narrowing (public API)', () => {
     })) {
       seqs.push(ev.seq)
       if (ev.kind === 'commit' && ev.commit.operation !== 'delete') {
-        expectTypeOf(ev.commit.record).toEqualTypeOf<unknown>()
+        expectTypeOf(ev.commit.record).toEqualTypeOf<RawRecordJson>()
       }
     }
     expect(seqs).toEqual([1]) // invalid record NOT skipped in raw mode

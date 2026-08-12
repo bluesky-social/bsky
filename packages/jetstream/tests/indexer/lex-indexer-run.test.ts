@@ -1,7 +1,7 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
-import { type EventBatch, type RawEventV1 } from '../../src/event.js'
+import { type EventBatch, type RawEvent } from '../../src/event.js'
 import { LexIndexer } from '../../src/lex-indexer.js'
 
 const likeSchema = record(
@@ -10,11 +10,13 @@ const likeSchema = record(
   l.object({ subject: l.string() }),
 )
 
-function rawPut(seq: number, subject: string): RawEventV1 {
+const TIME = '2024-09-09T19:46:02.329308Z'
+
+function rawPut(seq: number, subject: string): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: TIME,
     kind: 'commit',
     commit: {
       operation: 'create',
@@ -28,11 +30,11 @@ function rawPut(seq: number, subject: string): RawEventV1 {
 }
 // A create commit whose record is missing the required `subject` (typed as a
 // number), so likeSchema.safeValidate fails => typed.commit.validationError set.
-function rawInvalidPut(seq: number): RawEventV1 {
+function rawInvalidPut(seq: number): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: TIME,
     kind: 'commit',
     commit: {
       operation: 'create',
@@ -44,11 +46,11 @@ function rawInvalidPut(seq: number): RawEventV1 {
     },
   }
 }
-function rawDel(seq: number): RawEventV1 {
+function rawDel(seq: number): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: TIME,
     kind: 'commit',
     commit: {
       operation: 'delete',
@@ -58,11 +60,11 @@ function rawDel(seq: number): RawEventV1 {
     },
   }
 }
-function rawUnregistered(seq: number): RawEventV1 {
+function rawUnregistered(seq: number): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: TIME,
     kind: 'commit',
     commit: {
       operation: 'delete',
@@ -73,7 +75,7 @@ function rawUnregistered(seq: number): RawEventV1 {
   }
 }
 
-async function* batches(...bs: EventBatch<RawEventV1>[]) {
+async function* batches(...bs: EventBatch<RawEvent>[]) {
   for (const b of bs) yield b
 }
 
@@ -178,17 +180,17 @@ describe('LexIndexer.run', () => {
     const ix = new LexIndexer()
       .identity((e) => ids.push(e.did))
       .account((e) => accts.push({ did: e.did, active: e.active }))
-    const idEvt: RawEventV1 = {
+    const idEvt: RawEvent = {
       did: 'did:plc:b',
       seq: 1,
-      timeUs: 0,
+      time: TIME,
       kind: 'identity',
       identity: { did: 'did:plc:b', handle: 'h.test' },
     }
-    const acctEvt: RawEventV1 = {
+    const acctEvt: RawEvent = {
       did: 'did:plc:c',
       seq: 2,
-      timeUs: 0,
+      time: TIME,
       kind: 'account',
       account: { did: 'did:plc:c', active: true },
     }
@@ -414,10 +416,10 @@ describe('LexIndexer.run', () => {
         },
       })
       // Same uri (same did/collection/rkey) for both events => same key.
-      const sameKey = (seq: number): RawEventV1 => ({
+      const sameKey = (seq: number): RawEvent => ({
         did: 'did:plc:a',
         seq,
-        timeUs: 0,
+        time: TIME,
         kind: 'commit',
         commit: {
           operation: 'create',

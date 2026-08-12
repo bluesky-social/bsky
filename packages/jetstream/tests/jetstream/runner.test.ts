@@ -1,32 +1,59 @@
+import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import { type JetstreamConsumer } from '../../src/consumer.js'
 import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
-import { Jetstream, JetstreamRunner } from '../../src/index.js'
+import { Jetstream, JetstreamRunner, LexIndexer } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
-// fake transport emitting v1 JSON delete-commit frames then ending
+const NSID = 'network.bsky.jetstream.subscribeEvents'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
+
+// fake transport emitting v2 delete-commit frames then ending
 function fakeTransport(seqs: number[]): LiveTransport {
-  const enc = new TextEncoder()
   return {
     async *stream() {
       for (const seq of seqs) {
-        yield enc.encode(
-          JSON.stringify({
+        yield JSON.stringify({
+          $type: 'message',
+          payload: {
+            $type: `${NSID}#commit`,
+            seq,
             did: 'did:plc:a',
-            kind: 'commit',
-            time_us: seq,
-            commit: {
-              operation: 'delete',
-              collection: 'app.test.rec',
-              rkey: 'r' + seq,
-              rev: 'v',
-            },
-          }),
-        )
+            time: '2024-09-09T19:46:02.329308Z',
+            rev: TID,
+            operation: 'delete',
+            collection: 'app.test.rec',
+            rkey: 'r' + seq,
+          },
+        })
       }
     },
   }
 }
+
+// Records the request URL(s) and ends the stream immediately (no frames) —
+// enough to observe what the runner asked the wire for.
+function urlRecordingTransport(): { transport: LiveTransport; urls: string[] } {
+  const urls: string[] = []
+  return {
+    transport: {
+      // eslint-disable-next-line require-yield
+      async *stream(getUrl) {
+        urls.push(getUrl())
+      },
+    },
+    urls,
+  }
+}
+
+const likeSchema = record(
+  'tid',
+  'app.test.like',
+  l.object({ subject: l.string() }),
+)
 
 describe('JetstreamRunner', () => {
   it('drives a live indexer end to end and persists the contiguous watermark', async () => {
@@ -122,5 +149,22 @@ describe('JetstreamRunner', () => {
     })
     expect(seen).toEqual([1, 2, 3])
     expect(await store.load()).toBe(3)
+  })
+
+  it("derives the wire request from the consumer's registrations (collections + kinds)", async () => {
+    // A commit collection plus a sync handler, and nothing else registered:
+    // kinds should list exactly commit and sync, never identity/account.
+    const ix = new LexIndexer()
+      .commit(likeSchema, { put: () => {} })
+      .sync(() => {})
+    const { transport, urls } = urlRecordingTransport()
+    const js = new Jetstream({ service: 'https://js.example' })
+    await js.runner(ix).live({ liveTransport: transport })
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain('collections=app.test.like')
+    expect(urls[0]).toContain('kinds=commit')
+    expect(urls[0]).toContain('kinds=sync')
+    expect(urls[0]).not.toContain('kinds=identity')
+    expect(urls[0]).not.toContain('kinds=account')
   })
 })
