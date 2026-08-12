@@ -1,18 +1,17 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
-import { nodeSha256 } from '../../src/decode-event.js'
 import {
   type CutoverParams,
   cutoverReplay as cutoverReplayBase,
 } from '../../src/live/cutover.js'
 import type { LiveTransport } from '../../src/live/transport.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
+import { defaultDecompressor, defaultSha256 } from '../../src/runtime/node.js'
 
 // The class layer resolves these platform defaults; supply them here since
 // cutoverReplay takes them as required params.
-const decompressor = await nodeDecompressor()
-const sha256 = await nodeSha256()
+const decompressor = defaultDecompressor()
+const sha256 = defaultSha256()
 const cutoverReplay = (ctx: Omit<CutoverParams, 'decompressor' | 'sha256'>) =>
   cutoverReplayBase({ ...ctx, decompressor, sha256 })
 

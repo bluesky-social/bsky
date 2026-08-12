@@ -1,6 +1,6 @@
 import { MalformedError } from '../errors.js'
+import { type Decompressor } from '../runtime/interface.js'
 import { type SegEvent, decodeBlockFrame } from './block.js'
-import { type Decompressor } from './decompressor.js'
 import {
   RESERVED_HEADER_BYTES,
   type SegHeader,

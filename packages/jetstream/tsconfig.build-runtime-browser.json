@@ -1,0 +1,11 @@
+{
+  // Browser runtime defaults (throwing shims): no Node types. Selected at
+  // resolution time by the `#runtime` imports condition (see package.json).
+  "extends": "../../tsconfig/isomorphic.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+  },
+  "include": ["./src/runtime/browser.ts"],
+  "references": [{ "path": "./tsconfig.build-shared.json" }],
+}

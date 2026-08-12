@@ -22,12 +22,18 @@
       "default": "./dist/index.js"
     }
   },
+  "imports": {
+    "#runtime": {
+      "node": "./dist/runtime/node.js",
+      "default": "./dist/runtime/browser.js"
+    }
+  },
   "files": [
     "dist",
     "README.md"
   ],
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.15.0"
   },
   "dependencies": {
     "@atproto/lex": "^0.3.0",
@@ -36,7 +42,7 @@
   },
   "scripts": {
     "build": "tsc --build tsconfig.build.json",
-    "test": "vitest --run"
+    "test": "vitest --run && vitest --run --config vitest.browser.config.ts"
   },
   "devDependencies": {
     "@types/ws": "^8.18.1",

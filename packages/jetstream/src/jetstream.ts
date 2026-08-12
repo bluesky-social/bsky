@@ -1,6 +1,6 @@
 import { type DidString } from '@atproto/lex'
+import { defaultDecompressor, defaultSha256 } from '#runtime'
 import { type JetstreamConsumer } from './consumer.js'
-import { type Sha256, nodeSha256 } from './decode-event.js'
 import { backfillBatches } from './engine/backfill-pipeline.js'
 import {
   type CollectionFilter,
@@ -16,7 +16,7 @@ import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
 import { type RawRecordCbor, type RawRecordJson } from './raw-record.js'
 import { JetstreamRunner } from './runner.js'
-import { type Decompressor, nodeDecompressor } from './segment/decompressor.js'
+import { type Decompressor, type Sha256 } from './runtime/interface.js'
 import { shape } from './shape.js'
 import { DownloadError } from './xrpc/errors.js'
 import { type RetryPolicy } from './xrpc/retry.js'
@@ -58,15 +58,16 @@ export interface JetstreamOpts {
   /** Concurrent block downloads during archive backfill. Default 4. */
   blockConcurrency?: number
   /**
-   * zstd decompressor for archive blocks. Defaults to node:zlib, loaded
-   * lazily on first snapshot()/replay(); non-Node runtimes must supply one —
-   * there is no fallback.
+   * zstd decompressor for archive blocks. Wins over the platform default
+   * (node:zlib via the `#runtime` imports condition; browsers have none and
+   * must supply one to use snapshot()/replay()).
    */
   decompressor?: Decompressor
   /**
    * Synchronous SHA-256 backing the lazy `cid` getter on archive put commits.
-   * Defaults to node:crypto, loaded lazily on first snapshot()/replay();
-   * non-Node runtimes must supply one — there is no fallback.
+   * Wins over the platform default (node:crypto via the `#runtime` imports
+   * condition; browsers have none and must supply one to use
+   * snapshot()/replay()).
    */
   sha256?: Sha256
 }
@@ -247,8 +248,8 @@ export class Jetstream {
       tailHwmBytes: this.opts.tailHwmBytes,
       blockConcurrency: this.opts.blockConcurrency,
       fetchImpl: this.opts.fetchImpl ?? fetch,
-      decompressor: this.opts.decompressor ?? (await nodeDecompressor()),
-      sha256: this.opts.sha256 ?? (await nodeSha256()),
+      decompressor: this.opts.decompressor ?? defaultDecompressor(),
+      sha256: this.opts.sha256 ?? defaultSha256(),
       transport: opts.liveTransport,
       signal: opts.signal,
       onError: opts.onError,
@@ -278,8 +279,10 @@ export class Jetstream {
     const signal = opts.signal
     if (signal?.aborted) return
     const fetchImpl = this.opts.fetchImpl ?? fetch
-    const decompressor = this.opts.decompressor ?? (await nodeDecompressor())
-    const sha256 = this.opts.sha256 ?? (await nodeSha256())
+    // Resolved before any network work; on a runtime with no defaults this
+    // throws here, at the first pull, with a supply-your-own message.
+    const decompressor = this.opts.decompressor ?? defaultDecompressor()
+    const sha256 = this.opts.sha256 ?? defaultSha256()
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
     const maxRebackfills = opts.maxRebackfills ?? 50
 

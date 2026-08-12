@@ -3,14 +3,13 @@ import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
 import {
   microsToDatetime,
-  nodeSha256,
   rawEventFromSegment,
 } from '../../src/decode-event.js'
+import { defaultDecompressor, defaultSha256 } from '../../src/runtime/node.js'
 import { decodeBlockFrame } from '../../src/segment/block.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
 
-const decompressor = await nodeDecompressor()
-const sha256 = await nodeSha256()
+const decompressor = defaultDecompressor()
+const sha256 = defaultSha256()
 
 const rows = decodeBlockFrame(
   new Uint8Array(

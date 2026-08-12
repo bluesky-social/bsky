@@ -1,9 +1,9 @@
 import { zstdCompressSync } from 'node:zlib'
 import { expect, test } from 'vitest'
 import { MalformedError } from '../../src/errors.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
+import { defaultDecompressor } from '../../src/runtime/node.js'
 
-const d = await nodeDecompressor()
+const d = defaultDecompressor()
 
 test('round-trips a zstd frame', () => {
   const original = new TextEncoder().encode('hello jetstream'.repeat(100))
@@ -22,6 +22,6 @@ test('rejects a non-zstd frame', () => {
   expect(() => d.decompress(new Uint8Array([1, 2, 3]))).toThrow()
 })
 
-test('resolves to a cached instance', async () => {
-  expect(await nodeDecompressor()).toBe(d)
+test('returns a cached instance', () => {
+  expect(defaultDecompressor()).toBe(d)
 })

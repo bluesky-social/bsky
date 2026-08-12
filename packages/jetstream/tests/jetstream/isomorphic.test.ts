@@ -3,15 +3,18 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 // The package's isomorphism claim: nothing in src/ may import Node-only
-// modules. ws-client owns the platform split; this test keeps it that way.
+// modules, with exactly one sanctioned exception — the node branch of the
+// `#runtime` imports condition, which resolvers only select on Node.
+// ws-client owns the websocket platform split the same way.
 
 const SRC = join(import.meta.dirname, '../../src')
+const NODE_RUNTIME_BRANCH = join(SRC, 'runtime/node.ts')
 
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, entry.name)
     if (entry.isDirectory()) yield* walk(p)
-    else if (entry.name.endsWith('.ts')) yield p
+    else if (entry.name.endsWith('.ts') && p !== NODE_RUNTIME_BRANCH) yield p
   }
 }
 

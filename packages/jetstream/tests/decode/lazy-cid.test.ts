@@ -1,17 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import {
-  cidForRecord,
-  nodeSha256,
-  rawEventFromSegment,
-} from '../../src/decode-event.js'
+import { cidForRecord, rawEventFromSegment } from '../../src/decode-event.js'
 import { typedEventFromRaw } from '../../src/decode-typed.js'
+import { defaultDecompressor, defaultSha256 } from '../../src/runtime/node.js'
 import { decodeBlockFrame } from '../../src/segment/block.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
 
-const decompressor = await nodeDecompressor()
-const sha256 = await nodeSha256()
+const decompressor = defaultDecompressor()
+const sha256 = defaultSha256()
 
 const goldenFrame = new Uint8Array(
   readFileSync(

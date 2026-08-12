@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from 'vitest'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
+import { defaultDecompressor } from '../../src/runtime/node.js'
 import { SegKind } from '../../src/segment/kind.js'
 import {
   decodeSegment,
   readSealedHeader,
 } from '../../src/segment/segment-reader.js'
 
-const d = await nodeDecompressor()
+const d = defaultDecompressor()
 
 const seal = new Uint8Array(
   readFileSync(

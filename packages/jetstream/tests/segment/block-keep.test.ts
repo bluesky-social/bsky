@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { defaultDecompressor } from '../../src/runtime/node.js'
 import { type RowKeep, decodeBlockFrame } from '../../src/segment/block.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
 import { isCommitKind } from '../../src/segment/kind.js'
 
-const d = await nodeDecompressor()
+const d = defaultDecompressor()
 
 const goldenFrame = new Uint8Array(
   readFileSync(

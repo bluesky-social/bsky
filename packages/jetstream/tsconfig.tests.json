@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig/tests.json",
   "include": ["./src", "./tests"],
+  // The build must run first: `#runtime` resolves through package.json
+  // imports to dist declarations.
+  "references": [{ "path": "./tsconfig.build.json" }],
 }

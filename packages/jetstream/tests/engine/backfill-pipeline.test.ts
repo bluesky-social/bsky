@@ -1,14 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { nodeSha256 } from '../../src/decode-event.js'
 import { backfillBatches } from '../../src/engine/backfill-pipeline.js'
 import { makeSelector } from '../../src/engine/selector.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
+import { defaultDecompressor, defaultSha256 } from '../../src/runtime/node.js'
 import type { PlanEntry } from '../../src/xrpc/plan.js'
 
-const decompressor = await nodeDecompressor()
-const sha256 = await nodeSha256()
+const decompressor = defaultDecompressor()
+const sha256 = defaultSha256()
 
 // golden_block.bin = 3 sealed rows: seq 1 (post create), 2 (identity), 3 (like delete).
 const goldenFrame = new Uint8Array(

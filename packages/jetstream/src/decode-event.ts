@@ -17,6 +17,7 @@ import {
   type Sync,
 } from './event.js'
 import { type RawRecordCbor } from './raw-record.js'
+import { type Sha256 } from './runtime/interface.js'
 import { type SegEvent } from './segment/block.js'
 import { SegKind } from './segment/kind.js'
 
@@ -53,46 +54,6 @@ const syncPayloadSchema = l.object({
 type WireIdentityPayload = InferOutput<typeof identityPayloadSchema>
 type WireAccountPayload = Partial<InferOutput<typeof accountPayloadSchema>>
 type WireSyncPayload = Partial<InferOutput<typeof syncPayloadSchema>>
-
-/** Synchronous SHA-256, injected so src stays isomorphic. */
-export type Sha256 = (bytes: Uint8Array) => Uint8Array
-
-let nodeHash: Sha256 | undefined
-
-// Non-literal specifier: src type-checks without Node types, and bundlers
-// won't try to resolve node:crypto for the browser.
-const NODE_CRYPTO = 'node:crypto'
-
-/**
- * The default synchronous SHA-256, backed by node:crypto and loaded lazily so
- * this module stays importable outside Node. The lazy `cid` getter on archive
- * put commits needs a sync hash (WebCrypto is async-only); non-Node runtimes
- * must supply their own, and this throws rather than falling back.
- */
-export async function nodeSha256(): Promise<Sha256> {
-  if (nodeHash) return nodeHash
-  type CreateHash = (alg: string) => {
-    update(data: Uint8Array): { digest(): Uint8Array }
-  }
-  let crypto: { createHash?: CreateHash }
-  try {
-    crypto = (await import(NODE_CRYPTO)) as { createHash?: CreateHash }
-  } catch (cause) {
-    throw new Error(
-      'node:crypto is unavailable in this runtime: supply your own sha256',
-      { cause },
-    )
-  }
-  const { createHash } = crypto
-  if (typeof createHash !== 'function') {
-    throw new Error(
-      'node:crypto lacks createHash: supply your own sha256 implementation',
-    )
-  }
-  nodeHash = (bytes) =>
-    new Uint8Array(createHash('sha256').update(bytes).digest())
-  return nodeHash
-}
 
 /**
  * Synchronous CID for a DAG-CBOR record: SHA-256 the bytes and build a CIDv1

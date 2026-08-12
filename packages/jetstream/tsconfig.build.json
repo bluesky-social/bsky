@@ -1,8 +1,21 @@
 {
+  // Core, platform-neutral code. Imports the platform defaults through the
+  // `#runtime` imports condition, so the runtime projects build first.
   "extends": "../../tsconfig/isomorphic.json",
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
   },
   "include": ["./src"],
+  "exclude": [
+    "./src/errors.ts",
+    "./src/runtime/interface.ts",
+    "./src/runtime/node.ts",
+    "./src/runtime/browser.ts",
+  ],
+  "references": [
+    { "path": "./tsconfig.build-shared.json" },
+    { "path": "./tsconfig.build-runtime-node.json" },
+    { "path": "./tsconfig.build-runtime-browser.json" },
+  ],
 }
