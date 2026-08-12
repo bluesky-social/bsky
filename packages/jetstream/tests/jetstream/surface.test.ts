@@ -1,5 +1,10 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { Jetstream, JetstreamV1, type RawEventV1 } from '../../src/index.js'
+import {
+  Jetstream,
+  JetstreamV1,
+  type RawEvent,
+  type RawEventV1,
+} from '../../src/index.js'
 
 describe('class surfaces', () => {
   it('Jetstream drives v2 and owns the runner path', () => {
@@ -32,10 +37,16 @@ describe('class surfaces', () => {
     expectTypeOf(v1.live({ raw: true })).toEqualTypeOf<
       AsyncGenerator<RawEventV1>
     >()
-    // The matching Jetstream/RawEvent assertion lands in Task 10: Jetstream
-    // is still pinned to the v1 wire (see the TEMPORARY marker in
-    // jetstream.ts) until that task flips it, so today its raw arm is also
-    // typed AsyncGenerator<RawEventV1> — asserting RawEvent here would fail.
+    const v2 = new Jetstream('https://h')
+    expectTypeOf(v2.live({ raw: true })).toEqualTypeOf<
+      AsyncGenerator<RawEvent>
+    >()
+  })
+
+  it('the kinds filter is available on v2', () => {
+    const v2 = new Jetstream('https://h')
+    void v2.live({ kinds: ['commit', 'sync'] })
+    expectTypeOf(v2.live).toBeFunction()
   })
 
   it('typed v1 events carry no sync arm', () => {

@@ -11,7 +11,7 @@ import {
   type RawRecordJson,
   type SeqEvent,
   type Sync,
-  type TypedEventV1,
+  type TypedEvent,
 } from '../../src/index.js'
 
 describe('the two wires have their own envelopes', () => {
@@ -79,15 +79,15 @@ describe('consumer seam', () => {
   })
 })
 
-describe('Jetstream is still v1-backed', () => {
-  it('live()/liveRawBatches() promise v1 shapes, not the v2 seam types', () => {
+describe('Jetstream is v2-backed', () => {
+  it('live()/liveRawBatches() promise v2 shapes, matching the seam types', () => {
     const js = new Jetstream('https://h')
     expectTypeOf(js.live({ raw: true })).toEqualTypeOf<
-      AsyncGenerator<RawEventV1>
+      AsyncGenerator<RawEvent>
     >()
-    expectTypeOf(js.live()).toEqualTypeOf<AsyncGenerator<TypedEventV1>>()
+    expectTypeOf(js.live()).toEqualTypeOf<AsyncGenerator<TypedEvent>>()
     expectTypeOf(js.liveRawBatches({})).toEqualTypeOf<
-      AsyncGenerator<EventBatch<RawEventV1>>
+      AsyncGenerator<EventBatch<RawEvent>>
     >()
   })
 })

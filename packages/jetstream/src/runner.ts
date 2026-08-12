@@ -34,18 +34,7 @@ export class JetstreamRunner {
       collections: this.#consumer.collections,
       dids: this.#consumer.dids,
     })
-    // TEMPORARY: Jetstream is still v1-backed (liveRawBatches yields
-    // EventBatch<RawEventV1>), but the runner/consumer seam is v2-only
-    // (EventBatch<RawEvent>) — see event.ts for why the two are not
-    // assignable. Task 10 flips Jetstream to speak v2, at which point this
-    // cast is removed and the assignment becomes honestly type-safe. Nothing
-    // downstream of this cast reads the v2-only `time` field today (only
-    // `seq`), so this is not a runtime hazard in the interim. Deliberately a
-    // single `as` (not `as unknown as`): AsyncGenerator's type argument stays
-    // comparable even though RawEventV1/RawEvent are not assignable, so a
-    // future divergence (e.g. RawRecord gaining a CBOR arm, or an envelope
-    // rename) still re-errors here instead of silently passing.
-    await this.#drive(src as AsyncGenerator<EventBatch<RawEvent>>, opts)
+    await this.#drive(src, opts)
   }
 
   async #drive(

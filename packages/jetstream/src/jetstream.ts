@@ -4,11 +4,12 @@ import {
   type CollectionFilter,
   parseCollectionFilters,
 } from './engine/collections.js'
-import { type EventBatch, type RawEventV1 } from './event.js'
+import { type EventBatch, type Kind, type RawEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
-import { type TypedEventForV1, type WideTypedEventV1 } from './filter-types.js'
+import { type TypedEventFor, type WideTypedEvent } from './filter-types.js'
 import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
+import { type RawRecordJson } from './raw-record.js'
 import { JetstreamRunner } from './runner.js'
 import { shape } from './shape.js'
 
@@ -29,6 +30,11 @@ export interface LiveOpts<
 > {
   collections?: F
   dids?: DidString[]
+  /**
+   * Event kinds to receive. Omitted means all kinds. The collections filter
+   * constrains only commits, so a commits-only stream needs kinds: ['commit'].
+   */
+  kinds?: Kind[]
   cursor?: CursorStore
   signal?: AbortSignal
   onError?: (err: Error) => void
@@ -48,20 +54,22 @@ export class Jetstream {
 
   live<const F extends readonly CollectionFilter[] = readonly []>(
     opts?: LiveOpts<F> & { raw?: false },
-  ): AsyncGenerator<TypedEventForV1<F>>
-  live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEventV1>
-  live(opts: LiveOpts = {}): AsyncGenerator<RawEventV1 | WideTypedEventV1> {
+  ): AsyncGenerator<TypedEventFor<F>>
+  live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEvent<RawRecordJson>>
+  live(
+    opts: LiveOpts = {},
+  ): AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent> {
     const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
     // shape() is version-generic (one implementation serves both wires); this
-    // Jetstream is v1-backed, so its output is honestly RawEventV1 |
-    // WideTypedEventV1 at runtime even though shape()'s declared return type
+    // Jetstream is v2-backed, so its output is honestly RawEvent<RawRecordJson>
+    // | WideTypedEvent at runtime even though shape()'s declared return type
     // covers both wires' possibilities.
     return shape(
       this.liveRawBatches(opts),
       { ...opts, validateWire: this.opts.validateWire },
       schemasByNsid,
       opts.onError,
-    ) as AsyncGenerator<RawEventV1 | WideTypedEventV1>
+    ) as AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent>
   }
 
   runner(consumer: JetstreamConsumer): JetstreamRunner {
@@ -73,12 +81,14 @@ export class Jetstream {
   // buffering — live delivery stays realtime. EventBatch is used only as the
   // standard internal interface, looking ahead to v2 modes (snapshot/replay)
   // where batches carry real grouping.
-  liveRawBatches(opts: LiveOpts): AsyncGenerator<EventBatch<RawEventV1>> {
+  liveRawBatches(
+    opts: LiveOpts,
+  ): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>> {
     return rawBatchStream(
       this.service,
       opts,
-      1, // TEMPORARY: flipped to 2 in the next task
+      2,
       this.opts.validateWire,
-    ) as AsyncGenerator<EventBatch<RawEventV1>>
+    ) as AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>>
   }
 }

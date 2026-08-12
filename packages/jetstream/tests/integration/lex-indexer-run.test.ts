@@ -3,32 +3,33 @@ import { describe, expect, it } from 'vitest'
 import { Jetstream, LexIndexer, MemoryCursorStore } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
+const NSID = 'network.bsky.jetstream.subscribeEvents'
+
 const likeSchema = record(
   'tid',
   'app.test.like',
   l.object({ subject: l.string() }),
 )
 
-function likeFrame(seq: number, subject: string): Uint8Array {
-  // v1 live frame carries the record as parsed JSON
-  return new TextEncoder().encode(
-    JSON.stringify({
+function likeFrame(seq: number, subject: string): string {
+  return JSON.stringify({
+    $type: 'message',
+    payload: {
+      $type: `${NSID}#commit`,
+      seq,
       did: 'did:plc:a',
-      kind: 'commit',
-      time_us: seq,
-      commit: {
-        operation: 'create',
-        collection: 'app.test.like',
-        rkey: 'r' + seq,
-        rev: 'v',
-        cid: 'cid' + seq,
-        record: { $type: 'app.test.like', subject },
-      },
-    }),
-  )
+      time: '2024-09-09T19:46:02.329308Z',
+      operation: 'create',
+      collection: 'app.test.like',
+      rkey: 'r' + seq,
+      rev: 'v',
+      cid: 'cid' + seq,
+      record: { $type: 'app.test.like', subject },
+    },
+  })
 }
 
-function fakeTransport(frames: Uint8Array[]): LiveTransport {
+function fakeTransport(frames: string[]): LiveTransport {
   return {
     async *stream() {
       for (const f of frames) yield f

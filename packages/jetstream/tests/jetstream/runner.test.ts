@@ -4,25 +4,26 @@ import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
 import { Jetstream, JetstreamRunner } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
-// fake transport emitting v1 JSON delete-commit frames then ending
+const NSID = 'network.bsky.jetstream.subscribeEvents'
+
+// fake transport emitting v2 delete-commit frames then ending
 function fakeTransport(seqs: number[]): LiveTransport {
-  const enc = new TextEncoder()
   return {
     async *stream() {
       for (const seq of seqs) {
-        yield enc.encode(
-          JSON.stringify({
+        yield JSON.stringify({
+          $type: 'message',
+          payload: {
+            $type: `${NSID}#commit`,
+            seq,
             did: 'did:plc:a',
-            kind: 'commit',
-            time_us: seq,
-            commit: {
-              operation: 'delete',
-              collection: 'app.test.rec',
-              rkey: 'r' + seq,
-              rev: 'v',
-            },
-          }),
-        )
+            time: '2024-09-09T19:46:02.329308Z',
+            rev: 'v',
+            operation: 'delete',
+            collection: 'app.test.rec',
+            rkey: 'r' + seq,
+          },
+        })
       }
     },
   }
