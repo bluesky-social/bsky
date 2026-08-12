@@ -10,12 +10,12 @@ Install the Jetstream client:
 npm install @bsky/jetstream
 ```
 
-This package currently supports Jetstream's WebSocket-based live mode. `Jetstream` speaks the v2 wire: `live(opts)` tails `/xrpc/network.bsky.jetstream.subscribeEvents` from the cursor (or the tip), forever. Consuming events looks like:
+This package currently supports Jetstream's WebSocket-based live mode, speaking Jetstream's v2 wire. Consuming events looks like:
 
 ```ts
 import { Jetstream } from '@bsky/jetstream'
 
-const js = new Jetstream('https://your-jetstream-host.example')
+const js = new Jetstream('https://jetstream.us-east.bsky.network')
 
 for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
   if (evt.kind === 'commit' && evt.commit.operation === 'create') {
@@ -35,7 +35,7 @@ Using a lexicon as your collection filter will validate and type the events for 
 import { Jetstream } from '@bsky/jetstream'
 import { app } from '@bsky/sdk/lexicons'
 
-const js = new Jetstream('https://your-jetstream-host.example')
+const js = new Jetstream('https://jetstream.us-east.bsky.network')
 
 for await (const evt of js.live({ collections: [app.bsky.feed.post] })) {
   if (evt.kind === 'commit' && evt.commit.operation === 'create') {
@@ -61,7 +61,7 @@ For indexing workloads, `LexIndexer` dispatches schema-validated records to per-
 import { Jetstream, LexIndexer, MemoryCursorStore } from '@bsky/jetstream'
 import { app } from '@bsky/sdk/lexicons'
 
-const js = new Jetstream('https://your-jetstream-host.example')
+const js = new Jetstream('https://jetstream.us-east.bsky.network')
 
 const indexer = new LexIndexer()
   .commit(app.bsky.feed.like, {
@@ -85,11 +85,9 @@ await js.runner(indexer).live({ cursor })
 ### Cursors
 
 `live()`'s cursor is a v2 `seq`. Values `>= 1e15` are read by the server as
-unix-microsecond timestamps instead, and the SDK treats such a value as
-wire-only: it never seeds the dedup floor, so the first delivered event
-establishes it. When the server clamps a stale timestamp it sends an
-`OutdatedCursor` advisory, reported through `onError` without ending the
-stream.
+unix-microsecond timestamps instead. When the server clamps a stale timestamp
+it sends an `OutdatedCursor` advisory, reported through `onInfo` without
+ending the stream.
 
 Cursors are **not portable between versions**: a v1 cursor is a `time_us`
 value and a v2 cursor is a `seq`. Never replay a stored cursor against the
@@ -97,9 +95,9 @@ other version.
 
 ### Legacy v1 instances
 
-The public `jetstream*.bsky.network` hosts speak the frozen v1 wire. Use
-`JetstreamV1`, which offers `live()` only — v1 has no sealed archive, no
-`kinds` filter, and no runner/indexer path.
+The public `jetstream*.bsky.network` hosts speak the legacy v1 format. Use
+`JetstreamV1`, which offers `live()` only — v1 does not support historical
+network replay, has no `kinds` filter, and no runner/indexer path.
 
 ```ts
 import { JetstreamV1 } from '@bsky/jetstream'
@@ -126,7 +124,7 @@ To observe or tune connection behavior, configure a transport with
 ```ts
 import { Jetstream, websocketTransport } from '@bsky/jetstream'
 
-const js = new Jetstream('https://your-jetstream-host.example')
+const js = new Jetstream('https://jetstream.us-east.bsky.network')
 for await (const ev of js.live({
   collections: ['app.bsky.feed.post'],
   liveTransport: websocketTransport({
