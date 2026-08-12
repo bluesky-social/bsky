@@ -1,7 +1,8 @@
+import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import { type JetstreamConsumer } from '../../src/consumer.js'
 import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
-import { Jetstream, JetstreamRunner } from '../../src/index.js'
+import { Jetstream, JetstreamRunner, LexIndexer } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
 const NSID = 'network.bsky.jetstream.subscribeEvents'
@@ -32,6 +33,27 @@ function fakeTransport(seqs: number[]): LiveTransport {
     },
   }
 }
+
+// Records the request URL(s) and ends the stream immediately (no frames) —
+// enough to observe what the runner asked the wire for.
+function urlRecordingTransport(): { transport: LiveTransport; urls: string[] } {
+  const urls: string[] = []
+  return {
+    transport: {
+      // eslint-disable-next-line require-yield
+      async *stream(getUrl) {
+        urls.push(getUrl())
+      },
+    },
+    urls,
+  }
+}
+
+const likeSchema = record(
+  'tid',
+  'app.test.like',
+  l.object({ subject: l.string() }),
+)
 
 describe('JetstreamRunner', () => {
   it('drives a live indexer end to end and persists the contiguous watermark', async () => {
@@ -127,5 +149,22 @@ describe('JetstreamRunner', () => {
     })
     expect(seen).toEqual([1, 2, 3])
     expect(await store.load()).toBe(3)
+  })
+
+  it("derives the wire request from the consumer's registrations (collections + kinds)", async () => {
+    // A commit collection plus a sync handler, and nothing else registered:
+    // kinds should list exactly commit and sync, never identity/account.
+    const ix = new LexIndexer()
+      .commit(likeSchema, { put: () => {} })
+      .sync(() => {})
+    const { transport, urls } = urlRecordingTransport()
+    const js = new Jetstream({ service: 'https://js.example' })
+    await js.runner(ix).live({ liveTransport: transport })
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain('collections=app.test.like')
+    expect(urls[0]).toContain('kinds=commit')
+    expect(urls[0]).toContain('kinds=sync')
+    expect(urls[0]).not.toContain('kinds=identity')
+    expect(urls[0]).not.toContain('kinds=account')
   })
 })

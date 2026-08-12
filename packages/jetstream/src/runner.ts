@@ -9,6 +9,7 @@ export interface RunnerLiveOpts {
   cursor?: CursorStore
   signal?: AbortSignal
   onError?: (err: Error) => void
+  onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
 }
 
