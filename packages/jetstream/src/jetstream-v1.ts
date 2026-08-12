@@ -5,7 +5,7 @@ import {
 } from './engine/collections.js'
 import { type RawEventV1 } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
-import { type TypedEventForV1, type WideTypedEventV1 } from './filter-types.js'
+import { type TypedEventV1For, type WideTypedEventV1 } from './filter-types.js'
 import { type JetstreamOpts } from './jetstream.js'
 import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
@@ -45,10 +45,14 @@ export class JetstreamV1 {
 
   live<const F extends readonly CollectionFilter[] = readonly []>(
     opts?: LiveV1Opts<F> & { raw?: false },
-  ): AsyncGenerator<TypedEventForV1<F>>
+  ): AsyncGenerator<TypedEventV1For<F>>
   live(opts: LiveV1Opts & { raw: true }): AsyncGenerator<RawEventV1>
   live(opts: LiveV1Opts = {}): AsyncGenerator<RawEventV1 | WideTypedEventV1> {
     const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
+    // The cast here is unrelated to rawBatchStream's overload (its call above
+    // is already the honest v1-only type): shape() is version-generic, so its
+    // declared return covers both wires' possible outputs and needs narrowing
+    // to this class's v1-only union.
     return shape(
       rawBatchStream(this.service, opts, 1, this.opts.validateWire),
       { ...opts, validateWire: this.opts.validateWire },

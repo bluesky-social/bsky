@@ -48,6 +48,12 @@ export interface LiveOpts<
   cursor?: CursorStore
   signal?: AbortSignal
   onError?: (err: Error) => void
+  /**
+   * Seq-less server advisories (`#info` frames, e.g. `OutdatedCursor`). Not
+   * an error: when omitted, an advisory is dropped silently rather than
+   * routed to onError.
+   */
+  onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
   raw?: boolean
 }
@@ -100,11 +106,6 @@ export class Jetstream {
   liveRawBatches(
     opts: LiveOpts,
   ): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>> {
-    return rawBatchStream(
-      this.service,
-      opts,
-      2,
-      this.opts.validateWire,
-    ) as AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>>
+    return rawBatchStream(this.service, opts, 2, this.opts.validateWire)
   }
 }

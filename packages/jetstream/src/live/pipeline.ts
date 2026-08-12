@@ -21,6 +21,7 @@ export interface LiveStreamOpts {
   cursor?: CursorStore
   signal?: AbortSignal
   onError?: (err: Error) => void
+  onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
 }
 
@@ -30,6 +31,18 @@ export interface LiveStreamOpts {
  * EventBatch is the internal seam unit that snapshot and replay will fill with
  * real grouping.
  */
+export function rawBatchStream(
+  host: string,
+  opts: LiveStreamOpts,
+  version: 1,
+  validateWire?: boolean,
+): AsyncGenerator<EventBatch<RawEventV1>>
+export function rawBatchStream(
+  host: string,
+  opts: LiveStreamOpts,
+  version: 2,
+  validateWire?: boolean,
+): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>>
 export async function* rawBatchStream(
   host: string,
   opts: LiveStreamOpts,
@@ -48,6 +61,7 @@ export async function* rawBatchStream(
     transport: opts.liveTransport,
     signal: opts.signal,
     onError: opts.onError,
+    onInfo: opts.onInfo,
     validateWire,
   }
   // Branch on a literal version so each call selects the right liveEvents

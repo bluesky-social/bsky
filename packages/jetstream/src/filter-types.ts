@@ -67,25 +67,15 @@ export type TypedEventFor<F extends readonly CollectionFilter[]> =
 // The v1 equivalent: its own envelope, and no sync arm. Declared rather than
 // derived from TypedEventFor — the envelopes diverge, so an Exclude would not
 // express it.
-export type TypedEventForV1<F extends readonly CollectionFilter[]> =
+export type TypedEventV1For<F extends readonly CollectionFilter[]> =
   F extends readonly []
     ? TypedEventV1
     : | (EventBaseV1 & { kind: 'commit'; commit: TypedCommitFor<F[number]> })
       | (EventBaseV1 & { kind: 'identity'; identity: Identity })
       | (EventBaseV1 & { kind: 'account'; account: Account })
 
-// Widest commit accepted by a live() implementation signature: collection is
-// `string` (not NsidString) so TypedCommitFor<F> is assignable for any filter
-// tuple, and record is unknown to cover validated and unvalidated alike.
-type WideCommit = TypedPutCommit<unknown, string> | DeleteCommit<string>
-
-export type WideTypedEvent =
-  | (EventBase & { kind: 'commit'; commit: WideCommit })
-  | (EventBase & { kind: 'identity'; identity: Identity })
-  | (EventBase & { kind: 'account'; account: Account })
-  | (EventBase & { kind: 'sync'; sync: Sync })
-
-export type WideTypedEventV1 =
-  | (EventBaseV1 & { kind: 'commit'; commit: WideCommit })
-  | (EventBaseV1 & { kind: 'identity'; identity: Identity })
-  | (EventBaseV1 & { kind: 'account'; account: Account })
+// The widest event a live() implementation signature accepts: CollectionFilter[]
+// (not a specific tuple) makes TypedCommitFor<F[number]> assignable for any
+// filter tuple a caller might pass.
+export type WideTypedEvent = TypedEventFor<CollectionFilter[]>
+export type WideTypedEventV1 = TypedEventV1For<CollectionFilter[]>

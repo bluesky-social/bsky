@@ -36,7 +36,7 @@ export type {
 export type {
   TypedCommitFor,
   TypedEventFor,
-  TypedEventForV1,
+  TypedEventV1For,
 } from './filter-types.js'
 export { CommitTracker } from './execute/commit-tracker.js'
 export { type CursorStore, MemoryCursorStore } from './execute/cursor-store.js'
