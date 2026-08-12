@@ -1,15 +1,17 @@
 import { describe, expectTypeOf, it } from 'vitest'
-import type {
-  Ack,
-  EventBase,
-  EventBaseV1,
-  EventBatch,
-  JetstreamConsumer,
-  RawEvent,
-  RawEventV1,
-  RawRecordJson,
-  SeqEvent,
-  Sync,
+import {
+  type Ack,
+  type EventBase,
+  type EventBaseV1,
+  type EventBatch,
+  Jetstream,
+  type JetstreamConsumer,
+  type RawEvent,
+  type RawEventV1,
+  type RawRecordJson,
+  type SeqEvent,
+  type Sync,
+  type TypedEventV1,
 } from '../../src/index.js'
 
 describe('the two wires have their own envelopes', () => {
@@ -74,5 +76,18 @@ describe('consumer seam', () => {
     expectTypeOf<Ack>().parameter(0).toEqualTypeOf<SeqEvent>()
     const ack = ((_evt: SeqEvent) => {}) as Ack
     expectTypeOf(ack).toBeCallableWith({ seq: 42 })
+  })
+})
+
+describe('Jetstream is still v1-backed', () => {
+  it('live()/liveRawBatches() promise v1 shapes, not the v2 seam types', () => {
+    const js = new Jetstream('https://h')
+    expectTypeOf(js.live({ raw: true })).toEqualTypeOf<
+      AsyncGenerator<RawEventV1>
+    >()
+    expectTypeOf(js.live()).toEqualTypeOf<AsyncGenerator<TypedEventV1>>()
+    expectTypeOf(js.liveRawBatches({})).toEqualTypeOf<
+      AsyncGenerator<EventBatch<RawEventV1>>
+    >()
   })
 })

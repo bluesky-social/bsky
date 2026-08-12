@@ -57,11 +57,11 @@ export async function* shape(
     } else {
       for (const e of batch.events) {
         // The overloads exist for callers; this internal fan-out runs one body
-        // for both wires.
-        const t = typedEventFromRaw(
-          e as RawEvent<RawRecordJson>,
-          schemasByNsid,
-        ) as TypedEventV1 | TypedEvent
+        // for both wires. Only the input-side cast is needed — the v2
+        // overload's result (TypedEvent) already sits inside the declared
+        // union (TypedEventV1 | TypedEvent), so a result-side cast would be a
+        // no-op that could silently swallow a future mismatch.
+        const t = typedEventFromRaw(e as RawEvent<RawRecordJson>, schemasByNsid)
         if (skipInvalid(t, schemasByNsid, onError)) continue
         yield t
       }
