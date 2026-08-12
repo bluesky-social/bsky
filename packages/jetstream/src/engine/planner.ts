@@ -38,7 +38,13 @@ export async function* planPages(opts: PlanPagesOpts): AsyncGenerator<Plan> {
       opts.signal,
     )
     if (!pinned) {
-      sealedTip = page.sealedTipSeq
+      // The server already caps sealedTipSeq by the request's beforeSeq (see
+      // the planSnapshot lexicon); the min is belt-and-braces so a
+      // non-conforming server cannot make us page past the caller's bound.
+      sealedTip =
+        opts.beforeSeq !== undefined
+          ? Math.min(page.sealedTipSeq, opts.beforeSeq)
+          : page.sealedTipSeq
       pinned = true
     }
     yield page

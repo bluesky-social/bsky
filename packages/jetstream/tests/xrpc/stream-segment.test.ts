@@ -210,3 +210,76 @@ describe('streamSegment', () => {
     ).toBeUndefined()
   })
 })
+
+it('throws (cannot splice) when a 206 resume starts at the wrong offset', async () => {
+  // If-Range proves same-generation, not same-offset: a range-normalizing
+  // intermediary could 206 from byte 0.
+  let attempt = 0
+  const fetchImpl = (async () => {
+    attempt++
+    if (attempt === 1) {
+      let pulls = 0
+      const body = new ReadableStream<Uint8Array>({
+        pull(c) {
+          pulls++
+          if (pulls === 1) c.enqueue(new Uint8Array([1, 2]))
+          else c.error(new Error('reset'))
+        },
+      })
+      return new Response(body, { status: 200, headers: { etag: '"abc"' } })
+    }
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new Uint8Array([1, 2, 3, 4]))
+        c.close()
+      },
+    })
+    return new Response(body, {
+      status: 206,
+      headers: { etag: '"abc"', 'content-range': 'bytes 0-3/4' }, // wrong start
+    })
+  }) as unknown as typeof fetch
+
+  await expect(
+    collect(
+      streamSegment('https://h', 'seg_0.jss', fetchImpl, undefined, {
+        baseDelayMs: 1,
+        maxDelayMs: 1,
+      }),
+    ),
+  ).rejects.toThrow(/Content-Range/)
+})
+
+it('throws (cannot splice) when a 206 resume carries no Content-Range', async () => {
+  let attempt = 0
+  const fetchImpl = (async () => {
+    attempt++
+    if (attempt === 1) {
+      let pulls = 0
+      const body = new ReadableStream<Uint8Array>({
+        pull(c) {
+          pulls++
+          if (pulls === 1) c.enqueue(new Uint8Array([1, 2]))
+          else c.error(new Error('reset'))
+        },
+      })
+      return new Response(body, { status: 200, headers: { etag: '"abc"' } })
+    }
+    const body = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(new Uint8Array([3, 4]))
+        c.close()
+      },
+    })
+    return new Response(body, { status: 206, headers: { etag: '"abc"' } })
+  }) as unknown as typeof fetch
+
+  await expect(
+    collect(
+      streamSegment('https://h', 'seg_0.jss', fetchImpl, undefined, {
+        baseDelayMs: 1,
+        maxDelayMs: 1,
+      }),
+    ),
+  ).rejects.toThrow(/Content-Range/)
+})

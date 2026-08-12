@@ -1,3 +1,4 @@
+import { XrpcResponseError, l } from '@atproto/lex'
 import { describe, expect, it, vi } from 'vitest'
 import {
   abortableDelay,
@@ -92,5 +93,25 @@ describe('retry primitives', () => {
     vi.advanceTimersByTime(50)
     await expect(p).resolves.toBeUndefined()
     vi.useRealTimers()
+  })
+})
+
+describe('isRetryableError defers to XrpcResponseError.shouldRetry()', () => {
+  const testMethod = l.query(
+    'com.example.test',
+    l.params(),
+    l.payload('application/octet-stream'),
+  )
+  const responseError = (status: number) =>
+    new XrpcResponseError(testMethod, new Response('', { status }))
+
+  it('retries a transient xrpc response error', () => {
+    expect(isRetryableError(responseError(503))).toBe(true)
+    expect(isRetryableError(responseError(429))).toBe(true)
+  })
+
+  it('does not retry a permanent xrpc response error', () => {
+    expect(isRetryableError(responseError(404))).toBe(false)
+    expect(isRetryableError(responseError(400))).toBe(false)
   })
 })

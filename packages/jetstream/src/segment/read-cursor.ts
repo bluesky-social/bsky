@@ -57,6 +57,11 @@ export class ReadCursor {
     let shift = 0n
     for (;;) {
       const b = this.u8()
+      // The 10th byte sits at shift 63 and may only contribute the top bit
+      // (Go binary.Uvarint semantics); anything larger overflows u64.
+      if (shift === 63n && (b & 0x7f) > 1) {
+        throw new MalformedError('uvarint overflow')
+      }
       result |= BigInt(b & 0x7f) << shift
       if ((b & 0x80) === 0) break
       shift += 7n

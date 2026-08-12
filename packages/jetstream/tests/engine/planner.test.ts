@@ -141,3 +141,24 @@ describe('planPages', () => {
     ).rejects.toThrow(/no progress/)
   })
 })
+
+it('caps the pinned tip at the caller beforeSeq even if the server ignores it', async () => {
+  // A conforming server already returns sealedTipSeq capped by beforeSeq
+  // (planSnapshot lexicon); this pins the client-side belt-and-braces so a
+  // non-conforming server cannot make us page (and download) past the bound.
+  const { fetch, bodies } = fakePlanFetch([
+    { plannedThroughSeq: 50, sealedTipSeq: 1000 }, // tip NOT capped by server
+    { plannedThroughSeq: 100, sealedTipSeq: 1000 },
+  ])
+  const pages = await collect(
+    planPages({
+      host: 'https://h',
+      collections: [],
+      beforeSeq: 100,
+      fetchImpl: fetch,
+    }),
+  )
+  // stops at the caller's bound, not the server's runaway tip
+  expect(pages).toHaveLength(2)
+  expect(bodies[1].beforeSeq).toBe(100)
+})

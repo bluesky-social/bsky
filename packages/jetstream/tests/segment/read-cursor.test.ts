@@ -40,3 +40,14 @@ test('kind helpers', () => {
   expect(isCommitKind(SegKind.Identity)).toBe(false)
   expect(isCommitKind(SegKind.CreateResync)).toBe(true)
 })
+
+test('uvarint overflow throws instead of losing precision', () => {
+  // 10th byte at shift 63 may only contribute the top bit (Go semantics)...
+  const tooBig = new ReadCursor(new Uint8Array([...Array(9).fill(0xff), 0x02]))
+  expect(() => tooBig.uvarint()).toThrow(MalformedError)
+  // ...and an 11th byte is always overflow.
+  const tooLong = new ReadCursor(
+    new Uint8Array([...Array(10).fill(0x80), 0x01]),
+  )
+  expect(() => tooLong.uvarint()).toThrow(MalformedError)
+})

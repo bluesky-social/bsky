@@ -178,6 +178,19 @@ export async function* streamSegment(
           { status: res.status },
         )
       }
+      // The If-Range ETag proves same-generation, not same-offset: a range-
+      // normalizing intermediary could 206 from the wrong start and silently
+      // corrupt the splice. Trust only a Content-Range that starts exactly
+      // where we left off.
+      const contentRange = res.headers.get('content-range')
+      const rangeStart = /^bytes (\d+)-/.exec(contentRange ?? '')?.[1]
+      if (rangeStart === undefined || Number(rangeStart) !== bytesYielded) {
+        await res.body?.cancel()
+        throw new DownloadError(
+          `jetstream: getSegment ${name} resume returned Content-Range ${JSON.stringify(contentRange)} (expected start ${bytesYielded}); cannot splice`,
+          { status: res.status },
+        )
+      }
     } else {
       if (!res.ok) {
         // Drain the error body before throwing/retrying: an unconsumed body
