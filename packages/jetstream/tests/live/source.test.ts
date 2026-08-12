@@ -3,6 +3,10 @@ import { type LiveTransport, liveEvents } from '../../src/live/source.js'
 
 const NSID = 'network.bsky.jetstream.subscribeEvents'
 const CID = 'bafyreidfayvfuwqa7qlnopdjiqrxzs6blmoeu4rujcjtnci5beludirz2a'
+// A well-formed TID (13-char base32-sortable) — wire-valid even though no
+// test here enables validateWire, so a strict-mode test added later doesn't
+// fail on this fixture for an unrelated reason.
+const TID = '3jzfcijpj2z2a'
 
 const commitFrame = (seq: number): string =>
   JSON.stringify({
@@ -12,7 +16,7 @@ const commitFrame = (seq: number): string =>
       seq,
       did: 'did:plc:a',
       time: '2024-09-09T19:46:02.329308Z',
-      rev: '3kabc',
+      rev: TID,
       operation: 'create',
       collection: 'app.bsky.feed.post',
       rkey: `k${seq}`,
@@ -235,7 +239,7 @@ test('validateWire makes a malformed frame fatal', async () => {
       seq: 1,
       did: 'not-a-did',
       time: '2024-09-09T19:46:02.329308Z',
-      rev: '3kabc',
+      rev: TID,
       operation: 'create',
       collection: 'app.bsky.feed.post',
       rkey: 'k1',
