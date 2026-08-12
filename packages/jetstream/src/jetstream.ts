@@ -1,5 +1,5 @@
+import { defaultRuntime } from '#runtime'
 import { type DidString } from '@atproto/lex'
-import { defaultDecompressor, defaultSha256 } from '#runtime'
 import { assertValidApiKey, bearerAuth, withBearer } from './auth.js'
 import { type JetstreamConsumer } from './consumer.js'
 import { backfillBatches } from './engine/backfill-pipeline.js'
@@ -47,38 +47,41 @@ export interface JetstreamOpts {
   validateWire?: boolean
   /**
    * API key sent as `Authorization: Bearer <apiKey>` on every request —
-   * archive downloads and the live websocket handshake alike. A request that
-   * already carries an Authorization header keeps it. Validated at
+   * snapshot downloads and the live websocket handshake alike. A request
+   * that already carries an Authorization header keeps it. Validated at
    * construction: an absent key is legal (no auth sent); a present-but-
    * malformed one is not.
    */
   apiKey?: string
   /**
-   * fetch used for archive requests (planSnapshot/getSegment/getBlock) by
+   * fetch used for snapshot downloads (planSnapshot/getSegment/getBlock) by
    * snapshot() and replay(). Defaults to the global fetch.
    */
   fetchImpl?: typeof fetch
   /**
-   * Retry policy for archive downloads. Defaults to unbounded full-jitter
+   * Retry policy for snapshot downloads. Defaults to unbounded full-jitter
    * exponential backoff on transient failures (see RetryPolicy).
    */
   retry?: RetryPolicy
-  /** Byte high-water mark for the head archive download. Default 32 MiB. */
-  outstandingHwmBytes?: number
-  /** Byte high-water mark per prefetched archive download. Default 32 MiB. */
-  tailHwmBytes?: number
-  /** Concurrent block downloads during archive backfill. Default 4. */
+  /**
+   * Approximate per-download buffer budget for snapshot downloads, in bytes.
+   * Default 64 MiB, split between the download being delivered and the
+   * prefetched ones behind it. Total snapshot memory scales with this and
+   * blockConcurrency.
+   */
+  snapshotBufferBytes?: number
+  /** Concurrent block downloads while snapshotting. Default 4. */
   blockConcurrency?: number
   /**
-   * zstd decompressor for archive blocks. Wins over the platform default
+   * zstd decompressor for snapshot blocks. Wins over the platform default
    * (node:zlib via the `#runtime` imports condition; browsers have none and
    * must supply one to use snapshot()/replay()).
    */
   decompressor?: Decompressor
   /**
-   * Synchronous SHA-256 backing the lazy `cid` getter on archive put commits.
-   * Wins over the platform default (node:crypto via the `#runtime` imports
-   * condition; browsers have none and must supply one to use
+   * Synchronous SHA-256 backing the lazy `cid` getter on snapshot put
+   * commits. Wins over the platform default (node:crypto via the `#runtime`
+   * imports condition; browsers have none and must supply one to use
    * snapshot()/replay()).
    */
   sha256?: Sha256
@@ -114,7 +117,7 @@ export interface ReplayOpts<
   dids?: DidString[]
   /**
    * Event kinds to receive, uniform across both phases: sent on the live
-   * wire, applied client-side over the archive backfill.
+   * wire, applied client-side over the snapshot phase.
    */
   kinds?: Kind[]
   /**
@@ -122,21 +125,23 @@ export interface ReplayOpts<
    * loads from the store — saving is the runner's job.
    */
   cursor?: CursorStore
-  /** Exclusive lower bound for the backfill phase. */
+  /** Exclusive lower bound for the snapshot phase. */
   afterSeq?: number
-  /** Caps the backfill phase only; the live tail is unbounded. */
+  /** Caps the snapshot phase only; the live tail is unbounded. */
   beforeSeq?: number
   signal?: AbortSignal
-  /** Recoverable backfill problems (DownloadError, RecordValidationError). */
+  /**
+   * Recoverable problems from either phase: a DownloadError per re-planned
+   * transient failure, a RecordValidationError per skipped record in typed
+   * mode, and live-tail advisories (e.g. #info frames).
+   */
   onError?: (err: Error) => void
   liveTransport?: LiveTransport
-  /** Recoverable live-tail advisories (e.g. #info frames). */
-  onLiveError?: (err: Error) => void
   /**
-   * Bound on recovery cycles (download-failure re-plans plus cursor-too-old
-   * re-backfills) before replay gives up and throws. Default 50.
+   * Bound on recovery re-plans (transient download failures plus
+   * cursor-too-old recoveries) before replay gives up and throws. Default 50.
    */
-  maxRebackfills?: number
+  maxReplans?: number
   raw?: boolean
 }
 
@@ -165,7 +170,7 @@ export interface SnapshotOpts<
    * Bound on download-failure re-plans before the snapshot gives up and
    * throws. Default 50.
    */
-  maxRebackfills?: number
+  maxReplans?: number
   raw?: boolean
 }
 
@@ -201,6 +206,17 @@ export class Jetstream {
     return this.opts.apiKey
       ? { authorization: bearerAuth(this.opts.apiKey) }
       : undefined
+  }
+
+  // The public budget split half-and-half between the delivered download and
+  // the prefetched ones (the internal scheduler takes separate bounds).
+  #snapshotHwm(): { outstandingHwmBytes: number; tailHwmBytes: number } {
+    const budget = this.opts.snapshotBufferBytes ?? 64 * 1024 * 1024
+    if (!(budget > 0)) {
+      throw new RangeError('snapshotBufferBytes must be > 0')
+    }
+    const half = Math.ceil(budget / 2)
+    return { outstandingHwmBytes: half, tailHwmBytes: half }
   }
 
   live<const F extends readonly CollectionFilter[] = readonly []>(
@@ -260,8 +276,8 @@ export class Jetstream {
   }
 
   // The raw batch stream underlying replay(); the runner drives it directly.
-  // Archive batches carry the CBOR record arm, live-tail batches the JSON arm
-  // (discriminate with `record instanceof Uint8Array`).
+  // Snapshot-phase batches carry the CBOR record arm, live-tail batches the
+  // JSON arm (discriminate with `record instanceof Uint8Array`).
   async *replayRawBatches(
     opts: ReplayOpts,
   ): AsyncGenerator<EventBatch<RawEvent>> {
@@ -274,18 +290,16 @@ export class Jetstream {
       kinds: opts.kinds,
       afterSeq,
       beforeSeq: opts.beforeSeq,
-      outstandingHwmBytes: this.opts.outstandingHwmBytes,
-      tailHwmBytes: this.opts.tailHwmBytes,
+      ...this.#snapshotHwm(),
       blockConcurrency: this.opts.blockConcurrency,
       fetchImpl: this.#resolveFetch(),
-      decompressor: this.opts.decompressor ?? defaultDecompressor(),
-      sha256: this.opts.sha256 ?? defaultSha256(),
+      decompressor: this.opts.decompressor ?? defaultRuntime.zstdDecompressor(),
+      sha256: this.opts.sha256 ?? defaultRuntime.sha256(),
       transport: opts.liveTransport,
       headers: this.#authHeaders(),
       signal: opts.signal,
       onError: opts.onError,
-      onLiveError: opts.onLiveError,
-      maxRebackfills: opts.maxRebackfills,
+      maxReplans: opts.maxReplans,
       retry: this.opts.retry,
       validateWire: this.opts.validateWire,
     })
@@ -307,7 +321,7 @@ export class Jetstream {
   }
 
   // The raw batch stream underlying snapshot(); the runner drives it
-  // directly. One batch per archive block, in strict seq order.
+  // directly. One batch per snapshot block, in strict seq order.
   async *snapshotRawBatches(
     opts: SnapshotOpts,
   ): AsyncGenerator<EventBatch<RawEvent<RawRecordCbor>>> {
@@ -317,10 +331,11 @@ export class Jetstream {
     const fetchImpl = this.#resolveFetch()
     // Resolved before any network work; on a runtime with no defaults this
     // throws here, at the first pull, with a supply-your-own message.
-    const decompressor = this.opts.decompressor ?? defaultDecompressor()
-    const sha256 = this.opts.sha256 ?? defaultSha256()
+    const decompressor =
+      this.opts.decompressor ?? defaultRuntime.zstdDecompressor()
+    const sha256 = this.opts.sha256 ?? defaultRuntime.sha256()
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
-    const maxRebackfills = opts.maxRebackfills ?? 50
+    const maxReplans = opts.maxReplans ?? 50
 
     // afterSeq wins; otherwise resume from the cursor store. lastEmitted
     // tracks the max EventBatch.lastCursor yielded. A DownloadError re-plans
@@ -331,7 +346,7 @@ export class Jetstream {
     // abort returns cleanly.
     let resume = opts.afterSeq ?? (await opts.cursor?.load()) ?? 0
     let lastEmitted = resume
-    let rebackfills = 0
+    let replans = 0
     const window = { afterSeq: resume, beforeSeq: opts.beforeSeq }
     const selector = makeSelector({
       dids: opts.dids,
@@ -355,8 +370,7 @@ export class Jetstream {
             host,
             entries: page.segments,
             selector,
-            outstandingHwmBytes: this.opts.outstandingHwmBytes,
-            tailHwmBytes: this.opts.tailHwmBytes,
+            ...this.#snapshotHwm(),
             blockConcurrency: this.opts.blockConcurrency,
             fetchImpl,
             decompressor,
@@ -377,15 +391,15 @@ export class Jetstream {
         const prevResume = resume
         resume = Math.max(lastEmitted, resume)
         window.afterSeq = resume // prune re-planned rows already delivered
-        rebackfills++
+        replans++
         // Anti-spin: bound the number of re-plans. A transient failure before
         // any batch is emitted keeps resume pinned, so termination cannot key
         // on resume-not-advancing (that would defeat recovering a
-        // fail-once-at-seq-0 download); the maxRebackfills bound terminates
-        // an always-failing download instead.
-        if (rebackfills > maxRebackfills) {
+        // fail-once-at-seq-0 download); the maxReplans bound terminates an
+        // always-failing download instead.
+        if (replans > maxReplans) {
           throw new Error(
-            `jetstream: backfill re-plan made no progress (resume=${resume} prev=${prevResume} cycles=${rebackfills})`,
+            `jetstream: snapshot re-plan made no progress (resume=${resume} prev=${prevResume} cycles=${replans})`,
             { cause: err },
           )
         }

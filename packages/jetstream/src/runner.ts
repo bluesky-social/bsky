@@ -19,7 +19,7 @@ export interface RunnerSnapshotOpts {
   afterSeq?: number
   beforeSeq?: number
   onError?: (err: Error) => void
-  maxRebackfills?: number
+  maxReplans?: number
 }
 
 export interface RunnerReplayOpts {
@@ -28,9 +28,8 @@ export interface RunnerReplayOpts {
   afterSeq?: number
   beforeSeq?: number
   onError?: (err: Error) => void
-  onLiveError?: (err: Error) => void
   liveTransport?: LiveTransport
-  maxRebackfills?: number
+  maxReplans?: number
 }
 
 /**

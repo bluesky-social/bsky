@@ -5,11 +5,11 @@ import {
   microsToDatetime,
   rawEventFromSegment,
 } from '../../src/decode-event.js'
-import { defaultDecompressor, defaultSha256 } from '../../src/runtime/node.js'
+import { defaultRuntime } from '../../src/runtime/node.js'
 import { decodeBlockFrame } from '../../src/segment/block.js'
 
-const decompressor = defaultDecompressor()
-const sha256 = defaultSha256()
+const decompressor = defaultRuntime.zstdDecompressor()
+const sha256 = defaultRuntime.sha256()
 
 const rows = decodeBlockFrame(
   new Uint8Array(

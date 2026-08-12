@@ -20,15 +20,15 @@ export const MAX_DECODED_BLOCK_BYTES = 1 << 30 // 1 GiB
 export type Sha256 = (bytes: Uint8Array) => Uint8Array
 
 /**
- * The platform-default factories behind the `#runtime` imports condition.
- * Both branches (node/browser) conform to this shape; injection via
- * JetstreamOpts always wins over these defaults.
+ * The platform defaults behind the `#runtime` imports condition. Both
+ * branches (node/browser) export a `defaultRuntime` of this shape; injection
+ * via JetstreamOpts always wins over these defaults.
  */
 export interface JetstreamRuntime {
   /** May throw where the platform has no zstd (browser default). */
-  defaultDecompressor(): Decompressor
+  zstdDecompressor(): Decompressor
   /** May throw where the platform has no sync sha256 (browser default). */
-  defaultSha256(): Sha256
+  sha256(): Sha256
 }
 
 /**

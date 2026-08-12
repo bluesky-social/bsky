@@ -25,6 +25,9 @@ export default defineConfig(
     plugins: { n },
     settings: {
       'import-x/internal-regex': '^@bsky/',
+      // Conditional package imports (#runtime → ./dist/...) only resolve
+      // after a build; treat them as core so lint passes on a clean checkout.
+      'import-x/core-modules': ['#runtime'],
       'import-x/resolver': {
         typescript: true,
       },

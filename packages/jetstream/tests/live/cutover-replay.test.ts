@@ -6,12 +6,12 @@ import {
   cutoverReplay as cutoverReplayBase,
 } from '../../src/live/cutover.js'
 import type { LiveTransport } from '../../src/live/transport.js'
-import { defaultDecompressor, defaultSha256 } from '../../src/runtime/node.js'
+import { defaultRuntime } from '../../src/runtime/node.js'
 
 // The class layer resolves these platform defaults; supply them here since
 // cutoverReplay takes them as required params.
-const decompressor = defaultDecompressor()
-const sha256 = defaultSha256()
+const decompressor = defaultRuntime.zstdDecompressor()
+const sha256 = defaultRuntime.sha256()
 const cutoverReplay = (ctx: Omit<CutoverParams, 'decompressor' | 'sha256'>) =>
   cutoverReplayBase({ ...ctx, decompressor, sha256 })
 
@@ -297,7 +297,7 @@ test('cutoverReplay: too-old that cannot advance is fatal (anti-spin)', async ()
       cutoverReplay({
         host: 'https://h',
         nsids: ['app.bsky.feed.post'],
-        maxRebackfills: 2,
+        maxReplans: 2,
         fetchImpl: makeFetch([
           { plannedThroughSeq: 3, sealedTipSeq: 3, segments: [] },
         ]),

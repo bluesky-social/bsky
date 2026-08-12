@@ -117,10 +117,10 @@ describe('Jetstream apiKey — HTTP paths', () => {
       fetchImpl: impl,
       retry: { maxAttempts: 1 }, // no retry storm on the 500
     })
-    // getSegment 500 → DownloadError; maxRebackfills: 0 makes the first
+    // getSegment 500 → DownloadError; maxReplans: 0 makes the first
     // failure terminal instead of re-planning.
     await expect(
-      drain(js.snapshotRawBatches({ maxRebackfills: 0 })),
+      drain(js.snapshotRawBatches({ maxReplans: 0 })),
     ).rejects.toThrow()
     expect(auth.getSegment).toBe('Bearer secret1')
   })

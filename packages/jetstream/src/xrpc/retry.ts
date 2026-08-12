@@ -62,9 +62,12 @@ function statusOf(err: unknown): number | undefined {
 export function isRetryableError(err: unknown): boolean {
   if (isAbortError(err)) return false
   if (err instanceof XrpcFetchError) return true
+  // An xrpc response error knows its own retryability — defer to it. The
+  // status-set path below stays for the streaming layer, which classifies a
+  // raw res.status rather than an XrpcResponseError.
+  if (err instanceof XrpcResponseError) return err.shouldRetry()
   const status = statusOf(err)
   if (status !== undefined) return isRetryableStatus(status)
-  if (err instanceof XrpcResponseError) return isRetryableStatus(err.status)
   // A non-abort Error with no status is a transport-level failure
   // (connection refused/reset/timeout/DNS) — retryable.
   return err instanceof Error

@@ -29,9 +29,9 @@ export interface CutoverParams {
   transport?: LiveTransport
   headers?: LiveTransportHeaders // live handshake headers (e.g. Authorization)
   signal?: AbortSignal
+  /** Recoverable problems from both phases, live-tail advisories included. */
   onError?: (err: Error) => void
-  onLiveError?: (err: Error) => void
-  maxRebackfills?: number
+  maxReplans?: number
   retry?: RetryPolicy
   validateWire?: boolean
 }
@@ -46,7 +46,7 @@ const CURSOR_TOO_OLD = 'cursor too old'
 // changes between connects, so a 400 handshake — exactly 400, never other
 // 4xx — is classified as cursor-too-old and handed to the bounded
 // re-backfill. A genuine bad-request 400 still terminates, after
-// maxRebackfills instead of immediately. The message marker stays for custom
+// maxReplans instead of immediately. The message marker stays for custom
 // transports that do surface the body.
 //
 // TODO: this status-based classification is a stopgap. Once ws-client can
@@ -63,7 +63,7 @@ function isCursorTooOld(err: unknown): boolean {
  * Bufferless backfill→live cutover. Pages the sealed archive, then tails
  * subscribeEvents once at cursor = max(sealedTip, resume). A thrown "cursor
  * too old" 400 (backfill outran the live retention window) re-backfills from
- * the last delivered seq and reconnects, bounded by maxRebackfills with an
+ * the last delivered seq and reconnects, bounded by maxReplans with an
  * anti-spin guard. No client buffer or flip — the phases are sequential.
  */
 export async function* cutoverReplay(
@@ -71,9 +71,9 @@ export async function* cutoverReplay(
 ): AsyncGenerator<EventBatch<RawEvent>> {
   if (ctx.signal?.aborted) return
 
-  const maxRebackfills = ctx.maxRebackfills ?? 50
+  const maxReplans = ctx.maxReplans ?? 50
   let resume = ctx.afterSeq ?? 0
-  let rebackfills = 0
+  let replans = 0
   // The seq window prunes rows from blocks that straddle a resume boundary
   // (the plan is one-sided at the seq level); its floor advances with each
   // re-plan/re-backfill so recovered sweeps never re-deliver.
@@ -92,20 +92,20 @@ export async function* cutoverReplay(
   for (;;) {
     // Backfill phase: page the sealed archive, pinning the tip from page 1.
     // A DownloadError re-plans the residual (lastEmitted, tip] (bounded by
-    // maxRebackfills, shared with the live too-old guard); decode errors are
-    // fatal. Uses its own backfillResume so the live phase's resume is
+    // maxReplans, shared with the live too-old guard); decode errors are
+    // fatal. Uses its own snapshotResume so the live phase's resume is
     // untouched.
     let sealedTip: number | undefined
-    let backfillResume = resume
+    let snapshotResume = resume
     let lastEmitted = resume
     for (;;) {
-      window.afterSeq = backfillResume // sweep floor tracks the re-plan point
+      window.afterSeq = snapshotResume // sweep floor tracks the re-plan point
       try {
         for await (const page of planPages({
           host: ctx.host,
           dids: ctx.dids,
           collections: ctx.nsids,
-          afterSeq: backfillResume,
+          afterSeq: snapshotResume,
           beforeSeq: ctx.beforeSeq,
           fetchImpl: ctx.fetchImpl,
           signal: ctx.signal,
@@ -142,15 +142,15 @@ export async function* cutoverReplay(
         if (ctx.signal?.aborted) return
         if (!(err instanceof DownloadError)) throw err
         ctx.onError?.(err)
-        const prev = backfillResume
-        backfillResume = Math.max(lastEmitted, backfillResume)
-        rebackfills++
-        // Anti-spin bounded by maxRebackfills only: a transient failure
-        // before any batch keeps backfillResume pinned, so keying on
+        const prev = snapshotResume
+        snapshotResume = Math.max(lastEmitted, snapshotResume)
+        replans++
+        // Anti-spin bounded by maxReplans only: a transient failure
+        // before any batch keeps snapshotResume pinned, so keying on
         // resume-not-advancing would defeat fail-once-at-start recovery.
-        if (rebackfills > maxRebackfills) {
+        if (replans > maxReplans) {
           throw new Error(
-            `jetstream: backfill re-plan made no progress (resume=${backfillResume} prev=${prev} cycles=${rebackfills})`,
+            `jetstream: replay re-plan made no progress (resume=${snapshotResume} prev=${prev} cycles=${replans})`,
             { cause: err },
           )
         }
@@ -178,7 +178,7 @@ export async function* cutoverReplay(
         transport: ctx.transport,
         headers: ctx.headers,
         signal: ctx.signal,
-        onError: ctx.onLiveError,
+        onError: ctx.onError,
         validateWire: ctx.validateWire,
       })) {
         lastDelivered = ev.seq
@@ -189,10 +189,10 @@ export async function* cutoverReplay(
       if (!isCursorTooOld(err)) throw err
       const prevResume = resume
       resume = Math.max(lastDelivered ?? cutover, cutover)
-      rebackfills++
-      if (rebackfills > maxRebackfills || resume <= prevResume) {
+      replans++
+      if (replans > maxReplans || resume <= prevResume) {
         throw new Error(
-          `jetstream: re-backfill made no progress (resume=${resume} prev=${prevResume} cycles=${rebackfills})`,
+          `jetstream: replay re-plan made no progress (resume=${resume} prev=${prevResume} cycles=${replans})`,
           { cause: err },
         )
       }

@@ -2,9 +2,9 @@ import { cidForCbor } from '@atproto/lex'
 import { encode as cborEncode } from '@atproto/lex-cbor'
 import { expect, test } from 'vitest'
 import { cidForRecord } from '../../src/decode-event.js'
-import { defaultSha256 } from '../../src/runtime/node.js'
+import { defaultRuntime } from '../../src/runtime/node.js'
 
-const sha256 = defaultSha256()
+const sha256 = defaultRuntime.sha256()
 
 test('cidForRecord is synchronous and matches the CIDv1 dag-cbor shape', () => {
   const payload = cborEncode({ $type: 'app.bsky.feed.post', text: 'hi' })

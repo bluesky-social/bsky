@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { zstdCompressSync } from 'node:zlib'
 import { expect, test } from 'vitest'
-import { defaultDecompressor } from '../../src/runtime/node.js'
+import { defaultRuntime } from '../../src/runtime/node.js'
 import { decodeBlockFrame } from '../../src/segment/block.js'
 import { SegKind } from '../../src/segment/kind.js'
 
-const d = defaultDecompressor()
+const d = defaultRuntime.zstdDecompressor()
 
 const golden = new Uint8Array(
   readFileSync(

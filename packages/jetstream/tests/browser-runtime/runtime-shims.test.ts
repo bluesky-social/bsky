@@ -1,19 +1,16 @@
 // Runs with `#runtime` resolved to the browser branch
 // (vitest.browser.config.ts), mirroring what a browser bundler selects.
+import { defaultRuntime } from '#runtime'
 import { describe, expect, it } from 'vitest'
-import { defaultDecompressor, defaultSha256 } from '#runtime'
 import { Jetstream } from '../../src/index.js'
-import {
-  defaultDecompressor as nodeDefaultDecompressor,
-  defaultSha256 as nodeDefaultSha256,
-} from '../../src/runtime/node.js'
+import { defaultRuntime as nodeRuntime } from '../../src/runtime/node.js'
 
 describe('browser runtime shims', () => {
   it('throw with a supply-your-own message when called', () => {
-    expect(() => defaultDecompressor()).toThrow(
+    expect(() => defaultRuntime.zstdDecompressor()).toThrow(
       /supply your own Decompressor via Jetstream options/,
     )
-    expect(() => defaultSha256()).toThrow(
+    expect(() => defaultRuntime.sha256()).toThrow(
       /supply your own via Jetstream options/,
     )
   })
@@ -61,8 +58,8 @@ describe('browser runtime shims', () => {
     const js = new Jetstream({
       service: 'https://js.example',
       fetchImpl,
-      decompressor: nodeDefaultDecompressor(),
-      sha256: nodeDefaultSha256(),
+      decompressor: nodeRuntime.zstdDecompressor(),
+      sha256: nodeRuntime.sha256(),
     })
     const events = []
     for await (const e of js.snapshot()) events.push(e)

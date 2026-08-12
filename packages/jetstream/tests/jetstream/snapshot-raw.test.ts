@@ -94,7 +94,7 @@ test('snapshot: a download that always fails throws after bounded replans (anti-
   })
   await expect(
     (async () => {
-      for await (const _ of js.snapshotRawBatches({ maxRebackfills: 2 })) void _
+      for await (const _ of js.snapshotRawBatches({ maxReplans: 2 })) void _
     })(),
   ).rejects.toThrow(/no progress|re-plan|re-backfill/i)
 })
@@ -151,7 +151,7 @@ test('snapshot: does not skip a failing entry to reach a later one (no gap)', as
   })
   await expect(
     (async () => {
-      for await (const _ of js.snapshotRawBatches({ maxRebackfills: 3 })) void _
+      for await (const _ of js.snapshotRawBatches({ maxReplans: 3 })) void _
     })(),
   ).rejects.toThrow()
 })
