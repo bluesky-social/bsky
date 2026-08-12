@@ -1,4 +1,4 @@
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, it, test } from 'vitest'
 import { parseCollectionFilters } from '../src/engine/collections.js'
 import {

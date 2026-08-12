@@ -1,4 +1,4 @@
-import { type RecordSchema } from '@atproto/lex-schema'
+import { type RecordSchema } from '@atproto/lex'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type EventBatch, type RawEventV1, type TypedEvent } from './event.js'
 

@@ -1,4 +1,4 @@
-import { type RecordSchema } from '@atproto/lex-schema'
+import { type RecordSchema } from '@atproto/lex'
 import { type RawEventV1, type TypedCommit, type TypedEvent } from './event.js'
 
 export function typedEventFromRaw(

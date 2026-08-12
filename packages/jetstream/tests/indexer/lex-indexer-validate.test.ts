@@ -1,4 +1,4 @@
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { type EventBatch, type RawEventV1 } from '../../src/event.js'
 import { LexIndexer, type UnvalidatedRecord } from '../../src/index.js'

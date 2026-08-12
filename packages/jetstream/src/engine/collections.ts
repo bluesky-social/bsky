@@ -3,7 +3,7 @@ import {
   type NsidString,
   type RecordSchema,
   getMain,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 
 export interface SchemaCollectionFilter {
   collection: Main<RecordSchema>

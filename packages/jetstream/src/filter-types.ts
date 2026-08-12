@@ -1,4 +1,4 @@
-import { type InferOutput, type RecordSchema } from '@atproto/lex-schema'
+import { type InferOutput, type RecordSchema } from '@atproto/lex'
 import { type CollectionFilter } from './engine/collections.js'
 import {
   type Account,

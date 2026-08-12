@@ -1,4 +1,4 @@
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import { Jetstream, LexIndexer, MemoryCursorStore } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'

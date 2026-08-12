@@ -4,7 +4,7 @@ import type {
   DidString,
   HandleString,
   NsidString,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { expectTypeOf, test } from 'vitest'
 import type { CollectionFilter } from '../src/engine/collections.js'
 import type {

@@ -12,7 +12,7 @@ import {
   type TidString,
   atUri,
   getMain,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'

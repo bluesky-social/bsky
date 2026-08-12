@@ -1,4 +1,4 @@
-import { type InferOutput, l } from '@atproto/lex-schema'
+import { type InferOutput, l } from '@atproto/lex'
 import { MalformedError } from '../errors.js'
 import { type Account, type Identity, type RawEventV1 } from '../event.js'
 import { SKIP_FRAME } from './decode.js'

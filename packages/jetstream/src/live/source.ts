@@ -1,4 +1,4 @@
-import { type DidString } from '@atproto/lex-schema'
+import { type DidString } from '@atproto/lex'
 import { type RawEventV1 } from '../event.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
 import { SKIP_FRAME } from './decode.js'

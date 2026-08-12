@@ -1,4 +1,4 @@
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import { LexIndexer } from '../../src/lex-indexer.js'
 

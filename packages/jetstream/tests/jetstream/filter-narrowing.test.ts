@@ -4,7 +4,7 @@ import {
   type NsidString,
   l,
   record,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { Jetstream, type UnvalidatedRecord } from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'

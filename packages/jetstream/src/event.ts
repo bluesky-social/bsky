@@ -6,7 +6,7 @@ import {
   type NsidString,
   type RecordKeyString,
   type TidString,
-} from '@atproto/lex-schema'
+} from '@atproto/lex'
 
 export type Operation = 'create' | 'update' | 'delete'
 export type Kind = 'commit' | 'identity' | 'account'

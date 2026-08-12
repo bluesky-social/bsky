@@ -1,4 +1,4 @@
-import { type DidString } from '@atproto/lex-schema'
+import { type DidString } from '@atproto/lex'
 import { type JetstreamConsumer } from './consumer.js'
 import {
   type CollectionFilter,

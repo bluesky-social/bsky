@@ -1,9 +1,4 @@
-import {
-  type InferOutput,
-  type NsidString,
-  l,
-  record,
-} from '@atproto/lex-schema'
+import { type InferOutput, type NsidString, l, record } from '@atproto/lex'
 import { expectTypeOf, test } from 'vitest'
 import {
   type DeleteCommit,

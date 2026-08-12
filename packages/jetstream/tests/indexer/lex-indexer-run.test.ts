@@ -1,5 +1,5 @@
 import { setTimeout as delay } from 'node:timers/promises'
-import { l, record } from '@atproto/lex-schema'
+import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import { type EventBatch, type RawEventV1 } from '../../src/event.js'
 import { LexIndexer } from '../../src/lex-indexer.js'
