@@ -89,6 +89,7 @@ export class Jetstream {
       signal: opts.signal,
       onError: opts.onError,
       validateWire: this.opts.validateWire,
+      version: 1, // TEMPORARY: removed in the task that flips Jetstream to v2
     })) {
       yield { events: [ev], lastCursor: ev.seq }
     }

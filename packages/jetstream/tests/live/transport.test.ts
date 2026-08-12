@@ -69,6 +69,7 @@ describe('websocketTransport (real websocket)', () => {
         host: srv.host,
         transport: websocketTransport({ shouldReconnect: false }),
         onError: (err) => errors.push(err),
+        version: 1,
       })) {
         events.push(ev)
       }
@@ -101,6 +102,7 @@ describe('websocketTransport (real websocket)', () => {
           for await (const ev of liveEvents({
             host: srv.host,
             signal: ac.signal,
+            version: 1,
           })) {
             got.push(ev.seq)
             if (ev.seq === 200) ac.abort(new Error('test done'))
@@ -138,6 +140,7 @@ describe('websocketTransport (real websocket)', () => {
             host: srv.host,
             signal: ac.signal,
             transport: websocketTransport({ onReconnect }),
+            version: 1,
           })) {
             got.push(ev.seq)
             if (ev.seq === 100) conns[0].terminate() // abnormal close, no close frame
@@ -172,6 +175,7 @@ describe('websocketTransport (real websocket)', () => {
             host: srv.host,
             signal: ac.signal,
             transport: websocketTransport({ idleTimeoutMs: 50 }),
+            version: 1,
           })) {
             got.push(ev.seq)
             ac.abort(new Error('test done'))
