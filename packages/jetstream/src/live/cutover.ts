@@ -8,7 +8,7 @@ import { type Decompressor } from '../segment/decompressor.js'
 import { DownloadError } from '../xrpc/errors.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
 import { liveEvents } from './source.js'
-import { type LiveTransport } from './transport.js'
+import { type LiveTransport, handshakeRejectionStatus } from './transport.js'
 
 export interface CutoverParams {
   host: string
@@ -33,12 +33,20 @@ export interface CutoverParams {
 }
 
 // The server rejects a below-retention seq cursor pre-upgrade with an HTTP
-// 400 whose body carries this stable marker; the websocket transport
-// surfaces the refusal as a thrown error message containing it.
+// 400 whose body carries this stable marker.
 const CURSOR_TOO_OLD = 'cursor too old'
 
+// The default websocket transport cannot read the 400 body (ws discards it),
+// so all it surfaces is the handshake status. Within the live phase of a
+// cutover the params were just accepted by planSnapshot and only the cursor
+// changes between connects, so a 400 handshake is classified as cursor-too-old
+// and handed to the bounded re-backfill — a genuine bad-request 400 still
+// terminates, after maxRebackfills instead of immediately. The message marker
+// stays for custom transports that do surface the body.
 function isCursorTooOld(err: unknown): boolean {
-  return err instanceof Error && err.message.includes(CURSOR_TOO_OLD)
+  if (!(err instanceof Error)) return false
+  if (err.message.includes(CURSOR_TOO_OLD)) return true
+  return handshakeRejectionStatus(err) === 400
 }
 
 /**
@@ -54,9 +62,17 @@ export async function* cutoverReplay(
   if (ctx.signal?.aborted) return
 
   const maxRebackfills = ctx.maxRebackfills ?? 50
-  const selector = makeSelector({ dids: ctx.dids, collections: ctx.nsids })
   let resume = ctx.afterSeq ?? 0
   let rebackfills = 0
+  // The seq window prunes rows from blocks that straddle a resume boundary
+  // (the plan is one-sided at the seq level); its floor advances with each
+  // re-plan/re-backfill so recovered sweeps never re-deliver.
+  const window = { afterSeq: resume, beforeSeq: ctx.beforeSeq }
+  const selector = makeSelector({
+    dids: ctx.dids,
+    collections: ctx.nsids,
+    window,
+  })
   // The archive has no server-side kinds filter (unlike the live tail, which
   // sends `kinds=` on the wire), so filter client-side to make kinds uniform
   // across both phases. Only when non-empty: no kinds pays zero overhead.
@@ -73,6 +89,7 @@ export async function* cutoverReplay(
     let backfillResume = resume
     let lastEmitted = resume
     for (;;) {
+      window.afterSeq = backfillResume // sweep floor tracks the re-plan point
       try {
         for await (const page of planPages({
           host: ctx.host,

@@ -169,10 +169,13 @@ export function rawEventFromSegment(
   opts: DecodeEventOpts,
 ): RawEvent<RawRecordCbor> {
   const { sha256, validateWire } = opts
+  // Same display-time rule as the server's live encoder: an imported
+  // indexedAt (nonzero) wins; otherwise the witnessed time.
+  const timeUs = ev.indexedAt !== 0 ? ev.indexedAt : ev.witnessedAt
   const base = {
     did: ev.did,
     seq: ev.seq,
-    time: microsToDatetime(ev.indexedAt),
+    time: microsToDatetime(timeUs),
   }
   switch (ev.kind) {
     case SegKind.Create:

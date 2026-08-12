@@ -210,3 +210,43 @@ test('snapshot: recovers a transient download failure via replan (no gap, no dup
   }
   expect(seqs).toEqual([1, 2, 3]) // golden_block.bin = seq 1,2,3 — delivered once
 })
+
+test('snapshot: afterSeq mid-block prunes rows at or below the floor', async () => {
+  // The plan is one-sided: a block straddling afterSeq is planned whole, so
+  // the client's seq window must drop the already-covered rows.
+  const js = new Jetstream({ service: 'https://js.example', fetchImpl })
+  const seqs: number[] = []
+  for await (const b of js.snapshotRawBatches({ afterSeq: 1 })) {
+    for (const e of b.events) seqs.push(e.seq)
+  }
+  expect(seqs).toEqual([2, 3]) // seq 1 excluded (exclusive lower bound)
+})
+
+test('snapshot: beforeSeq mid-block prunes rows above the ceiling', async () => {
+  const js = new Jetstream({ service: 'https://js.example', fetchImpl })
+  const seqs: number[] = []
+  for await (const b of js.snapshotRawBatches({ beforeSeq: 2 })) {
+    for (const e of b.events) seqs.push(e.seq)
+  }
+  expect(seqs).toEqual([1, 2]) // seq 3 excluded (inclusive upper bound)
+})
+
+test('snapshot: onError DownloadError names the failed plan entry', async () => {
+  failOnce = true
+  const errored: Error[] = []
+  const js = new Jetstream({
+    service: 'https://js.example',
+    fetchImpl: fetchTransientImpl,
+    retry: { maxAttempts: 1, baseDelayMs: 1 },
+  })
+  for await (const _ of js.snapshotRawBatches({
+    onError: (err) => errored.push(err),
+  }))
+    void _
+  expect(errored).toHaveLength(1)
+  const derr = errored[0] as InstanceType<
+    typeof import('../../src/index.js').DownloadError
+  >
+  expect(derr.name).toBe('DownloadError')
+  expect(derr.entry?.name).toBe('a.jss')
+})

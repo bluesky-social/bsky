@@ -374,3 +374,40 @@ describe('blockSource', () => {
     expect(blockTags).toEqual(['b1.jss#0', 'b1.jss#1', 'b1.jss#2', 'b1.jss#3'])
   })
 })
+
+it('throws on an unknown plan entry mode instead of silently skipping it', async () => {
+  const entry = {
+    name: 'a.jss',
+    index: 0,
+    checksum: 'x'.repeat(16),
+    minSeq: 1,
+    maxSeq: 3,
+    mode: 'shards', // some future mode this client does not understand
+  } as unknown as PlanEntry
+  const fetchImpl = (async () => {
+    throw new Error('should not fetch')
+  }) as unknown as typeof fetch
+  await expect(
+    collect(blockSource({ host: 'https://h', entries: [entry], fetchImpl })),
+  ).rejects.toThrow(/unknown plan entry mode/)
+})
+
+it('return() settles in-flight prefetches without hanging (no leaked pumps)', async () => {
+  // Tiny tail HWM forces look-ahead pumps to suspend on backpressure. An
+  // abandoned generator must still settle them (finally path) rather than
+  // leave them suspended forever.
+  const fetchImpl = makeFetch({
+    blockFrame: (seg, idx) => enc(`${seg}#${idx}`),
+    segmentBody: () => [],
+  })
+  const gen = blockSource({
+    host: 'https://h',
+    entries: [blocksEntry(0, 'a.jss', 4)],
+    fetchImpl,
+    tailHwmBytes: 1,
+  })
+  const first = await gen.next()
+  expect(first.done).toBe(false)
+  await gen.return(undefined) // must resolve, not deadlock
+  expect((await gen.next()).done).toBe(true)
+})

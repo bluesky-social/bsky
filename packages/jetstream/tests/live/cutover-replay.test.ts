@@ -473,3 +473,32 @@ test('cutoverReplay: raw replay yields CBOR-arm records from backfill and JSON-a
   }
   expect(kinds).toEqual(['cbor', 'json']) // seam is typed, not hidden
 })
+
+test('cutoverReplay: a bare 400 handshake rejection (body unreadable) is treated as cursor-too-old', async () => {
+  // The default ws transport discards the 400 body, so the "cursor too old"
+  // marker is unreadable — only the status survives. Recovery must still
+  // trigger off the handshake status.
+  let connects = 0
+  const transport: LiveTransport = {
+    async *stream() {
+      connects++
+      if (connects === 1) {
+        // Shape matches ws-client's surfaced handshake rejection.
+        throw new Error('Unexpected server response: 400')
+      }
+      yield new TextEncoder().encode(liveCommit(4))
+    },
+  }
+  const seqs = await drain(
+    cutoverReplay({
+      host: 'https://h',
+      nsids: ['app.bsky.feed.post'],
+      fetchImpl: makeFetch([
+        { plannedThroughSeq: 3, sealedTipSeq: 3, segments: [] },
+      ]),
+      transport,
+    }),
+  )
+  expect(seqs).toEqual([4])
+  expect(connects).toBe(2)
+})

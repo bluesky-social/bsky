@@ -30,7 +30,7 @@ test('decodes all events in the sealed segment', () => {
   expect(rows).toHaveLength(2)
   expect(rows[0]).toMatchObject({
     seq: 1,
-    indexedAt: 100,
+    witnessedAt: 100,
     kind: SegKind.Create,
     did: 'did:plc:a',
     collection: 'app.bsky.feed.post',

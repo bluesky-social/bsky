@@ -6,8 +6,8 @@ import { SegKind } from '../../src/segment/kind.js'
 const row = (over: Record<string, unknown> = {}): SegEvent =>
   ({
     seq: 10,
-    indexedAt: 1,
-    renderedAt: 0,
+    witnessedAt: 1,
+    indexedAt: 0,
     kind: SegKind.Create,
     did: 'did:plc:a',
     collection: 'app.bsky.feed.post',
@@ -37,4 +37,26 @@ test('identity/account/sync rows bypass the collection filter', () => {
   ).toBe(false)
   // an identity row (no collection) passes even with a restrictive collection filter
   expect(sel.keep(row({ kind: SegKind.Identity, collection: '' }))).toBe(true)
+})
+
+test('seq window prunes rows outside (afterSeq, beforeSeq]', () => {
+  const window = { afterSeq: 10, beforeSeq: 12 }
+  const sel = makeSelector({ collections: [], window })
+  expect(sel.keep(row({ seq: 10 }))).toBe(false) // exclusive floor
+  expect(sel.keep(row({ seq: 11 }))).toBe(true)
+  expect(sel.keep(row({ seq: 12 }))).toBe(true) // inclusive ceiling
+  expect(sel.keep(row({ seq: 13 }))).toBe(false)
+  // identity rows are bound by the window too
+  expect(
+    sel.keep(row({ seq: 9, kind: SegKind.Identity, collection: '' })),
+  ).toBe(false)
+})
+
+test('seq window is read live: advancing the floor mid-run takes effect', () => {
+  const window = { afterSeq: 0 }
+  const sel = makeSelector({ collections: [], window })
+  expect(sel.keep(row({ seq: 5 }))).toBe(true)
+  window.afterSeq = 5
+  expect(sel.keep(row({ seq: 5 }))).toBe(false)
+  expect(sel.keep(row({ seq: 6 }))).toBe(true)
 })

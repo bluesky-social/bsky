@@ -21,8 +21,8 @@ test('decodes the Go golden block frame exactly', () => {
 
   expect(rows[0]).toMatchObject({
     seq: 1,
-    indexedAt: 1700000000_000000,
-    renderedAt: 0,
+    witnessedAt: 1700000000_000000,
+    indexedAt: 0,
     kind: SegKind.Create,
     did: 'did:plc:abcdefghijklmnopqrstuvwx',
     collection: 'app.bsky.feed.post',
@@ -35,8 +35,8 @@ test('decodes the Go golden block frame exactly', () => {
 
   expect(rows[1]).toMatchObject({
     seq: 2,
-    indexedAt: 1700000001_000000,
-    renderedAt: 1700000000_500000,
+    witnessedAt: 1700000001_000000,
+    indexedAt: 1700000000_500000,
     kind: SegKind.Identity,
     did: 'did:web:example.com',
     collection: '',

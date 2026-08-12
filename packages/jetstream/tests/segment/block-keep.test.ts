@@ -24,7 +24,9 @@ describe('decodeBlock keep-predicate equivalence', () => {
   for (const [name, keep] of Object.entries(predicates)) {
     it(`filtered decode ≡ decode-then-filter (${name})`, () => {
       const full = decodeBlockFrame(goldenFrame, d)
-      const expected = full.filter((r) => keep(r.collection, r.did, r.kind))
+      const expected = full.filter((r) =>
+        keep(r.collection, r.did, r.kind, r.seq),
+      )
       const filtered = decodeBlockFrame(goldenFrame, d, keep)
       expect(filtered).toEqual(expected)
     })

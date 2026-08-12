@@ -62,7 +62,7 @@ test('backfill skips and reports a record that fails conversion', async () => {
 
 // Hand-rolled block encoder, mirroring decodeBlock's exact binary layout
 // (src/segment/block.ts): [u32le count], then fixed columns column-major
-// (seq u64le, indexedAt i64le, renderedAt i64le, kind u8, collLen u8,
+// (seq u64le, witnessedAt i64le, indexedAt i64le, kind u8, collLen u8,
 // didLen u16le, rkeyLen u8, revLen u8, payLen u32le), then variable columns
 // column-major (collection, did, rkey, rev, payload bytes). getBlock's wire
 // response is this buffer zstd-compressed. Building this locally (rather
@@ -72,8 +72,8 @@ test('backfill skips and reports a record that fails conversion', async () => {
 export function encodeBlock(
   rows: {
     seq: number
+    witnessedAt: number
     indexedAt: number
-    renderedAt: number
     kind: number
     did: string
     collection: string
@@ -110,11 +110,11 @@ export function encodeBlock(
     off += 8
   }
   for (const c of cols) {
-    view.setBigInt64(off, BigInt(c.indexedAt), true)
+    view.setBigInt64(off, BigInt(c.witnessedAt), true)
     off += 8
   }
   for (const c of cols) {
-    view.setBigInt64(off, BigInt(c.renderedAt), true)
+    view.setBigInt64(off, BigInt(c.indexedAt), true)
     off += 8
   }
   for (const c of cols) {
@@ -170,8 +170,8 @@ test("backfill happy path: a $type'd record decodes end to end through segment-f
   const block = encodeBlock([
     {
       seq: 1,
-      indexedAt: 1000,
-      renderedAt: 0,
+      witnessedAt: 1000,
+      indexedAt: 0,
       kind: SegKind.Create,
       did: 'did:plc:test',
       collection: 'app.bsky.feed.post',

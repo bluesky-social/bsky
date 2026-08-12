@@ -281,17 +281,24 @@ export class Jetstream {
     const decompressor = this.opts.decompressor ?? (await nodeDecompressor())
     const sha256 = this.opts.sha256 ?? (await nodeSha256())
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
-    const selector = makeSelector({ dids: opts.dids, collections: nsids })
     const maxRebackfills = opts.maxRebackfills ?? 50
 
     // afterSeq wins; otherwise resume from the cursor store. lastEmitted
-    // tracks the max EventBatch.lastCursor yielded — always a block boundary,
-    // and planSnapshot's afterSeq is block-aligned, so a DownloadError
-    // re-plans the residual (lastEmitted, tip] with no gap and no duplicate.
-    // Decode errors are terminal; abort returns cleanly.
+    // tracks the max EventBatch.lastCursor yielded. A DownloadError re-plans
+    // the residual (lastEmitted, tip]: a block straddling the boundary is
+    // planned whole (the plan is one-sided), and the selector's seq window —
+    // advanced to each re-plan's floor — prunes the already-delivered rows,
+    // so recovery has no gap and no duplicate. Decode errors are terminal;
+    // abort returns cleanly.
     let resume = opts.afterSeq ?? (await opts.cursor?.load()) ?? 0
     let lastEmitted = resume
     let rebackfills = 0
+    const window = { afterSeq: resume, beforeSeq: opts.beforeSeq }
+    const selector = makeSelector({
+      dids: opts.dids,
+      collections: nsids,
+      window,
+    })
 
     for (;;) {
       if (signal?.aborted) return
@@ -330,6 +337,7 @@ export class Jetstream {
         opts.onError?.(err)
         const prevResume = resume
         resume = Math.max(lastEmitted, resume)
+        window.afterSeq = resume // prune re-planned rows already delivered
         rebackfills++
         // Anti-spin: bound the number of re-plans. A transient failure before
         // any batch is emitted keeps resume pinned, so termination cannot key

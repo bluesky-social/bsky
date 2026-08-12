@@ -14,11 +14,16 @@ import { ReadCursor } from './read-cursor.js'
  * writer enforces formats, and validateWire re-checks them. Non-commit kinds
  * (identity/account/sync) carry '' in collection/rkey/rev, so the brands are
  * trustworthy only on commit rows.
+ *
+ * Timestamps are unix microseconds: witnessedAt is when jetstream first saw
+ * the event (immutable); indexedAt is the display timestamp, 0 unless an
+ * operator imported one, and it wins when nonzero (see the server's
+ * segment/event.go DisplayTime).
  */
 export interface SegEvent {
   seq: number
+  witnessedAt: number
   indexedAt: number
-  renderedAt: number
   kind: SegKind
   did: DidString
   collection: NsidString
@@ -36,6 +41,7 @@ export type RowKeep = (
   collection: string,
   did: string,
   kind: SegKind,
+  seq: number,
 ) => boolean
 
 /**
@@ -60,10 +66,10 @@ export function decodeBlock(buf: Uint8Array, keep?: RowKeep): SegEvent[] {
   // Fixed columns in spec order, decoded for all rows (cheap numerics).
   const seqs = new Array<number>(n)
   for (let i = 0; i < n; i++) seqs[i] = c.u64leAsNumber()
+  const witnessedAts = new Array<number>(n)
+  for (let i = 0; i < n; i++) witnessedAts[i] = c.i64leAsNumber()
   const indexedAts = new Array<number>(n)
   for (let i = 0; i < n; i++) indexedAts[i] = c.i64leAsNumber()
-  const renderedAts = new Array<number>(n)
-  for (let i = 0; i < n; i++) renderedAts[i] = c.i64leAsNumber()
   const kinds = new Array<SegKind>(n)
   for (let i = 0; i < n; i++) {
     const k = c.u8()
@@ -91,7 +97,7 @@ export function decodeBlock(buf: Uint8Array, keep?: RowKeep): SegEvent[] {
   const kept = new Array<boolean>(n)
   let keptCount = 0
   for (let i = 0; i < n; i++) {
-    kept[i] = keep ? keep(collections[i], dids[i], kinds[i]) : true
+    kept[i] = keep ? keep(collections[i], dids[i], kinds[i], seqs[i]) : true
     if (kept[i]) keptCount++
   }
 
@@ -113,8 +119,8 @@ export function decodeBlock(buf: Uint8Array, keep?: RowKeep): SegEvent[] {
     if (!kept[i]) continue
     rows[out++] = {
       seq: seqs[i],
+      witnessedAt: witnessedAts[i],
       indexedAt: indexedAts[i],
-      renderedAt: renderedAts[i],
       kind: kinds[i],
       did: dids[i],
       collection: collections[i],

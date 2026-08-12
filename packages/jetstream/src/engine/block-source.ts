@@ -1,5 +1,7 @@
+import { MalformedError } from '../errors.js'
 import { streamSegmentFrames } from '../segment/segment-reader.js'
 import { getBlock, streamSegment } from '../xrpc/download.js'
+import { DownloadError } from '../xrpc/errors.js'
 import { type PlanEntry } from '../xrpc/plan.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
 
@@ -50,17 +52,23 @@ export async function* blockSource(
   const maxBlocks = Math.max(1, opts.blockConcurrency ?? 4)
 
   // Flatten the plan into an ordered list of downloads (unit = segment | block).
+  // An unrecognized mode throws: silently skipping the entry would drop its
+  // whole seq range while the plan cursor advances past it — data loss.
   const downloads: Download[] = []
   for (let e = 0; e < entries.length; e++) {
     const entry = entries[e]
     if (entry.mode === 'segment') {
       downloads.push({ kind: 'segment', entryIndex: e, entry })
-    } else {
+    } else if (entry.mode === 'blocks') {
       for (const br of entry.blocks ?? []) {
         for (let b = br.first; b <= br.last; b++) {
           downloads.push({ kind: 'block', entryIndex: e, entry, blockIndex: b })
         }
       }
+    } else {
+      throw new MalformedError(
+        `unknown plan entry mode ${JSON.stringify(entry.mode)} (segment ${entry.name})`,
+      )
     }
   }
 
@@ -224,34 +232,43 @@ export async function* blockSource(
   }
 
   fill()
-  while (window.length > 0) {
-    if (signal?.aborted) {
-      await drainAll()
-      return
-    }
-    const head = window[0]
-    // Refill BEFORE draining so prefetches for the slots behind the head are
-    // already in flight while the head streams.
-    fill()
-    try {
-      for await (const frame of head.drain()) {
-        if (signal?.aborted) {
-          await drainAll()
-          return
+  try {
+    while (window.length > 0) {
+      if (signal?.aborted) return
+      const head = window[0]
+      // Refill BEFORE draining so prefetches for the slots behind the head
+      // are already in flight while the head streams.
+      fill()
+      try {
+        for await (const frame of head.drain()) {
+          if (signal?.aborted) return
+          yield { entryIndex: head.d.entryIndex, entry: head.d.entry, frame }
         }
-        yield { entryIndex: head.d.entryIndex, entry: head.d.entry, frame }
+      } catch (err) {
+        // The head's download errored after a clean ascending prefix. Drop
+        // the failed head first (its pump already errored — do not re-drain
+        // it); the finally below settles the healthy tails, then the error
+        // rethrows in-order so the consumer can recover without a gap. A
+        // DownloadError is annotated with the failed plan entry here — the
+        // one place it is known.
+        window.shift()
+        throw err instanceof DownloadError && !err.entry
+          ? new DownloadError(err.message, {
+              entry: head.d.entry,
+              status: err.status,
+              cause: err,
+            })
+          : err
       }
-    } catch (err) {
-      // The head's download errored after a clean ascending prefix. Drop the
-      // failed head first (its pump already errored — do not re-drain it),
-      // then settle the healthy tails so no pump promise leaks, then rethrow
-      // in-order so the consumer can recover without a gap.
+      // Head exhausted: dequeue it, then top the window back up.
       window.shift()
-      await drainAll()
-      throw err
+      fill()
     }
-    // Head exhausted: dequeue it, then top the window back up.
-    window.shift()
-    fill()
+  } finally {
+    // Runs on every exit — completion, abort, head error, and consumer
+    // abandonment (an early return()/throw from the caller). Settling every
+    // in-flight prefetch keeps pumps from suspending forever at their HWM
+    // and leaking their response bodies.
+    await drainAll()
   }
 }
