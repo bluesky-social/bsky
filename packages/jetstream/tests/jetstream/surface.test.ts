@@ -70,4 +70,10 @@ describe('class surfaces', () => {
     // @ts-expect-error LiveV1Opts has no kinds — the v1 wire has no such param
     void v1.live({ kinds: ['commit'] })
   })
+
+  it('onInfo is rejected on v1', () => {
+    const v1 = new JetstreamV1('https://h')
+    // @ts-expect-error LiveV1Opts has no onInfo — the v1 wire has no #info frame
+    void v1.live({ onInfo: () => {} })
+  })
 })

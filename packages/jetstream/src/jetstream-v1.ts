@@ -49,7 +49,7 @@ export class JetstreamV1 {
   live(opts: LiveV1Opts & { raw: true }): AsyncGenerator<RawEventV1>
   live(opts: LiveV1Opts = {}): AsyncGenerator<RawEventV1 | WideTypedEventV1> {
     const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
-    // The cast here is unrelated to rawBatchStream's overload (its call above
+    // The cast here is unrelated to rawBatchStream's overload (its call below
     // is already the honest v1-only type): shape() is version-generic, so its
     // declared return covers both wires' possible outputs and needs narrowing
     // to this class's v1-only union.

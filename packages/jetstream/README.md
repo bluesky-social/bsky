@@ -55,7 +55,7 @@ Passing `validateRecord: false` only drops the _schema_ check — a record that
 isn't a `$type`'d map still fails conversion and is skipped, reported via
 `onError` (or, for `LexIndexer`, `onValidationError`) rather than delivered.
 
-For indexing workloads, `LexIndexer` dispatches schema-validated records to per-collection handlers with bounded concurrency and per-record ordering, and `JetstreamRunner` drives it with durable cursor tracking:
+For indexing workloads, `LexIndexer` dispatches schema-validated records to per-collection handlers with bounded concurrency and per-record ordering, and `JetstreamRunner` drives it with durable cursor tracking. The runner asks the server only for the kinds a `LexIndexer` has registered handlers for — register `.identity()`/`.account()`/`.sync()` (or a collection via `.commit()`) to receive that kind at all:
 
 ```ts
 import { Jetstream, LexIndexer, MemoryCursorStore } from '@bsky/jetstream'
@@ -87,7 +87,8 @@ await js.runner(indexer).live({ cursor })
 `live()`'s cursor is a v2 `seq`. Values `>= 1e15` are read by the server as
 unix-microsecond timestamps instead. When the server clamps a stale timestamp
 it sends an `OutdatedCursor` advisory, reported through `onInfo` without
-ending the stream.
+ending the stream — an advisory is dropped silently if no `onInfo` is
+registered.
 
 Cursors are **not portable between versions**: a v1 cursor is a `time_us`
 value and a v2 cursor is a `seq`. Never replay a stored cursor against the
