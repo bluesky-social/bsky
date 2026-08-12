@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { SocketError } from '@atproto/ws-client'
 import { expect, test } from 'vitest'
 import {
   type CutoverParams,
@@ -482,8 +483,9 @@ test('cutoverReplay: a bare 400 handshake rejection (body unreadable) is treated
     async *stream() {
       connects++
       if (connects === 1) {
-        // Shape matches ws-client's surfaced handshake rejection.
-        throw new Error('Unexpected server response: 400')
+        // Shape matches ws-client's surfaced handshake rejection: the raw ws
+        // error wrapped in a SocketError.
+        throw new SocketError(new Error('Unexpected server response: 400'))
       }
       yield new TextEncoder().encode(liveCommit(4))
     },

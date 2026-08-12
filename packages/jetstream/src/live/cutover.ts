@@ -29,8 +29,10 @@ export interface CutoverParams {
   transport?: LiveTransport
   headers?: LiveTransportHeaders // live handshake headers (e.g. Authorization)
   signal?: AbortSignal
-  /** Recoverable problems from both phases, live-tail advisories included. */
+  /** Recoverable problems from both phases. */
   onError?: (err: Error) => void
+  /** Seq-less live-phase advisories (#info frames); dropped when omitted. */
+  onInfo?: (info: { name: string; message?: string }) => void
   maxReplans?: number
   retry?: RetryPolicy
   validateWire?: boolean
@@ -179,6 +181,7 @@ export async function* cutoverReplay(
         headers: ctx.headers,
         signal: ctx.signal,
         onError: ctx.onError,
+        onInfo: ctx.onInfo,
         validateWire: ctx.validateWire,
       })) {
         lastDelivered = ev.seq

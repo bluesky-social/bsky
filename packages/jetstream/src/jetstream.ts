@@ -132,10 +132,16 @@ export interface ReplayOpts<
   signal?: AbortSignal
   /**
    * Recoverable problems from either phase: a DownloadError per re-planned
-   * transient failure, a RecordValidationError per skipped record in typed
-   * mode, and live-tail advisories (e.g. #info frames).
+   * transient failure, and a RecordValidationError per skipped record in
+   * typed mode.
    */
   onError?: (err: Error) => void
+  /**
+   * Seq-less server advisories from the live phase (`#info` frames, e.g.
+   * `OutdatedCursor`). Not an error: when omitted, an advisory is dropped
+   * silently rather than routed to onError.
+   */
+  onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
   /**
    * Bound on recovery re-plans (transient download failures plus
@@ -150,6 +156,12 @@ export interface SnapshotOpts<
 > {
   collections?: F
   dids?: DidString[]
+  /**
+   * Event kinds to receive. The snapshot plan has no kinds filter, so this
+   * is applied client-side after download — same semantics as replay's
+   * snapshot phase.
+   */
+  kinds?: Kind[]
   /**
    * Resume position source. `afterSeq` wins when both are set. snapshot()
    * only loads from the store — saving is the runner's job.
@@ -299,6 +311,7 @@ export class Jetstream {
       headers: this.#authHeaders(),
       signal: opts.signal,
       onError: opts.onError,
+      onInfo: opts.onInfo,
       maxReplans: opts.maxReplans,
       retry: this.opts.retry,
       validateWire: this.opts.validateWire,
@@ -336,6 +349,11 @@ export class Jetstream {
     const sha256 = this.opts.sha256 ?? defaultRuntime.sha256()
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
     const maxReplans = opts.maxReplans ?? 50
+    // The plan has no kinds filter, so kinds prune client-side. lastCursor is
+    // preserved so the watermark advances past pruned events, and an
+    // empty-after-filter batch still yields (same rule as replay's phase).
+    const kindsFilter =
+      opts.kinds && opts.kinds.length > 0 ? new Set(opts.kinds) : undefined
 
     // afterSeq wins; otherwise resume from the cursor store. lastEmitted
     // tracks the max EventBatch.lastCursor yielded. A DownloadError re-plans
@@ -380,7 +398,12 @@ export class Jetstream {
             validateWire: this.opts.validateWire,
           })) {
             if (batch.lastCursor > lastEmitted) lastEmitted = batch.lastCursor
-            yield batch
+            yield kindsFilter
+              ? {
+                  events: batch.events.filter((e) => kindsFilter.has(e.kind)),
+                  lastCursor: batch.lastCursor,
+                }
+              : batch
           }
         }
         return

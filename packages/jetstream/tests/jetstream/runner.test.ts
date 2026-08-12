@@ -153,23 +153,6 @@ describe('JetstreamRunner', () => {
     expect(await store.load()).toBe(3)
   })
 
-  it("derives the wire request from the consumer's registrations (collections + kinds)", async () => {
-    // A commit collection plus a sync handler, and nothing else registered:
-    // kinds should list exactly commit and sync, never identity/account.
-    const ix = new LexIndexer()
-      .commit(likeSchema, { put: () => {} })
-      .sync(() => {})
-    const { transport, urls } = urlRecordingTransport()
-    const js = new Jetstream({ service: 'https://js.example' })
-    await js.runner(ix).live({ liveTransport: transport })
-    expect(urls).toHaveLength(1)
-    expect(urls[0]).toContain('collections=app.test.like')
-    expect(urls[0]).toContain('kinds=commit')
-    expect(urls[0]).toContain('kinds=sync')
-    expect(urls[0]).not.toContain('kinds=identity')
-    expect(urls[0]).not.toContain('kinds=account')
-  })
-
   // golden_block.bin = 3 sealed rows at seq 1,2,3.
   const goldenFrame = new Uint8Array(
     readFileSync(
@@ -309,5 +292,22 @@ describe('JetstreamRunner', () => {
     expect(planAfterSeq).toBe(3)
     expect(seen).toEqual([])
     expect(await store.load()).toBe(3)
+  })
+
+  it("derives the wire request from the consumer's registrations (collections + kinds)", async () => {
+    // A commit collection plus a sync handler, and nothing else registered:
+    // kinds should list exactly commit and sync, never identity/account.
+    const ix = new LexIndexer()
+      .commit(likeSchema, { put: () => {} })
+      .sync(() => {})
+    const { transport, urls } = urlRecordingTransport()
+    const js = new Jetstream({ service: 'https://js.example' })
+    await js.runner(ix).live({ liveTransport: transport })
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain('collections=app.test.like')
+    expect(urls[0]).toContain('kinds=commit')
+    expect(urls[0]).toContain('kinds=sync')
+    expect(urls[0]).not.toContain('kinds=identity')
+    expect(urls[0]).not.toContain('kinds=account')
   })
 })
