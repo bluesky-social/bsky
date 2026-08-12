@@ -206,3 +206,17 @@ test('flush() does not issue a concurrent save while one is in-flight', async ()
   // Never more than one concurrent save
   expect(maxConcurrentSaves).toBe(1)
 })
+
+test('a run that acks nothing never saves (a 0 would clobber a stored cursor)', async () => {
+  const calls: number[] = []
+  const t = new CommitTracker({
+    load: async () => 3,
+    save: async (seq) => {
+      calls.push(seq)
+    },
+  })
+  t.track(4) // pulled but never acked
+  await t.flush()
+  expect(calls).toEqual([])
+  expect(t.watermark()).toBe(0)
+})

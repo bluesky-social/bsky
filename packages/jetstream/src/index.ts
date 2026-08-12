@@ -59,7 +59,11 @@ export type {
 } from './lex-indexer.js'
 export type { Ack, ConsumerContext, JetstreamConsumer } from './consumer.js'
 export { JetstreamRunner } from './runner.js'
-export type { RunnerLiveOpts } from './runner.js'
+export type {
+  RunnerLiveOpts,
+  RunnerReplayOpts,
+  RunnerSnapshotOpts,
+} from './runner.js'
 export { MalformedError, XrpcSubscriptionError } from './errors.js'
 export { RecordValidationError } from './shape.js'
 export { DownloadError } from './xrpc/errors.js'

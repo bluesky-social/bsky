@@ -4,7 +4,11 @@ export class CommitTracker {
   private readonly store: CursorStore | undefined
   private readonly tracked: number[] = []
   private readonly doneSet = new Set<number>()
-  private mark = 0
+  // undefined until the first ack completes a contiguous prefix. A run that
+  // acks nothing must never save — a 0 would clobber a previously stored
+  // cursor (e.g. a snapshot resumed at the tip, or a live run that dies
+  // before delivering anything).
+  private mark: number | undefined
   private savePromise: Promise<void> | undefined
 
   constructor(store?: CursorStore) {
@@ -35,7 +39,7 @@ export class CommitTracker {
   }
 
   watermark(): number {
-    return this.mark
+    return this.mark ?? 0
   }
 
   async flush(): Promise<void> {
@@ -49,7 +53,7 @@ export class CommitTracker {
   // the saved value catches up with the latest watermark, so saves requested
   // during an in-flight save collapse into exactly one more.
   private scheduleSave(): void {
-    if (!this.store) return
+    if (!this.store || this.mark === undefined) return
     if (!this.savePromise) {
       this.savePromise = this.runSaveLoop()
     }
@@ -59,7 +63,7 @@ export class CommitTracker {
     try {
       let saved: number
       do {
-        saved = this.mark
+        saved = this.mark!
         await this.store!.save(saved)
       } while (saved !== this.mark)
     } finally {

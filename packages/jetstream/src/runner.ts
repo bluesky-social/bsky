@@ -13,9 +13,29 @@ export interface RunnerLiveOpts {
   liveTransport?: LiveTransport
 }
 
+export interface RunnerSnapshotOpts {
+  cursor?: CursorStore
+  signal?: AbortSignal
+  afterSeq?: number
+  beforeSeq?: number
+  onError?: (err: Error) => void
+  maxRebackfills?: number
+}
+
+export interface RunnerReplayOpts {
+  cursor?: CursorStore
+  signal?: AbortSignal
+  afterSeq?: number
+  beforeSeq?: number
+  onError?: (err: Error) => void
+  onLiveError?: (err: Error) => void
+  liveTransport?: LiveTransport
+  maxRebackfills?: number
+}
+
 /**
  * Drives a JetstreamConsumer from a Jetstream source with cursor tracking:
- * builds the live raw batch stream (filtered by the consumer's static
+ * builds the mode's raw batch stream (filtered by the consumer's static
  * collections/dids/kinds), registers each event's seq with a CommitTracker before
  * the consumer sees it, and persists the contiguous acked watermark via the
  * CursorStore. flush() runs even when the consumer throws.
@@ -35,6 +55,24 @@ export class JetstreamRunner {
       collections: this.#consumer.collections,
       dids: this.#consumer.dids,
       kinds: this.#consumer.kinds,
+    })
+    await this.#drive(src, opts)
+  }
+
+  async snapshot(opts: RunnerSnapshotOpts = {}): Promise<void> {
+    const src = this.#jetstream.snapshotRawBatches({
+      ...opts,
+      collections: this.#consumer.collections,
+      dids: this.#consumer.dids,
+    })
+    await this.#drive(src, opts)
+  }
+
+  async replay(opts: RunnerReplayOpts = {}): Promise<void> {
+    const src = this.#jetstream.replayRawBatches({
+      ...opts,
+      collections: this.#consumer.collections,
+      dids: this.#consumer.dids,
     })
     await this.#drive(src, opts)
   }
