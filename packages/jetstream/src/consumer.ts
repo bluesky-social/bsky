@@ -31,12 +31,8 @@ export interface ConsumerContext {
  *
  * The seam element is the v2 `RawEvent`: put commits carry the record in its
  * wire representation, and the stream may include sync events.
- * typedEventFromRaw normalizes an event into TypedEvent. By design, this
- * seam should only ever see v2 events — but as of this commit, JetstreamRunner
- * casts the (still v1-backed) Jetstream's raw batches into it (see
- * runner.ts), so a real event here may in fact be a RawEventV1 wearing this
- * type; do not assume `time`/`sync` are honestly present until that cast is
- * removed (Task 10 flips Jetstream to v2).
+ * typedEventFromRaw normalizes an event into TypedEvent. This seam is v2-only
+ * — `time` and the `sync` arm are honestly present.
  */
 export interface JetstreamConsumer {
   collections?: CollectionFilter[]
