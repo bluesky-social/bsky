@@ -109,6 +109,32 @@ describe('decodeLiveFrameV1', () => {
     expect(acc.account.active).toBe(true)
   })
 
+  it('throws when account is missing the required active field, in every mode', () => {
+    // active is the takedown/deactivation signal on v1's #account frame. A
+    // missing value must never default to false ("deactivated") — it must
+    // throw, in both default and strict mode.
+    const bad = () =>
+      enc({
+        did: 'did:plc:abc',
+        time_us: 6,
+        kind: 'account',
+        account: { did: 'did:plc:abc' },
+      })
+    expect(() => decodeLiveFrameV1(bad())).toThrow(MalformedError)
+    expect(() => decodeLiveFrameV1(bad(), true)).toThrow(MalformedError)
+  })
+
+  it('throws when account.active is present but not a boolean, in every mode', () => {
+    const bad = () =>
+      enc({
+        did: 'did:plc:abc',
+        time_us: 6,
+        kind: 'account',
+        account: { did: 'did:plc:abc', active: 'nope' },
+      })
+    expect(() => decodeLiveFrameV1(bad())).toThrow(MalformedError)
+  })
+
   it('skips unknown kinds (incl. prototype short codes); throws on error frames and non-JSON', () => {
     expect(decodeLiveFrameV1(enc({ did: 'd', time_us: 4, kind: 'wat' }))).toBe(
       SKIP_FRAME,

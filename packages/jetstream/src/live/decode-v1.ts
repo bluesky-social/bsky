@@ -54,7 +54,10 @@ const wireV1AccountFrame = l.object({
   kind: l.literal('account'),
   account: l.object({
     did: l.string({ format: 'did' }),
-    active: l.optional(l.boolean()),
+    // Required: "active" vs "inactive" is the takedown/deactivation signal,
+    // so a missing value must throw rather than default to false (which
+    // downstream would read as "deactivated").
+    active: l.boolean(),
     status: l.optional(l.string()),
     time: l.optional(l.string({ format: 'datetime' })),
   }),
@@ -178,9 +181,19 @@ export function decodeLiveFrameV1(
         throw new MalformedError(
           `v1 account frame missing payload (seq=${seq})`,
         )
+      // The cast above is optimistic (non-strict mode skips validation), so
+      // `active` can still be absent or non-boolean here even though the
+      // schema marks it required. It is the takedown/deactivation signal, so
+      // defaulting a missing value to `false` would fabricate "deactivated"
+      // — throw instead, in every mode.
+      if (typeof f.account.active !== 'boolean') {
+        throw new MalformedError(
+          `v1 account event missing required field active (did=${did})`,
+        )
+      }
       const account: Account = {
         did: f.account.did || did,
-        active: f.account.active ?? false,
+        active: f.account.active,
         status: f.account.status,
         time: f.account.time,
       }
