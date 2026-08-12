@@ -7,7 +7,7 @@ import {
 import { type EventBatch, type RawEventV1 } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventForV1, type WideTypedEventV1 } from './filter-types.js'
-import { liveEvents } from './live/source.js'
+import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
 import { JetstreamRunner } from './runner.js'
 import { shape } from './shape.js'
@@ -73,25 +73,12 @@ export class Jetstream {
   // buffering — live delivery stays realtime. EventBatch is used only as the
   // standard internal interface, looking ahead to v2 modes (snapshot/replay)
   // where batches carry real grouping.
-  async *liveRawBatches(
-    opts: LiveOpts,
-  ): AsyncGenerator<EventBatch<RawEventV1>> {
-    const host = this.service
-    const { nsids } = parseCollectionFilters(opts.collections ?? [])
-    const start = await opts.cursor?.load()
-    for await (const ev of liveEvents({
-      host,
-      collections: nsids,
-      dids: opts.dids,
-      cursor: start,
-      dedupFloor: start, // a resume cursor is also the dedup floor
-      transport: opts.liveTransport,
-      signal: opts.signal,
-      onError: opts.onError,
-      validateWire: this.opts.validateWire,
-      version: 1, // TEMPORARY: removed in the task that flips Jetstream to v2
-    })) {
-      yield { events: [ev], lastCursor: ev.seq }
-    }
+  liveRawBatches(opts: LiveOpts): AsyncGenerator<EventBatch<RawEventV1>> {
+    return rawBatchStream(
+      this.service,
+      opts,
+      1, // TEMPORARY: flipped to 2 in the next task
+      this.opts.validateWire,
+    ) as AsyncGenerator<EventBatch<RawEventV1>>
   }
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MalformedError } from '../../src/errors.js'
 import { type TypedEventV1 } from '../../src/event.js'
 import { RecordValidationError } from '../../src/index.js'
-import { Jetstream } from '../../src/jetstream.js'
+import { JetstreamV1 } from '../../src/jetstream-v1.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 
 const TID = '3jzfcijpj2z2a'
@@ -46,7 +46,7 @@ function transportOf(frames: string[]): LiveTransport {
 
 describe('validateWire strict mode', () => {
   it('live: throws MalformedError on a mangled did (raw mode, fatal)', async () => {
-    const js = new Jetstream({
+    const js = new JetstreamV1({
       service: 'https://js.example',
       validateWire: true,
     })
@@ -62,7 +62,7 @@ describe('validateWire strict mode', () => {
   })
 
   it('live: accepts well-formed frames and yields them', async () => {
-    const js = new Jetstream({
+    const js = new JetstreamV1({
       service: 'https://js.example',
       validateWire: true,
     })
@@ -80,7 +80,7 @@ describe('validateWire strict mode', () => {
   })
 
   it('default mode: the same mangled frame passes through untouched', async () => {
-    const js = new Jetstream({ service: 'https://js.example' })
+    const js = new JetstreamV1({ service: 'https://js.example' })
     const dids: string[] = []
     for await (const ev of js.live({
       raw: true,
@@ -92,7 +92,7 @@ describe('validateWire strict mode', () => {
   })
 
   it('strict mode throws on a missing required field (commit without rev)', async () => {
-    const js = new Jetstream({
+    const js = new JetstreamV1({
       service: 'https://js.example',
       validateWire: true,
     })
@@ -118,7 +118,7 @@ describe('validateWire strict mode', () => {
   })
 
   it('unknown kinds still SKIP_FRAME in strict mode (pre-discrimination)', async () => {
-    const js = new Jetstream({
+    const js = new JetstreamV1({
       service: 'https://js.example',
       validateWire: true,
     })
@@ -141,7 +141,7 @@ describe('validateWire strict mode', () => {
     const float = { $type: 'app.bsky.feed.like', n: 1.5 }
 
     const strictErrors: Error[] = []
-    const strictJs = new Jetstream({
+    const strictJs = new JetstreamV1({
       service: 'https://js.example',
       validateWire: true,
     })
@@ -159,7 +159,7 @@ describe('validateWire strict mode', () => {
     expect(strictErrors).toHaveLength(1)
     expect(strictErrors[0]).toBeInstanceOf(RecordValidationError)
 
-    const defaultJs = new Jetstream({ service: 'https://js.example' })
+    const defaultJs = new JetstreamV1({ service: 'https://js.example' })
     const defaultOut: TypedEventV1[] = []
     for await (const ev of defaultJs.live({
       liveTransport: transportOf([putFrame('did:plc:a', float)]),

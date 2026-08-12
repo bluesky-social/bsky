@@ -7,7 +7,7 @@ import {
   record,
 } from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { Jetstream, type RawRecordJson } from '../../src/index.js'
+import { JetstreamV1, type RawRecordJson } from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 
 const likeSchema = record(
@@ -45,7 +45,7 @@ function fakeTransport(frames: string[]): LiveTransport {
 
 describe('live() filter narrowing (public API)', () => {
   it('mixed filters: correlated narrowing + validation skip, end to end', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     const likes: Like[] = []
     const posts: number[] = []
     for await (const ev of jetstream.live({
@@ -76,7 +76,7 @@ describe('live() filter narrowing (public API)', () => {
   })
 
   it('no collections filter still yields plain TypedEvent', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     for await (const ev of jetstream.live({
       liveTransport: fakeTransport([
         frame(1, 'app.test.like', { $type: 'app.test.like', subject: 'ok' }),
@@ -90,7 +90,7 @@ describe('live() filter narrowing (public API)', () => {
   })
 
   it('raw mode is untouched by schema filters (no skip, RawEventV1 shape)', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     const seqs: number[] = []
     for await (const ev of jetstream.live({
       raw: true,

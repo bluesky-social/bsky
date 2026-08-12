@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
-import { Jetstream } from '../../src/jetstream.js'
+import { JetstreamV1 } from '../../src/jetstream-v1.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
 const te = new TextEncoder()
@@ -28,9 +28,9 @@ function fakeTransport(seqs: number[]): LiveTransport {
   }
 }
 
-describe('Jetstream.live', () => {
+describe('JetstreamV1.live', () => {
   it('typed yields one TypedEvent per frame', async () => {
-    const js = new Jetstream({ service: 'https://js.example' })
+    const js = new JetstreamV1({ service: 'https://js.example' })
     const out: number[] = []
     for await (const evt of js.live({
       liveTransport: fakeTransport([1, 2, 3]),
@@ -43,7 +43,7 @@ describe('Jetstream.live', () => {
   it('reads resume cursor from the store as the dedup floor', async () => {
     const store = new MemoryCursorStore()
     await store.save(2)
-    const js = new Jetstream({ service: 'https://js.example' })
+    const js = new JetstreamV1({ service: 'https://js.example' })
     const out: number[] = []
     for await (const evt of js.live({
       cursor: store,

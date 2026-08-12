@@ -1,5 +1,7 @@
 export { Jetstream } from './jetstream.js'
 export type { JetstreamOpts, LiveOpts } from './jetstream.js'
+export { JetstreamV1 } from './jetstream-v1.js'
+export type { LiveV1Opts } from './jetstream-v1.js'
 export { typedEventFromRaw } from './decode-typed.js'
 export { parseRawRecord } from './raw-record.js'
 export type { RawRecord, RawRecordJson } from './raw-record.js'

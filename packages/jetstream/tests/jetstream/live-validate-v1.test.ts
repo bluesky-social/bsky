@@ -1,6 +1,6 @@
 import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
-import { Jetstream, RecordValidationError } from '../../src/index.js'
+import { JetstreamV1, RecordValidationError } from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 
 const likeSchema = record(
@@ -35,9 +35,9 @@ function fakeTransport(frames: string[]): LiveTransport {
   }
 }
 
-describe('live() with a validating schema filter', () => {
+describe('JetstreamV1.live() with a validating schema filter', () => {
   it('yields only valid records; invalid ones go to onError as RecordValidationError', async () => {
-    const jetstream = new Jetstream({ service: 'https://js.example' })
+    const jetstream = new JetstreamV1({ service: 'https://js.example' })
     const errors: Error[] = []
     const seqs: number[] = []
     for await (const ev of jetstream.live({
