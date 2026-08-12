@@ -11,6 +11,7 @@ import { makeSelector } from './engine/selector.js'
 import { type EventBatch, type Kind, type RawEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventFor, type WideTypedEvent } from './filter-types.js'
+import { cutoverReplay } from './live/cutover.js'
 import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
 import { type RawRecordCbor, type RawRecordJson } from './raw-record.js'
@@ -90,6 +91,39 @@ export interface LiveOpts<
    */
   onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
+  raw?: boolean
+}
+
+export interface ReplayOpts<
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+> {
+  collections?: F
+  dids?: DidString[]
+  /**
+   * Event kinds to receive, uniform across both phases: sent on the live
+   * wire, applied client-side over the archive backfill.
+   */
+  kinds?: Kind[]
+  /**
+   * Resume position source. `afterSeq` wins when both are set. replay() only
+   * loads from the store — saving is the runner's job.
+   */
+  cursor?: CursorStore
+  /** Exclusive lower bound for the backfill phase. */
+  afterSeq?: number
+  /** Caps the backfill phase only; the live tail is unbounded. */
+  beforeSeq?: number
+  signal?: AbortSignal
+  /** Recoverable backfill problems (DownloadError, RecordValidationError). */
+  onError?: (err: Error) => void
+  liveTransport?: LiveTransport
+  /** Recoverable live-tail advisories (e.g. #info frames). */
+  onLiveError?: (err: Error) => void
+  /**
+   * Bound on recovery cycles (download-failure re-plans plus cursor-too-old
+   * re-backfills) before replay gives up and throws. Default 50.
+   */
+  maxRebackfills?: number
   raw?: boolean
 }
 
@@ -176,8 +210,53 @@ export class Jetstream {
     ) as AsyncGenerator<RawEvent<RawRecordCbor> | WideTypedEvent>
   }
 
+  replay<const F extends readonly CollectionFilter[] = readonly []>(
+    opts?: ReplayOpts<F> & { raw?: false },
+  ): AsyncGenerator<TypedEventFor<F>>
+  replay(opts: ReplayOpts & { raw: true }): AsyncGenerator<RawEvent>
+  replay(opts: ReplayOpts = {}): AsyncGenerator<RawEvent | WideTypedEvent> {
+    const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
+    return shape(
+      this.replayRawBatches(opts),
+      { ...opts, validateWire: this.opts.validateWire },
+      schemasByNsid,
+      opts.onError,
+    ) as AsyncGenerator<RawEvent | WideTypedEvent>
+  }
+
   runner(consumer: JetstreamConsumer): JetstreamRunner {
     return new JetstreamRunner(this, consumer)
+  }
+
+  // The raw batch stream underlying replay(); the runner drives it directly.
+  // Archive batches carry the CBOR record arm, live-tail batches the JSON arm
+  // (discriminate with `record instanceof Uint8Array`).
+  async *replayRawBatches(
+    opts: ReplayOpts,
+  ): AsyncGenerator<EventBatch<RawEvent>> {
+    const { nsids } = parseCollectionFilters(opts.collections ?? [])
+    const afterSeq = opts.afterSeq ?? (await opts.cursor?.load())
+    yield* cutoverReplay({
+      host: this.service,
+      nsids,
+      dids: opts.dids,
+      kinds: opts.kinds,
+      afterSeq,
+      beforeSeq: opts.beforeSeq,
+      outstandingHwmBytes: this.opts.outstandingHwmBytes,
+      tailHwmBytes: this.opts.tailHwmBytes,
+      blockConcurrency: this.opts.blockConcurrency,
+      fetchImpl: this.opts.fetchImpl ?? fetch,
+      decompressor: this.opts.decompressor ?? (await nodeDecompressor()),
+      sha256: this.opts.sha256 ?? (await nodeSha256()),
+      transport: opts.liveTransport,
+      signal: opts.signal,
+      onError: opts.onError,
+      onLiveError: opts.onLiveError,
+      maxRebackfills: opts.maxRebackfills,
+      retry: this.opts.retry,
+      validateWire: this.opts.validateWire,
+    })
   }
 
   // The raw batch stream underlying live(); the runner drives it directly.

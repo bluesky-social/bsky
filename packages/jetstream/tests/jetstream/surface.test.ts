@@ -13,9 +13,11 @@ describe('class surfaces', () => {
     const js = new Jetstream('https://h')
     expect(typeof js.live).toBe('function')
     expect(typeof js.snapshot).toBe('function')
+    expect(typeof js.replay).toBe('function')
     expect(typeof js.runner).toBe('function')
     expect(typeof js.liveRawBatches).toBe('function')
     expect(typeof js.snapshotRawBatches).toBe('function')
+    expect(typeof js.replayRawBatches).toBe('function')
   })
 
   it('JetstreamV1 offers live() only', () => {
@@ -51,6 +53,13 @@ describe('class surfaces', () => {
     const v2 = new Jetstream('https://h')
     expectTypeOf(v2.snapshot({ raw: true })).toEqualTypeOf<
       AsyncGenerator<RawEvent<RawRecordCbor>>
+    >()
+  })
+
+  it('replay raw yields the full union (CBOR backfill + JSON tail)', () => {
+    const v2 = new Jetstream('https://h')
+    expectTypeOf(v2.replay({ raw: true })).toEqualTypeOf<
+      AsyncGenerator<RawEvent>
     >()
   })
 

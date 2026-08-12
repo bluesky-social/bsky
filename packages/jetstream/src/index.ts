@@ -1,5 +1,10 @@
 export { Jetstream } from './jetstream.js'
-export type { JetstreamOpts, LiveOpts, SnapshotOpts } from './jetstream.js'
+export type {
+  JetstreamOpts,
+  LiveOpts,
+  ReplayOpts,
+  SnapshotOpts,
+} from './jetstream.js'
 export { JetstreamV1 } from './jetstream-v1.js'
 export type { LiveV1Opts } from './jetstream-v1.js'
 export { typedEventFromRaw } from './decode-typed.js'
