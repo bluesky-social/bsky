@@ -1,17 +1,24 @@
 import { type DidString } from '@atproto/lex'
 import { type JetstreamConsumer } from './consumer.js'
+import { type Sha256, nodeSha256 } from './decode-event.js'
+import { backfillBatches } from './engine/backfill-pipeline.js'
 import {
   type CollectionFilter,
   parseCollectionFilters,
 } from './engine/collections.js'
+import { planPages } from './engine/planner.js'
+import { makeSelector } from './engine/selector.js'
 import { type EventBatch, type Kind, type RawEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type TypedEventFor, type WideTypedEvent } from './filter-types.js'
 import { rawBatchStream } from './live/pipeline.js'
 import { type LiveTransport } from './live/transport.js'
-import { type RawRecordJson } from './raw-record.js'
+import { type RawRecordCbor, type RawRecordJson } from './raw-record.js'
 import { JetstreamRunner } from './runner.js'
+import { type Decompressor, nodeDecompressor } from './segment/decompressor.js'
 import { shape } from './shape.js'
+import { DownloadError } from './xrpc/errors.js'
+import { type RetryPolicy } from './xrpc/retry.js'
 
 export interface JetstreamOpts {
   service: string
@@ -33,6 +40,34 @@ export interface JetstreamOpts {
    * conversion there is always non-strict regardless of `validateWire`.
    */
   validateWire?: boolean
+  /**
+   * fetch used for archive requests (planSnapshot/getSegment/getBlock) by
+   * snapshot() and replay(). Defaults to the global fetch.
+   */
+  fetchImpl?: typeof fetch
+  /**
+   * Retry policy for archive downloads. Defaults to unbounded full-jitter
+   * exponential backoff on transient failures (see RetryPolicy).
+   */
+  retry?: RetryPolicy
+  /** Byte high-water mark for the head archive download. Default 32 MiB. */
+  outstandingHwmBytes?: number
+  /** Byte high-water mark per prefetched archive download. Default 32 MiB. */
+  tailHwmBytes?: number
+  /** Concurrent block downloads during archive backfill. Default 4. */
+  blockConcurrency?: number
+  /**
+   * zstd decompressor for archive blocks. Defaults to node:zlib, loaded
+   * lazily on first snapshot()/replay(); non-Node runtimes must supply one —
+   * there is no fallback.
+   */
+  decompressor?: Decompressor
+  /**
+   * Synchronous SHA-256 backing the lazy `cid` getter on archive put commits.
+   * Defaults to node:crypto, loaded lazily on first snapshot()/replay();
+   * non-Node runtimes must supply one — there is no fallback.
+   */
+  sha256?: Sha256
 }
 
 export interface LiveOpts<
@@ -55,6 +90,35 @@ export interface LiveOpts<
    */
   onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
+  raw?: boolean
+}
+
+export interface SnapshotOpts<
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+> {
+  collections?: F
+  dids?: DidString[]
+  /**
+   * Resume position source. `afterSeq` wins when both are set. snapshot()
+   * only loads from the store — saving is the runner's job.
+   */
+  cursor?: CursorStore
+  /** Exclusive lower bound: events at or below it are not included. */
+  afterSeq?: number
+  /** Inclusive upper bound; also caps the pinned sealed tip. */
+  beforeSeq?: number
+  signal?: AbortSignal
+  /**
+   * Recoverable problems: a DownloadError per re-planned transient failure
+   * (its `.entry` names the segment), and a RecordValidationError per skipped
+   * record in typed mode. Fatal problems throw instead.
+   */
+  onError?: (err: Error) => void
+  /**
+   * Bound on download-failure re-plans before the snapshot gives up and
+   * throws. Default 50.
+   */
+  maxRebackfills?: number
   raw?: boolean
 }
 
@@ -94,6 +158,24 @@ export class Jetstream {
     ) as AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent>
   }
 
+  snapshot<const F extends readonly CollectionFilter[] = readonly []>(
+    opts?: SnapshotOpts<F> & { raw?: false },
+  ): AsyncGenerator<TypedEventFor<F>>
+  snapshot(
+    opts: SnapshotOpts & { raw: true },
+  ): AsyncGenerator<RawEvent<RawRecordCbor>>
+  snapshot(
+    opts: SnapshotOpts = {},
+  ): AsyncGenerator<RawEvent<RawRecordCbor> | WideTypedEvent> {
+    const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
+    return shape(
+      this.snapshotRawBatches(opts),
+      { ...opts, validateWire: this.opts.validateWire },
+      schemasByNsid,
+      opts.onError,
+    ) as AsyncGenerator<RawEvent<RawRecordCbor> | WideTypedEvent>
+  }
+
   runner(consumer: JetstreamConsumer): JetstreamRunner {
     return new JetstreamRunner(this, consumer)
   }
@@ -101,11 +183,87 @@ export class Jetstream {
   // The raw batch stream underlying live(); the runner drives it directly.
   // Each event is wrapped in a trivial single-event "batch" with NO extra
   // buffering — live delivery stays realtime. EventBatch is used only as the
-  // standard internal interface, looking ahead to v2 modes (snapshot/replay)
-  // where batches carry real grouping.
+  // standard internal interface; snapshot/replay batches carry real grouping.
   liveRawBatches(
     opts: LiveOpts,
   ): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>> {
     return rawBatchStream(this.service, opts, 2, this.opts.validateWire)
+  }
+
+  // The raw batch stream underlying snapshot(); the runner drives it
+  // directly. One batch per archive block, in strict seq order.
+  async *snapshotRawBatches(
+    opts: SnapshotOpts,
+  ): AsyncGenerator<EventBatch<RawEvent<RawRecordCbor>>> {
+    const host = this.service
+    const signal = opts.signal
+    if (signal?.aborted) return
+    const fetchImpl = this.opts.fetchImpl ?? fetch
+    const decompressor = this.opts.decompressor ?? (await nodeDecompressor())
+    const sha256 = this.opts.sha256 ?? (await nodeSha256())
+    const { nsids } = parseCollectionFilters(opts.collections ?? [])
+    const selector = makeSelector({ dids: opts.dids, collections: nsids })
+    const maxRebackfills = opts.maxRebackfills ?? 50
+
+    // afterSeq wins; otherwise resume from the cursor store. lastEmitted
+    // tracks the max EventBatch.lastCursor yielded — always a block boundary,
+    // and planSnapshot's afterSeq is block-aligned, so a DownloadError
+    // re-plans the residual (lastEmitted, tip] with no gap and no duplicate.
+    // Decode errors are terminal; abort returns cleanly.
+    let resume = opts.afterSeq ?? (await opts.cursor?.load()) ?? 0
+    let lastEmitted = resume
+    let rebackfills = 0
+
+    for (;;) {
+      if (signal?.aborted) return
+      try {
+        for await (const page of planPages({
+          host,
+          dids: opts.dids,
+          collections: nsids,
+          afterSeq: resume,
+          beforeSeq: opts.beforeSeq,
+          fetchImpl,
+          signal,
+        })) {
+          for await (const batch of backfillBatches({
+            host,
+            entries: page.segments,
+            selector,
+            outstandingHwmBytes: this.opts.outstandingHwmBytes,
+            tailHwmBytes: this.opts.tailHwmBytes,
+            blockConcurrency: this.opts.blockConcurrency,
+            fetchImpl,
+            decompressor,
+            sha256,
+            signal,
+            retry: this.opts.retry,
+            validateWire: this.opts.validateWire,
+          })) {
+            if (batch.lastCursor > lastEmitted) lastEmitted = batch.lastCursor
+            yield batch
+          }
+        }
+        return
+      } catch (err) {
+        if (signal?.aborted) return
+        if (!(err instanceof DownloadError)) throw err
+        opts.onError?.(err)
+        const prevResume = resume
+        resume = Math.max(lastEmitted, resume)
+        rebackfills++
+        // Anti-spin: bound the number of re-plans. A transient failure before
+        // any batch is emitted keeps resume pinned, so termination cannot key
+        // on resume-not-advancing (that would defeat recovering a
+        // fail-once-at-seq-0 download); the maxRebackfills bound terminates
+        // an always-failing download instead.
+        if (rebackfills > maxRebackfills) {
+          throw new Error(
+            `jetstream: backfill re-plan made no progress (resume=${resume} prev=${prevResume} cycles=${rebackfills})`,
+            { cause: err },
+          )
+        }
+      }
+    }
   }
 }
