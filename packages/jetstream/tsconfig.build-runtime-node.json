@@ -1,0 +1,11 @@
+{
+  // Node-only runtime defaults: compiled against Node.js types. Selected at
+  // resolution time by the `#runtime` imports condition (see package.json).
+  "extends": "../../tsconfig/node.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+  },
+  "include": ["./src/runtime/node.ts"],
+  "references": [{ "path": "./tsconfig.build-shared.json" }],
+}

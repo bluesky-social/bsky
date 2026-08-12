@@ -3,7 +3,12 @@ import { type Kind, type RawEvent, type RawEventV1 } from '../event.js'
 import { type RawRecordJson } from '../raw-record.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
 import { type LiveInfoFrame, SKIP_FRAME, decodeLiveFrame } from './decode.js'
-import { type LiveTransport, websocketTransport } from './transport.js'
+import {
+  type LiveTransport,
+  type LiveTransportHeaders,
+  type LiveTransportOpts,
+  websocketTransport,
+} from './transport.js'
 
 export { type LiveTransport } from './transport.js'
 
@@ -34,6 +39,7 @@ export interface LiveEventsOpts {
   cursor?: number // undefined = live from tip; 0 = replay from start
   dedupFloor?: number // undefined = nothing delivered (seq 0 passes); else drop seq <= floor
   transport?: LiveTransport
+  headers?: LiveTransportHeaders // connection handshake headers (e.g. Authorization)
   signal?: AbortSignal
   onError?: (err: Error) => void
   /**
@@ -130,7 +136,10 @@ export async function* liveEvents(
     return u.toString()
   }
 
-  for await (const chunk of transport.stream(getUrl, signal)) {
+  const transportOpts: LiveTransportOpts | undefined = opts.headers
+    ? { headers: opts.headers }
+    : undefined
+  for await (const chunk of transport.stream(getUrl, signal, transportOpts)) {
     let ev:
       RawEventV1 | RawEvent<RawRecordJson> | LiveInfoFrame | typeof SKIP_FRAME
     try {

@@ -272,6 +272,9 @@ importers:
       '@atproto/lex':
         specifier: ^0.3.0
         version: 0.3.3
+      '@atproto/lex-cbor':
+        specifier: ^0.1.6
+        version: 0.1.6
       '@atproto/ws-client':
         specifier: ^0.2.0
         version: 0.2.0

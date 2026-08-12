@@ -12,7 +12,7 @@ import {
 import { type CursorStore } from '../execute/cursor-store.js'
 import { type RawRecordJson } from '../raw-record.js'
 import { liveEvents } from './source.js'
-import { type LiveTransport } from './transport.js'
+import { type LiveTransport, type LiveTransportHeaders } from './transport.js'
 
 export interface LiveStreamOpts {
   collections?: readonly CollectionFilter[]
@@ -23,6 +23,8 @@ export interface LiveStreamOpts {
   onError?: (err: Error) => void
   onInfo?: (info: { name: string; message?: string }) => void
   liveTransport?: LiveTransport
+  /** Handshake headers (e.g. Authorization), set by the owning class. */
+  headers?: LiveTransportHeaders
 }
 
 /**
@@ -59,6 +61,7 @@ export async function* rawBatchStream(
     cursor: start,
     dedupFloor: start, // a resume cursor is also the dedup floor
     transport: opts.liveTransport,
+    headers: opts.headers,
     signal: opts.signal,
     onError: opts.onError,
     onInfo: opts.onInfo,

@@ -51,3 +51,22 @@ export function parseCollectionFilters(filters: readonly CollectionFilter[]): {
   }
   return { nsids, schemasByNsid }
 }
+
+/**
+ * Exact-match a collection against parsed filter strings. An empty filter
+ * list matches everything; `ns.*` matches the namespace prefix.
+ */
+export function collectionMatches(
+  collection: string,
+  filters: string[],
+): boolean {
+  if (filters.length === 0) return true
+  for (const f of filters) {
+    if (f.endsWith('.*')) {
+      if (collection.startsWith(f.slice(0, -1))) return true // keep the trailing dot
+    } else if (f === collection) {
+      return true
+    }
+  }
+  return false
+}

@@ -80,14 +80,14 @@ describe('consumer seam', () => {
 })
 
 describe('Jetstream is v2-backed', () => {
-  it('live()/liveRawBatches() promise v2 shapes, matching the seam types', () => {
+  it('live()/liveRawBatches() promise v2 JSON-arm shapes', () => {
     const js = new Jetstream('https://h')
     expectTypeOf(js.live({ raw: true })).toEqualTypeOf<
-      AsyncGenerator<RawEvent>
+      AsyncGenerator<RawEvent<RawRecordJson>>
     >()
     expectTypeOf(js.live()).toEqualTypeOf<AsyncGenerator<TypedEvent>>()
     expectTypeOf(js.liveRawBatches({})).toEqualTypeOf<
-      AsyncGenerator<EventBatch<RawEvent>>
+      AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>>
     >()
   })
 })

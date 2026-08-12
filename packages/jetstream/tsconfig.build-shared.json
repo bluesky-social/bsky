@@ -1,0 +1,11 @@
+{
+  // Leaf modules both runtime branches and the core depend on: the shared
+  // runtime interface (and the errors it throws). Compiled first so the
+  // branches can build against its declarations.
+  "extends": "../../tsconfig/isomorphic.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+  },
+  "include": ["./src/errors.ts", "./src/runtime/interface.ts"],
+}

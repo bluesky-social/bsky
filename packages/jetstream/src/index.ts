@@ -1,13 +1,20 @@
 export { Jetstream } from './jetstream.js'
-export type { JetstreamOpts, LiveOpts } from './jetstream.js'
+export type {
+  JetstreamOpts,
+  LiveOpts,
+  ReplayOpts,
+  SnapshotOpts,
+} from './jetstream.js'
 export { JetstreamV1 } from './jetstream-v1.js'
 export type { LiveV1Opts } from './jetstream-v1.js'
 export { typedEventFromRaw } from './decode-typed.js'
 export { parseRawRecord } from './raw-record.js'
-export type { RawRecord, RawRecordJson } from './raw-record.js'
+export type { RawRecord, RawRecordCbor, RawRecordJson } from './raw-record.js'
 export { websocketTransport } from './live/transport.js'
 export type {
   LiveTransport,
+  LiveTransportHeaders,
+  LiveTransportOpts,
   WebsocketTransportOptions,
 } from './live/transport.js'
 export type {
@@ -54,6 +61,14 @@ export type {
 } from './lex-indexer.js'
 export type { Ack, ConsumerContext, JetstreamConsumer } from './consumer.js'
 export { JetstreamRunner } from './runner.js'
-export type { RunnerLiveOpts } from './runner.js'
+export type {
+  RunnerLiveOpts,
+  RunnerReplayOpts,
+  RunnerSnapshotOpts,
+} from './runner.js'
 export { MalformedError, XrpcSubscriptionError } from './errors.js'
 export { RecordValidationError } from './shape.js'
+export { DownloadError } from './xrpc/errors.js'
+export type { BlockRange, PlanEntry } from './xrpc/plan.js'
+export type { RetryInfo, RetryPolicy, RetryTarget } from './xrpc/retry.js'
+export type { Decompressor, Sha256 } from './runtime/interface.js'
