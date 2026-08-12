@@ -78,6 +78,12 @@ export type AccountEvent = {
   time?: DatetimeString
   seq: number
 }
+export type SyncEvent = {
+  did: DidString
+  rev: TidString
+  time?: DatetimeString
+  seq: number
+}
 
 export interface CommitHandlers<R> {
   put?: (e: PutEvent<R>, ctx: HandlerContext) => unknown | Promise<unknown>
@@ -137,6 +143,9 @@ export class LexIndexer implements JetstreamConsumer {
     | undefined
   #accountHandler:
     | ((e: AccountEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
+    | undefined
+  #syncHandler:
+    | ((e: SyncEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
     | undefined
   #validationErrorHandler:
     | ((
@@ -230,6 +239,13 @@ export class LexIndexer implements JetstreamConsumer {
     return this
   }
 
+  sync(
+    fn: (e: SyncEvent, ctx: HandlerContext) => unknown | Promise<unknown>,
+  ): this {
+    this.#syncHandler = fn
+    return this
+  }
+
   onValidationError(
     fn: (
       e: ValidationErrorEvent,
@@ -318,6 +334,20 @@ export class LexIndexer implements JetstreamConsumer {
               active: evt.account.active,
               status: evt.account.status,
               time: evt.account.time,
+              seq: evt.seq,
+            },
+            hctx,
+          )
+        }
+        return undefined
+      }
+      if (evt.kind === 'sync') {
+        if (this.#syncHandler) {
+          return this.#syncHandler(
+            {
+              did: evt.sync.did,
+              rev: evt.sync.rev,
+              time: evt.sync.time,
               seq: evt.seq,
             },
             hctx,

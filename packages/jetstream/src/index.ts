@@ -47,6 +47,7 @@ export type {
   IdentityEvent,
   LexIndexerOpts,
   PutEvent,
+  SyncEvent,
   ValidationErrorEvent,
 } from './lex-indexer.js'
 export type { Ack, ConsumerContext, JetstreamConsumer } from './consumer.js'
