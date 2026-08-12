@@ -77,7 +77,10 @@ const wireAccountPayload = l.object({
   account: l.object({
     seq: l.optional(l.integer()),
     did: l.string({ format: 'did' }),
-    active: l.optional(l.boolean()),
+    // Required on subscribeRepos#account: "active" vs "inactive" is the
+    // takedown/deactivation signal, so a missing value must throw rather than
+    // default to false (which downstream would read as "deactivated").
+    active: l.boolean(),
     status: l.optional(l.string()),
     time: l.optional(l.string({ format: 'datetime' })),
   }),
@@ -125,6 +128,13 @@ export function decodeLiveFrame(
     parsed = JSON.parse(typeof data === 'string' ? data : td.decode(data))
   } catch (err) {
     throw new MalformedError('decode live frame', { cause: err })
+  }
+  // `null` is valid JSON but not a frame: without this guard, `peek.$type`
+  // below throws TypeError instead of MalformedError. Other non-object JSON
+  // (numbers, strings, arrays) reads `$type` as undefined and correctly falls
+  // out as SKIP_FRAME further down, so only null needs the explicit guard.
+  if (parsed === null) {
+    throw new MalformedError('live frame is null')
   }
 
   const peek = parsed as PeekFrame
@@ -195,9 +205,19 @@ export function decodeLiveFrame(
       return { ...base, kind: 'identity', identity }
     }
     case ACCOUNT: {
+      // The cast above is optimistic (non-strict mode skips validation), so
+      // `active` can still be absent or non-boolean here even though the
+      // schema marks it required. It is the takedown/deactivation signal, so
+      // defaulting a missing value to `false` would fabricate "deactivated"
+      // — throw instead, in every mode.
+      if (typeof p.account.active !== 'boolean') {
+        throw new MalformedError(
+          `live account event missing required field active (did=${did})`,
+        )
+      }
       const account: Account = {
         did: p.account.did || did,
-        active: Boolean(p.account.active),
+        active: p.account.active,
         status: p.account.status,
         time: p.account.time,
       }
