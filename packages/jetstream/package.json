@@ -1,0 +1,44 @@
+{
+  "name": "@bsky/jetstream",
+  "version": "0.0.0",
+  "license": "MIT OR Apache-2.0",
+  "description": "Client library for Jetstream (atproto event streaming)",
+  "keywords": [
+    "atproto",
+    "bluesky",
+    "jetstream",
+    "sdk"
+  ],
+  "homepage": "https://bsky.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bluesky-social/bsky",
+    "directory": "packages/jetstream"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@atproto/lex-schema": "^0.2.2",
+    "@atproto/ws-client": "^0.2.0"
+  },
+  "scripts": {
+    "build": "tsc --build tsconfig.build.json",
+    "test": "vitest --run"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1",
+    "ws": "^8.21.0"
+  }
+}
