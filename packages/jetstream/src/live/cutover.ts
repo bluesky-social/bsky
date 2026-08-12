@@ -39,10 +39,16 @@ const CURSOR_TOO_OLD = 'cursor too old'
 // The default websocket transport cannot read the 400 body (ws discards it),
 // so all it surfaces is the handshake status. Within the live phase of a
 // cutover the params were just accepted by planSnapshot and only the cursor
-// changes between connects, so a 400 handshake is classified as cursor-too-old
-// and handed to the bounded re-backfill — a genuine bad-request 400 still
-// terminates, after maxRebackfills instead of immediately. The message marker
-// stays for custom transports that do surface the body.
+// changes between connects, so a 400 handshake — exactly 400, never other
+// 4xx — is classified as cursor-too-old and handed to the bounded
+// re-backfill. A genuine bad-request 400 still terminates, after
+// maxRebackfills instead of immediately. The message marker stays for custom
+// transports that do surface the body.
+//
+// TODO: this status-based classification is a stopgap. Once ws-client can
+// surface the handshake response body (see the HANDSHAKE_REJECTION_RE note in
+// transport.ts), match the CursorTooOld error name precisely and drop the
+// bare-400 heuristic.
 function isCursorTooOld(err: unknown): boolean {
   if (!(err instanceof Error)) return false
   if (err.message.includes(CURSOR_TOO_OLD)) return true
