@@ -52,5 +52,5 @@ export type {
 export type { Ack, ConsumerContext, JetstreamConsumer } from './consumer.js'
 export { JetstreamRunner } from './runner.js'
 export type { RunnerLiveOpts } from './runner.js'
-export { MalformedError } from './errors.js'
+export { MalformedError, XrpcSubscriptionError } from './errors.js'
 export { RecordValidationError } from './shape.js'
