@@ -37,11 +37,36 @@ export type WebsocketTransportOptions = Omit<
   idleTimeoutMs?: number | false
 }
 
+// ws raises `Unexpected server response: <status>` when an upgrade is refused
+// and discards the response body, so the XRPC error envelope naming
+// CursorTooOld is unreachable from here — only the status is available.
+// Matching on someone else's message text is a stopgap until ws-client
+// surfaces the handshake response; the unit tests fail loudly if it changes.
+const HANDSHAKE_REJECTION_RE = /Unexpected server response: (\d{3})/
+
+export function handshakeRejectionStatus(error: unknown): number | undefined {
+  // ws-client nests the ws error under SocketError, so walk the cause chain.
+  for (let e: unknown = error, depth = 0; depth < 5; depth++) {
+    if (!(e instanceof Error)) break
+    const match = HANDSHAKE_REJECTION_RE.exec(e.message)
+    if (match) return Number(match[1])
+    e = e.cause
+  }
+  return undefined
+}
+
 // A jetstream server closing 1000 (restart, load-shed) should not end the
 // consumer's stream — the resume cursor makes the redial seamless. Everything
 // else keeps ws-client's classification: protocol closes
 // (1002/1003/1007/1009), DataModeError, and local resource errors stay fatal.
 export function jetstreamShouldReconnect(error: unknown): boolean {
+  // A 4xx refusal is permanent for this request; 5xx is transient and keeps
+  // the default treatment.
+  const status = handshakeRejectionStatus(error)
+  if (status !== undefined) {
+    if (status >= 400 && status < 500) return false
+    if (status >= 500) return true
+  }
   return (
     (error instanceof CloseError && error.code === CloseCode.Normal) ||
     defaultShouldReconnect(error)
@@ -59,7 +84,7 @@ export function resolveWebsocketOptions(
     shouldReconnect = jetstreamShouldReconnect,
     ...rest
   } = options
-  if (idleTimeoutMs !== false && idleTimeoutMs <= 0) {
+  if (idleTimeoutMs !== false && !(idleTimeoutMs > 0)) {
     throw new RangeError(
       'idleTimeoutMs must be > 0; use false to disable idle detection',
     )
