@@ -1,6 +1,6 @@
 import { type DidString } from '@atproto/lex'
 import { type CollectionFilter } from './engine/collections.js'
-import { type EventBatch, type RawEventV1, type SeqEvent } from './event.js'
+import { type EventBatch, type RawEvent, type SeqEvent } from './event.js'
 
 /**
  * Signals that the consumer has finished processing an event. Fire-and-forget:
@@ -29,14 +29,16 @@ export interface ConsumerContext {
  * stream, decides its own concurrency/ordering, and calls ack(evt) on
  * completion. It knows nothing about cursors.
  *
- * The seam element is the v1 raw event (parsed-JSON `record` on put commits);
- * typedEventFromRaw normalizes it into TypedEvent.
+ * The seam element is the v2 `RawEvent`: put commits carry the record in its
+ * wire representation, and the stream may include sync events.
+ * typedEventFromRaw normalizes an event into TypedEvent. v1 events do not flow
+ * here — JetstreamV1 is live-only.
  */
 export interface JetstreamConsumer {
   collections?: CollectionFilter[]
   dids?: DidString[]
   run(
-    stream: AsyncIterable<EventBatch<RawEventV1>>,
+    stream: AsyncIterable<EventBatch<RawEvent>>,
     ctx: ConsumerContext,
   ): Promise<void>
 }

@@ -1,7 +1,8 @@
 import { l, record } from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { type EventBatch, type RawEventV1 } from '../../src/event.js'
+import { type EventBatch, type RawEvent } from '../../src/event.js'
 import { LexIndexer, type UnvalidatedRecord } from '../../src/index.js'
+import { type RawRecordJson } from '../../src/raw-record.js'
 
 const likeSchema = record(
   'tid',
@@ -9,11 +10,11 @@ const likeSchema = record(
   l.object({ subject: l.string() }),
 )
 
-function putWithRecord(seq: number, rec: unknown): RawEventV1 {
+function putWithRecord(seq: number, rec: RawRecordJson): RawEvent {
   return {
     did: 'did:plc:a',
     seq,
-    timeUs: 0,
+    time: '2024-09-09T19:46:02.329308Z',
     kind: 'commit',
     commit: {
       operation: 'create',
@@ -26,7 +27,7 @@ function putWithRecord(seq: number, rec: unknown): RawEventV1 {
   }
 }
 
-function oneBatch(events: RawEventV1[]): AsyncIterable<EventBatch<RawEventV1>> {
+function oneBatch(events: RawEvent[]): AsyncIterable<EventBatch<RawEvent>> {
   return (async function* () {
     yield { events, lastCursor: events[events.length - 1]?.seq ?? 0 }
   })()
@@ -84,7 +85,7 @@ describe('commit validateRecord', () => {
 
   it('validateRecord: false still routes ONLY the registered collection', async () => {
     const puts: number[] = []
-    const other: RawEventV1 = {
+    const other: RawEvent = {
       ...putWithRecord(3, { $type: 'app.test.other' }),
     }
     ;(other as { commit: { collection: string } }).commit.collection =

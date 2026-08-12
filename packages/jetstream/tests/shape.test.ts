@@ -6,9 +6,10 @@ import {
   type RawEventV1,
   type TypedEvent,
 } from '../src/event.js'
+import { type RawRecordJson } from '../src/raw-record.js'
 import { RecordValidationError, shape } from '../src/shape.js'
 
-function rawCreate(seq: number, record: unknown): RawEventV1 {
+function rawCreate(seq: number, record: RawRecordJson): RawEventV1 {
   return {
     did: 'did:plc:a',
     seq,
@@ -41,7 +42,7 @@ const likeSchema = record(
   l.object({ subject: l.string() }),
 )
 
-function putEvent(seq: number, rec: unknown): RawEventV1 {
+function putEvent(seq: number, rec: RawRecordJson): RawEventV1 {
   return {
     did: 'did:plc:a',
     seq,

@@ -1,6 +1,7 @@
 import { type InferOutput, l } from '@atproto/lex'
 import { MalformedError } from '../errors.js'
 import { type Account, type Identity, type RawEventV1 } from '../event.js'
+import { type RawRecordJson } from '../raw-record.js'
 import { SKIP_FRAME } from './decode.js'
 
 // v1 wire frame — the authoritative jetstream-legacy shape
@@ -156,7 +157,7 @@ export function decodeLiveFrameV1(
           rkey: c.rkey,
           rev: c.rev,
           cid: c.cid,
-          record: c.record,
+          record: c.record as RawRecordJson,
         },
       }
     }

@@ -1,5 +1,5 @@
 import { type JetstreamConsumer } from './consumer.js'
-import { type EventBatch, type RawEventV1 } from './event.js'
+import { type EventBatch, type RawEvent } from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
 import { type Jetstream } from './jetstream.js'
 import { type LiveTransport } from './live/transport.js'
@@ -34,11 +34,21 @@ export class JetstreamRunner {
       collections: this.#consumer.collections,
       dids: this.#consumer.dids,
     })
-    await this.#drive(src, opts)
+    // TEMPORARY: Jetstream is still v1-backed (liveRawBatches yields
+    // EventBatch<RawEventV1>), but the runner/consumer seam is v2-only
+    // (EventBatch<RawEvent>) — see event.ts for why the two are not
+    // assignable. Task 10 flips Jetstream to speak v2, at which point this
+    // cast is removed and the assignment becomes honestly type-safe. Nothing
+    // downstream of this cast reads the v2-only `time` field today (only
+    // `seq`), so this is not a runtime hazard in the interim.
+    await this.#drive(
+      src as unknown as AsyncGenerator<EventBatch<RawEvent>>,
+      opts,
+    )
   }
 
   async #drive(
-    src: AsyncGenerator<EventBatch<RawEventV1>>,
+    src: AsyncGenerator<EventBatch<RawEvent>>,
     opts: { cursor?: CursorStore; signal?: AbortSignal },
   ): Promise<void> {
     const ts = trackedStream(src, opts.cursor)

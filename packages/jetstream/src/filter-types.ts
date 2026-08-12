@@ -4,8 +4,11 @@ import {
   type Account,
   type DeleteCommit,
   type EventBase,
+  type EventBaseV1,
   type Identity,
+  type Sync,
   type TypedEvent,
+  type TypedEventV1,
   type TypedPutCommit,
   type UnvalidatedRecord,
 } from './event.js'
@@ -47,7 +50,7 @@ export type TypedCommitFor<F extends CollectionFilter> = F extends string
         ? ValidatedCommit<S['$type'], InferOutput<S>>
         : never
 
-// The typed event union for a filter tuple. No filters (readonly []) means
+// The typed event union for a v2 filter tuple. No filters (readonly []) means
 // no narrowing was earned: plain TypedEvent. Non-commit kinds are identical
 // across all filters.
 export type TypedEventFor<F extends readonly CollectionFilter[]> =
@@ -56,3 +59,30 @@ export type TypedEventFor<F extends readonly CollectionFilter[]> =
     : | (EventBase & { kind: 'commit'; commit: TypedCommitFor<F[number]> })
       | (EventBase & { kind: 'identity'; identity: Identity })
       | (EventBase & { kind: 'account'; account: Account })
+      | (EventBase & { kind: 'sync'; sync: Sync })
+
+// The v1 equivalent: its own envelope, and no sync arm. Declared rather than
+// derived from TypedEventFor — the envelopes diverge, so an Exclude would not
+// express it.
+export type TypedEventForV1<F extends readonly CollectionFilter[]> =
+  F extends readonly []
+    ? TypedEventV1
+    : | (EventBaseV1 & { kind: 'commit'; commit: TypedCommitFor<F[number]> })
+      | (EventBaseV1 & { kind: 'identity'; identity: Identity })
+      | (EventBaseV1 & { kind: 'account'; account: Account })
+
+// Widest commit accepted by a live() implementation signature: collection is
+// `string` (not NsidString) so TypedCommitFor<F> is assignable for any filter
+// tuple, and record is unknown to cover validated and unvalidated alike.
+type WideCommit = TypedPutCommit<unknown, string> | DeleteCommit<string>
+
+export type WideTypedEvent =
+  | (EventBase & { kind: 'commit'; commit: WideCommit })
+  | (EventBase & { kind: 'identity'; identity: Identity })
+  | (EventBase & { kind: 'account'; account: Account })
+  | (EventBase & { kind: 'sync'; sync: Sync })
+
+export type WideTypedEventV1 =
+  | (EventBaseV1 & { kind: 'commit'; commit: WideCommit })
+  | (EventBaseV1 & { kind: 'identity'; identity: Identity })
+  | (EventBaseV1 & { kind: 'account'; account: Account })

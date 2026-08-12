@@ -1,6 +1,13 @@
 import { type RecordSchema } from '@atproto/lex'
 import { typedEventFromRaw } from './decode-typed.js'
-import { type EventBatch, type RawEventV1, type TypedEvent } from './event.js'
+import {
+  type EventBatch,
+  type RawEvent,
+  type RawEventV1,
+  type TypedEvent,
+  type TypedEventV1,
+} from './event.js'
+import { type RawRecordJson } from './raw-record.js'
 
 /**
  * Reported through the per-call onError when a put commit's record fails
@@ -35,19 +42,26 @@ export interface ShapeFlags {
   raw?: boolean
 }
 
+type AnyRaw = RawEventV1 | RawEvent<RawRecordJson>
+
 export async function* shape(
-  src: AsyncIterable<EventBatch<RawEventV1>>,
+  src: AsyncIterable<EventBatch<AnyRaw>>,
   flags: ShapeFlags,
   schemasByNsid: Map<string, RecordSchema>,
   onError?: (err: Error) => void,
-): AsyncGenerator<RawEventV1 | TypedEvent> {
+): AsyncGenerator<AnyRaw | TypedEventV1 | TypedEvent> {
   const raw = flags.raw === true
   for await (const batch of src) {
     if (raw) {
       for (const e of batch.events) yield e
     } else {
       for (const e of batch.events) {
-        const t = typedEventFromRaw(e, schemasByNsid)
+        // The overloads exist for callers; this internal fan-out runs one body
+        // for both wires.
+        const t = typedEventFromRaw(
+          e as RawEvent<RawRecordJson>,
+          schemasByNsid,
+        ) as TypedEventV1 | TypedEvent
         if (skipInvalid(t, schemasByNsid, onError)) continue
         yield t
       }
@@ -60,7 +74,7 @@ export async function* shape(
 // (string filters, validateRecord: false) flow through — exactly the pre-skip
 // behavior.
 function skipInvalid(
-  t: TypedEvent,
+  t: TypedEventV1 | TypedEvent,
   schemasByNsid: Map<string, RecordSchema>,
   onError?: (err: Error) => void,
 ): boolean {

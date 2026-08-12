@@ -6,7 +6,11 @@ import {
   record,
 } from '@atproto/lex'
 import { describe, expect, expectTypeOf, it } from 'vitest'
-import { Jetstream, type UnvalidatedRecord } from '../../src/index.js'
+import {
+  Jetstream,
+  type RawRecordJson,
+  type UnvalidatedRecord,
+} from '../../src/index.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 
 const likeSchema = record(
@@ -100,7 +104,7 @@ describe('live() filter narrowing (public API)', () => {
     })) {
       seqs.push(ev.seq)
       if (ev.kind === 'commit' && ev.commit.operation !== 'delete') {
-        expectTypeOf(ev.commit.record).toEqualTypeOf<unknown>()
+        expectTypeOf(ev.commit.record).toEqualTypeOf<RawRecordJson>()
       }
     }
     expect(seqs).toEqual([1]) // invalid record NOT skipped in raw mode

@@ -1,10 +1,25 @@
 import { type RecordSchema } from '@atproto/lex'
-import { type RawEventV1, type TypedCommit, type TypedEvent } from './event.js'
+import {
+  type RawEvent,
+  type RawEventV1,
+  type TypedCommit,
+  type TypedEvent,
+  type TypedEventV1,
+} from './event.js'
+import { type RawRecordJson } from './raw-record.js'
 
 export function typedEventFromRaw(
   raw: RawEventV1,
   schemasByNsid: Map<string, RecordSchema>,
-): TypedEvent {
+): TypedEventV1
+export function typedEventFromRaw(
+  raw: RawEvent<RawRecordJson>,
+  schemasByNsid: Map<string, RecordSchema>,
+): TypedEvent
+export function typedEventFromRaw(
+  raw: RawEventV1 | RawEvent<RawRecordJson>,
+  schemasByNsid: Map<string, RecordSchema>,
+): TypedEventV1 | TypedEvent {
   if (raw.kind !== 'commit') return raw
   // Delete first: DeleteCommit carries no `record`, so the put-commit handling
   // below only sees put commits.

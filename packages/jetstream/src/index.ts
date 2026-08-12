@@ -15,17 +15,28 @@ export type {
 export type {
   Account,
   DeleteCommit,
+  EventBase,
+  EventBaseV1,
   EventBatch,
   Identity,
-  RawCommitV1,
+  Kind,
+  KindV1,
+  RawCommit,
+  RawEvent,
   RawEventV1,
-  RawPutCommitV1,
+  RawPutCommit,
   SeqEvent,
+  Sync,
   TypedCommit,
   TypedEvent,
+  TypedEventV1,
   UnvalidatedRecord,
 } from './event.js'
-export type { TypedCommitFor, TypedEventFor } from './filter-types.js'
+export type {
+  TypedCommitFor,
+  TypedEventFor,
+  TypedEventForV1,
+} from './filter-types.js'
 export { CommitTracker } from './execute/commit-tracker.js'
 export { type CursorStore, MemoryCursorStore } from './execute/cursor-store.js'
 export { LexIndexer } from './lex-indexer.js'

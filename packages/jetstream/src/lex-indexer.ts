@@ -18,7 +18,7 @@ import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
 import {
   type EventBatch,
-  type RawEventV1,
+  type RawEvent,
   type UnvalidatedRecord,
 } from './event.js'
 import { eventUri } from './event.js'
@@ -88,7 +88,7 @@ export interface CommitHandlers<R> {
 
 export interface LexIndexerOpts {
   concurrency?: number
-  keyOf?: (evt: RawEventV1) => string
+  keyOf?: (evt: RawEvent) => string
 }
 
 const isThenable = (v: unknown): v is PromiseLike<unknown> =>
@@ -132,7 +132,7 @@ interface AnyCommitHandlers {
 
 export class LexIndexer implements JetstreamConsumer {
   readonly concurrency: number
-  readonly #keyOf: ((evt: RawEventV1) => string) | undefined
+  readonly #keyOf: ((evt: RawEvent) => string) | undefined
   readonly #collections = new Map<NsidString, AnyCommitHandlers>()
   #identityHandler:
     | ((e: IdentityEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
@@ -243,11 +243,11 @@ export class LexIndexer implements JetstreamConsumer {
   }
 
   async run(
-    stream: AsyncIterable<EventBatch<RawEventV1>>,
+    stream: AsyncIterable<EventBatch<RawEvent>>,
     ctx: ConsumerContext,
   ): Promise<void> {
     const concurrency = Math.max(1, this.concurrency)
-    const keyOf = this.#keyOf ?? ((evt: RawEventV1) => eventUri(evt))
+    const keyOf = this.#keyOf ?? ((evt: RawEvent) => eventUri(evt))
     // schemasByNsid drives typedEventFromRaw's validation; a collection
     // registered with validateRecord: false is deliberately OMITTED so its
     // records skip schema.safeValidate (routing is unaffected — handlers are
@@ -297,7 +297,7 @@ export class LexIndexer implements JetstreamConsumer {
     // PERF: plain function (not async) — a sync user handler completes without
     // any promise allocation; the CALLER inspects the return for a thenable.
     // Each branch returns the handler's result directly (may be a thenable).
-    const handle = (evt: RawEventV1): unknown => {
+    const handle = (evt: RawEvent): unknown => {
       if (evt.kind === 'identity') {
         if (this.#identityHandler) {
           return this.#identityHandler(
@@ -419,7 +419,7 @@ export class LexIndexer implements JetstreamConsumer {
     // stopped-skip passes skipAck=true so the slot is released WITHOUT acking
     // (acking a skipped event would advance the watermark past unprocessed
     // events). Always releases the slot exactly once.
-    const settle = (evt: RawEventV1, err: unknown, skipAck = false): void => {
+    const settle = (evt: RawEvent, err: unknown, skipAck = false): void => {
       if (err === undefined) {
         if (!skipAck) ctx.ack(evt)
       } else {
@@ -437,7 +437,7 @@ export class LexIndexer implements JetstreamConsumer {
     // when a tail exists, acquire/release pairing (settle runs once per
     // dispatched event), fail-fast without acking the failed event. The async
     // fallback below is the original chain semantics.
-    const dispatch = (evt: RawEventV1): void => {
+    const dispatch = (evt: RawEvent): void => {
       // NOTE: keyOf is deliberately NOT guarded — a key-computation failure is
       // an implementer bug (broken custom keyOf) and should throw hard out of
       // run() rather than be settled like a handler error. The default
