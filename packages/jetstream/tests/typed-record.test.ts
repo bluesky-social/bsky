@@ -47,7 +47,7 @@ describe('typedEventFromRaw record conversion', () => {
     expect(t.commit.validationError).toBeInstanceOf(Error)
   })
 
-  it('adopts the schema-validated value so coercions survive', () => {
+  it('a valid record passes schema validation and comes back converted', () => {
     const schema = record('tid', 'app.test.rec', l.object({ text: l.string() }))
     const schemas = new Map([['app.test.rec', schema]])
     const t = typedEventFromRaw(
