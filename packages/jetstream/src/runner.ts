@@ -15,7 +15,7 @@ export interface RunnerLiveOpts {
 /**
  * Drives a JetstreamConsumer from a Jetstream source with cursor tracking:
  * builds the live raw batch stream (filtered by the consumer's static
- * collections/dids), registers each event's seq with a CommitTracker before
+ * collections/dids/kinds), registers each event's seq with a CommitTracker before
  * the consumer sees it, and persists the contiguous acked watermark via the
  * CursorStore. flush() runs even when the consumer throws.
  */
@@ -33,6 +33,7 @@ export class JetstreamRunner {
       ...opts,
       collections: this.#consumer.collections,
       dids: this.#consumer.dids,
+      kinds: this.#consumer.kinds,
     })
     await this.#drive(src, opts)
   }

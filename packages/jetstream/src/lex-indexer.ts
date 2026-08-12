@@ -17,7 +17,7 @@ import {
 import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
-import { type EventBatch, type RawEvent } from './event.js'
+import { type EventBatch, type Kind, type RawEvent } from './event.js'
 import { eventUri } from './event.js'
 
 // Shared per-run context handed to every handler as the second arg. Allocated
@@ -161,6 +161,20 @@ export class LexIndexer implements JetstreamConsumer {
 
   get collections(): CollectionFilter[] {
     return [...this.#collections.keys()]
+  }
+
+  // Derived from registrations, like `collections`. onValidationError is
+  // commit-related but implies nothing on its own — it only ever fires for a
+  // collection already registered via commit(). Nothing registered must
+  // return undefined, not []: an empty array is still a concrete kinds list
+  // to a caller reading the type, and undefined is the honest "no filter."
+  get kinds(): Kind[] | undefined {
+    const kinds: Kind[] = []
+    if (this.#collections.size > 0) kinds.push('commit')
+    if (this.#identityHandler) kinds.push('identity')
+    if (this.#accountHandler) kinds.push('account')
+    if (this.#syncHandler) kinds.push('sync')
+    return kinds.length > 0 ? kinds : undefined
   }
 
   // Simple form: register a collection with schema-validated records

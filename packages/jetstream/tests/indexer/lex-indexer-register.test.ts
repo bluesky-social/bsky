@@ -36,3 +36,34 @@ describe('LexIndexer registration', () => {
     expect(new LexIndexer({ concurrency: 4 }).concurrency).toBe(4)
   })
 })
+
+describe('LexIndexer.kinds', () => {
+  it('is undefined when nothing is registered', () => {
+    expect(new LexIndexer().kinds).toBeUndefined()
+  })
+
+  it('derives "commit" from a registered collection', () => {
+    const ix = new LexIndexer().commit(likeSchema, { put: () => {} })
+    expect(ix.kinds).toEqual(['commit'])
+  })
+
+  it('derives one entry per registered handler, in registration order', () => {
+    const ix = new LexIndexer()
+      .commit(likeSchema, { put: () => {} })
+      .identity(() => {})
+      .account(() => {})
+      .sync(() => {})
+    expect(ix.kinds).toEqual(['commit', 'identity', 'account', 'sync'])
+  })
+
+  it('onValidationError alone implies nothing (no collection registered)', () => {
+    const ix = new LexIndexer().onValidationError(() => {})
+    expect(ix.kinds).toBeUndefined()
+  })
+
+  it('identity/account/sync handlers derive their own kind without a collection', () => {
+    expect(new LexIndexer().identity(() => {}).kinds).toEqual(['identity'])
+    expect(new LexIndexer().account(() => {}).kinds).toEqual(['account'])
+    expect(new LexIndexer().sync(() => {}).kinds).toEqual(['sync'])
+  })
+})
