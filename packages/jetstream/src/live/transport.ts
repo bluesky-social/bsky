@@ -1,6 +1,7 @@
 import {
   CloseCode,
   CloseError,
+  SocketError,
   type WebSocketOptions,
   defaultShouldReconnect,
   websocket,
@@ -45,14 +46,12 @@ export type WebsocketTransportOptions = Omit<
 const HANDSHAKE_REJECTION_RE = /Unexpected server response: (\d{3})/
 
 export function handshakeRejectionStatus(error: unknown): number | undefined {
-  // ws-client nests the ws error under SocketError, so walk the cause chain.
-  for (let e: unknown = error, depth = 0; depth < 5; depth++) {
-    if (!(e instanceof Error)) break
-    const match = HANDSHAKE_REJECTION_RE.exec(e.message)
-    if (match) return Number(match[1])
-    e = e.cause
-  }
-  return undefined
+  // ws-client wraps the raw ws error in a SocketError, one level deep.
+  if (!(error instanceof SocketError)) return undefined
+  const cause = error.cause
+  if (!(cause instanceof Error)) return undefined
+  const match = HANDSHAKE_REJECTION_RE.exec(cause.message)
+  return match ? Number(match[1]) : undefined
 }
 
 // A jetstream server closing 1000 (restart, load-shed) should not end the
@@ -84,7 +83,12 @@ export function resolveWebsocketOptions(
     shouldReconnect = jetstreamShouldReconnect,
     ...rest
   } = options
-  if (idleTimeoutMs !== false && !(idleTimeoutMs > 0)) {
+  if (Number.isNaN(idleTimeoutMs)) {
+    throw new RangeError(
+      'idleTimeoutMs must be > 0; use false to disable idle detection',
+    )
+  }
+  if (idleTimeoutMs !== false && idleTimeoutMs <= 0) {
     throw new RangeError(
       'idleTimeoutMs must be > 0; use false to disable idle detection',
     )

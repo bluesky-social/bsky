@@ -1,4 +1,8 @@
-import { CloseError, HeartbeatTimeoutError } from '@atproto/ws-client'
+import {
+  CloseError,
+  HeartbeatTimeoutError,
+  SocketError,
+} from '@atproto/ws-client'
 import { describe, expect, it } from 'vitest'
 import {
   handshakeRejectionStatus,
@@ -75,17 +79,22 @@ describe('resolveWebsocketOptions', () => {
 describe('handshakeRejectionStatus', () => {
   it("extracts the status from ws's handshake error", () => {
     expect(
-      handshakeRejectionStatus(new Error('Unexpected server response: 400')),
+      handshakeRejectionStatus(
+        new SocketError(new Error('Unexpected server response: 400')),
+      ),
     ).toBe(400)
   })
 
-  it('walks the cause chain', () => {
-    const inner = new Error('Unexpected server response: 503')
-    const outer = new Error('socket failed', { cause: inner })
-    expect(handshakeRejectionStatus(outer)).toBe(503)
+  it('only looks at SocketError.cause, not a plain Error', () => {
+    expect(
+      handshakeRejectionStatus(new Error('Unexpected server response: 503')),
+    ).toBeUndefined()
   })
 
   it('returns undefined for unrelated errors', () => {
+    expect(
+      handshakeRejectionStatus(new SocketError(new Error('boom'))),
+    ).toBeUndefined()
     expect(handshakeRejectionStatus(new Error('boom'))).toBeUndefined()
     expect(handshakeRejectionStatus('nope')).toBeUndefined()
   })
@@ -96,16 +105,22 @@ describe('jetstreamShouldReconnect handshake policy', () => {
     // A 400 is a permanent statement about this request (bad cursor, rejected
     // params); redialing repeats it forever.
     expect(
-      jetstreamShouldReconnect(new Error('Unexpected server response: 400')),
+      jetstreamShouldReconnect(
+        new SocketError(new Error('Unexpected server response: 400')),
+      ),
     ).toBe(false)
     expect(
-      jetstreamShouldReconnect(new Error('Unexpected server response: 404')),
+      jetstreamShouldReconnect(
+        new SocketError(new Error('Unexpected server response: 404')),
+      ),
     ).toBe(false)
   })
 
   it('reconnects after a 5xx rejection', () => {
     expect(
-      jetstreamShouldReconnect(new Error('Unexpected server response: 502')),
+      jetstreamShouldReconnect(
+        new SocketError(new Error('Unexpected server response: 502')),
+      ),
     ).toBe(true)
   })
 })
