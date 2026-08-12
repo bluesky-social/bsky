@@ -34,7 +34,7 @@
     "@atproto/ws-client": "^0.2.0"
   },
   "scripts": {
-    "build": "tsgo --build tsconfig.build.json",
+    "build": "tsc --build tsconfig.build.json",
     "test": "vitest --run"
   },
   "devDependencies": {
