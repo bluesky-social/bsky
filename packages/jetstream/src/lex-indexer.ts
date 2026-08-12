@@ -52,7 +52,8 @@ export type DelEvent = {
 }
 // Same flat shape as PutEvent but carries the decode/validation `error` instead
 // of a decoded `record`. Routed here (not to `put`) when a create/update record
-// fails to schema-validate, so `put`'s `record` is always a valid decoded R.
+// fails to convert (e.g. missing $type) or fails to schema-validate, so
+// `put`'s `record` is always a valid decoded R.
 export type ValidationErrorEvent = {
   did: DidString
   seq: number
@@ -355,8 +356,9 @@ export class LexIndexer implements JetstreamConsumer {
       if (typed.kind !== 'commit' || typed.commit.operation === 'delete')
         return undefined
       if (typed.commit.validationError !== undefined) {
-        // Invalid record: fails schema-validation. Never reaches put; route to
-        // the optional handler, otherwise ack-and-skip.
+        // Invalid record: failed conversion (e.g. missing $type) or
+        // schema-validation. Never reaches put; route to the optional
+        // handler, otherwise ack-and-skip.
         if (this.#validationErrorHandler) {
           const did = typed.did
           const tc = typed.commit

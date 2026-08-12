@@ -11,8 +11,9 @@ import { type RawRecordJson } from './raw-record.js'
 
 /**
  * Reported through the per-call onError when a put commit's record fails
- * schema validation for a validating schema filter and the event is skipped.
- * Distinguishable from transport errors via instanceof.
+ * conversion (regardless of collection) or fails schema validation for a
+ * validating schema filter, and the event is skipped. Distinguishable from
+ * transport errors via instanceof.
  */
 export class RecordValidationError extends Error {
   readonly did: string
@@ -76,10 +77,16 @@ export async function* shape(
   }
 }
 
-// True (skip) only for put commits whose collection has a VALIDATING schema
-// and whose record failed validation. Collections without a registered schema
-// (string filters, validateRecord: false) flow through — exactly the pre-skip
-// behavior.
+// Skip (and report) a put commit whose record is unusable. Two distinct
+// failure shapes reach here, both carrying `validationError`:
+//   - conversion failed: `record` is undefined, REGARDLESS of collection —
+//     the static type (TypedLexMap, non-optional) promises a record is
+//     present, so delivering undefined would be data corruption. Always
+//     skip and report.
+//   - schema validation failed: `record` is defined (the converted value)
+//     but didn't validate. Skipped only for collections with a VALIDATING
+//     schema; collections without one (string filters, validateRecord:
+//     false) flow through — exactly the pre-skip behavior.
 function skipInvalid(
   t: TypedEventV1 | TypedEvent,
   schemasByNsid: Map<string, RecordSchema>,
@@ -87,7 +94,7 @@ function skipInvalid(
 ): boolean {
   if (t.kind !== 'commit' || t.commit.operation === 'delete') return false
   if (t.commit.validationError === undefined) return false
-  if (!schemasByNsid.has(t.commit.collection)) return false
+  if (t.commit.record && !schemasByNsid.has(t.commit.collection)) return false
   onError?.(
     new RecordValidationError({
       did: t.did,

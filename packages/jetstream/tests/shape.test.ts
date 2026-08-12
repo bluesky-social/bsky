@@ -138,6 +138,27 @@ test('unregistered collections are never skipped and never reported', async () =
   expect(errors).toHaveLength(0)
 })
 
+test('conversion failures are skipped and reported even for unregistered collections', async () => {
+  // Regression: a record that fails CONVERSION (no $type here) must never
+  // reach a consumer as `record: undefined` — the static type promises a
+  // record is present — regardless of whether the collection has a
+  // registered schema. Unlike a schema-validation failure, this is not
+  // gated on schemasByNsid.has(collection).
+  const errors: Error[] = []
+  const out: TypedEvent[] = []
+  for await (const ev of shape(
+    oneBatch([putEvent(1, { hello: 'no $type' })]),
+    {},
+    new Map(), // no schema registered for app.test.like
+    (err) => errors.push(err),
+  )) {
+    out.push(ev as TypedEvent)
+  }
+  expect(out).toHaveLength(0)
+  expect(errors).toHaveLength(1)
+  expect(errors[0]).toBeInstanceOf(RecordValidationError)
+})
+
 test('raw paths never skip', async () => {
   const { schemasByNsid } = parseCollectionFilters([likeSchema])
   const out: unknown[] = []

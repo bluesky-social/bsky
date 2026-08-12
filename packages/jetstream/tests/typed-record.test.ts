@@ -75,17 +75,23 @@ describe('typedEventFromRaw record conversion', () => {
 
   it('strict mode tightens conversion', () => {
     const float = { $type: 'app.test.rec', n: 1.5 }
-    expect(typedEventFromRaw(putEvent(float), new Map()).kind).toBe('commit')
+    const loose = typedEventFromRaw(putEvent(float), new Map())
+    if (loose.kind !== 'commit' || loose.commit.operation === 'delete') {
+      expect.unreachable('expected a put commit')
+    }
+    // Loose (default) direction: the non-integer number is accepted as-is.
+    expect(loose.commit.validationError).toBeUndefined()
     const strict = typedEventFromRaw(putEvent(float), new Map(), {
       strict: true,
     })
     if (strict.kind !== 'commit' || strict.commit.operation === 'delete') {
       expect.unreachable('expected a put commit')
     }
+    // Strict direction: the same non-integer number is rejected.
     expect(strict.commit.validationError).toBeInstanceOf(Error)
   })
 
-  it('leaves cid readable and passes deletes through', () => {
+  it('leaves cid readable on a put commit', () => {
     const t = typedEventFromRaw(
       putEvent({ $type: 'app.test.rec', text: 'hi' }),
       new Map(),
@@ -94,5 +100,27 @@ describe('typedEventFromRaw record conversion', () => {
       expect.unreachable('expected a put commit')
     }
     expect(t.commit.cid).toBe(CID)
+  })
+
+  it('passes a delete commit through untouched (no record, no conversion)', () => {
+    const del: RawEvent<RawRecordJson> = {
+      did: 'did:plc:a' as never,
+      seq: 1,
+      time: '2024-01-01T00:00:00.000Z' as never,
+      kind: 'commit',
+      commit: {
+        operation: 'delete',
+        collection: 'app.test.rec' as never,
+        rkey: 'r1' as never,
+        rev: 'rev1' as never,
+      },
+    }
+    const t = typedEventFromRaw(del, new Map())
+    if (t.kind !== 'commit' || t.commit.operation !== 'delete') {
+      expect.unreachable('expected a delete commit')
+    }
+    expect(t.commit).not.toHaveProperty('record')
+    expect(t.commit).not.toHaveProperty('validationError')
+    expect(t.commit.rkey).toBe('r1')
   })
 })

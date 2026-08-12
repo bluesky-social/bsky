@@ -38,15 +38,18 @@ export function typedEventFromRaw(
   try {
     record = parseRawRecord(rawCommit.record, opts)
   } catch (err) {
-    record = undefined
+    // `record` stays undefined — it is never assigned when parseRawRecord
+    // throws.
     validationError = err instanceof Error ? err : new Error(String(err))
   }
   const schema = schemasByNsid.get(collection)
   if (schema && validationError === undefined) {
     const result = schema.safeValidate(record)
     if (result.success) {
-      // Adopt the validated value: lex-schema may apply defaults or coercions,
-      // and returning the pre-coercion record would drop them.
+      // safeValidate (unlike safeParse) does not coerce — result.value is the
+      // input by reference, so this assignment is a no-op today. Kept so the
+      // code stays correct if this ever moves to a transforming validation
+      // method; deleting it would silently reintroduce the pre-coercion bug.
       record = result.value
     } else {
       validationError = new Error(

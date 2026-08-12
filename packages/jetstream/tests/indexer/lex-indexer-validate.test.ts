@@ -74,11 +74,16 @@ describe('commit validateRecord', () => {
       oneBatch([
         putWithRecord(1, { $type: 'app.test.like', subject: 123 }), // schema-invalid: OK
         putWithRecord(2, { $type: 'app.test.like', extra: 'no schema check' }), // schema-invalid: OK
+        putWithRecord(3, { hello: 'no $type' }), // conversion floor still applies
       ]),
       { ack: () => {} },
     )
+    // validateRecord: false skips SCHEMA checks, but the $type floor (record
+    // conversion, established independent of any collection's schema) still
+    // applies: a $type-less record fails conversion and routes to
+    // onValidationError, never put.
     expect(puts).toEqual([1, 2])
-    expect(invalid).toEqual([])
+    expect(invalid).toEqual([3])
   })
 
   it('validateRecord: false still routes ONLY the registered collection', async () => {
