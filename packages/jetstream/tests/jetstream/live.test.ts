@@ -1,7 +1,8 @@
 import { l, record } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
+import { type TypedEvent } from '../../src/event.js'
 import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
-import { Jetstream } from '../../src/index.js'
+import { Jetstream, RecordValidationError } from '../../src/index.js'
 import { type LiveTransport } from '../../src/live/transport.js'
 
 const NSID = 'network.bsky.jetstream.subscribeEvents'
@@ -175,6 +176,49 @@ describe('Jetstream.live (v2)', () => {
     expect(seqs).toEqual([1])
     expect(errors).toHaveLength(1)
     expect(errors[0].name).toBe('RecordValidationError')
+  })
+
+  it('typed mode: strict tightens record conversion; default mode does not', async () => {
+    // 1.5 is a non-integer number: strict conversion (matching validateWire)
+    // rejects it, loose conversion accepts it as-is.
+    const float = { $type: 'app.test.rec', n: 1.5 }
+
+    const strictErrors: Error[] = []
+    const strictJs = new Jetstream({
+      service: 'https://js.example',
+      validateWire: true,
+    })
+    const strictOut: unknown[] = []
+    for await (const ev of strictJs.live({
+      liveTransport: fakeTransport([putFrame(1, float)]),
+      onError: (err) => strictErrors.push(err),
+    })) {
+      strictOut.push(ev)
+    }
+    // The conversion failure is skipped and reported, never delivered.
+    expect(strictOut).toHaveLength(0)
+    expect(strictErrors).toHaveLength(1)
+    expect(strictErrors[0]).toBeInstanceOf(RecordValidationError)
+
+    const defaultJs = new Jetstream('https://js.example')
+    const defaultOut: TypedEvent[] = []
+    for await (const ev of defaultJs.live({
+      liveTransport: fakeTransport([putFrame(1, float)]),
+      onError: () => {
+        throw new Error('default mode must not report a conversion error')
+      },
+    })) {
+      defaultOut.push(ev)
+    }
+    expect(defaultOut).toHaveLength(1)
+    const defaultEv = defaultOut[0]
+    if (
+      defaultEv.kind !== 'commit' ||
+      defaultEv.commit.operation === 'delete'
+    ) {
+      throw new Error('expected a put commit')
+    }
+    expect(defaultEv.commit.validationError).toBeUndefined()
   })
 
   it('makes a malformed frame fatal under validateWire', async () => {
