@@ -76,6 +76,12 @@ export type TypedEventV1For<F extends readonly CollectionFilter[]> =
 
 // The widest event a live() implementation signature accepts: CollectionFilter[]
 // (not a specific tuple) makes TypedCommitFor<F[number]> assignable for any
-// filter tuple a caller might pass.
-export type WideTypedEvent = TypedEventFor<CollectionFilter[]>
-export type WideTypedEventV1 = TypedEventV1For<CollectionFilter[]>
+// concrete filter tuple a caller might pass. The empty-tuple case (no filter
+// at all) is unioned in separately: TypedEventFor<readonly []> is plain
+// TypedEvent, whose default (untied to any collection) record type is
+// TypedLexMap<string> — narrower-branded than the CollectionFilter[] arms'
+// TypedLexMap<NsidString>-and-friends, so it is not covered by
+// TypedEventFor<CollectionFilter[]> alone.
+export type WideTypedEvent = TypedEventFor<CollectionFilter[]> | TypedEvent
+export type WideTypedEventV1 =
+  TypedEventV1For<CollectionFilter[]> | TypedEventV1
