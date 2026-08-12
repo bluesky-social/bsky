@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { planPages } from '../../src/engine/planner.js'
 import type { Plan } from '../../src/xrpc/plan.js'
 

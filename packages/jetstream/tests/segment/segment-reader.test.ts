@@ -1,12 +1,12 @@
-import { expect, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import {
-  readSealedHeader,
-  decodeSegment,
-} from '../../src/segment/segment-reader.js'
+import { expect, test } from 'vitest'
 import { nodeDecompressor } from '../../src/segment/decompressor.js'
 import { SegKind } from '../../src/segment/kind.js'
+import {
+  decodeSegment,
+  readSealedHeader,
+} from '../../src/segment/segment-reader.js'
 
 const d = await nodeDecompressor()
 

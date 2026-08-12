@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest'
 import { zstdCompressSync } from 'node:zlib'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
+import { expect, test } from 'vitest'
 import { MalformedError } from '../../src/errors.js'
+import { nodeDecompressor } from '../../src/segment/decompressor.js'
 
 const d = await nodeDecompressor()
 

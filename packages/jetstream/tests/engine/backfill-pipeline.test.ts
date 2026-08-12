@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
+import { nodeSha256 } from '../../src/decode-event.js'
 import { backfillBatches } from '../../src/engine/backfill-pipeline.js'
 import { makeSelector } from '../../src/engine/selector.js'
 import { nodeDecompressor } from '../../src/segment/decompressor.js'
-import { nodeSha256 } from '../../src/decode-event.js'
 import type { PlanEntry } from '../../src/xrpc/plan.js'
 
 const decompressor = await nodeDecompressor()

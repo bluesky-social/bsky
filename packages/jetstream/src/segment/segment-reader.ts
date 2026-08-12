@@ -1,16 +1,16 @@
 import { MalformedError } from '../errors.js'
-import {
-  type SegHeader,
-  readSealedHeader,
-  RESERVED_HEADER_BYTES,
-} from './header.js'
 import { type SegEvent, decodeBlockFrame } from './block.js'
 import { type Decompressor } from './decompressor.js'
+import {
+  RESERVED_HEADER_BYTES,
+  type SegHeader,
+  readSealedHeader,
+} from './header.js'
 
 const BLOCK_INDEX_ENTRY_SIZE = 52
 const LENGTH_PREFIX = 8
 
-export { readSealedHeader, RESERVED_HEADER_BYTES }
+export { RESERVED_HEADER_BYTES, readSealedHeader }
 
 /** Random-access read of one compressed block frame via the footer index. */
 export function readBlockFrame(

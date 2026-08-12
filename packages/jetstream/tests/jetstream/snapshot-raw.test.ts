@@ -1,6 +1,6 @@
-import { expect, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { expect, test } from 'vitest'
 import { Jetstream } from '../../src/jetstream.js'
 
 const goldenFrame = new Uint8Array(

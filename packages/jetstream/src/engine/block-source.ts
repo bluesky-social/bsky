@@ -1,6 +1,6 @@
-import { type PlanEntry } from '../xrpc/plan.js'
-import { getBlock, streamSegment } from '../xrpc/download.js'
 import { streamSegmentFrames } from '../segment/segment-reader.js'
+import { getBlock, streamSegment } from '../xrpc/download.js'
+import { type PlanEntry } from '../xrpc/plan.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
 
 export interface BlockChunk {

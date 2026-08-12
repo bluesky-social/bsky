@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { getSegment, getBlock } from '../../src/xrpc/download.js'
+import { getBlock, getSegment } from '../../src/xrpc/download.js'
 import { DownloadError } from '../../src/xrpc/errors.js'
 
 function fakeFetch(body: Uint8Array, status = 200): typeof fetch {

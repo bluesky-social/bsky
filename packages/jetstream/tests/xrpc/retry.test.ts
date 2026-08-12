@@ -1,12 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
-  resolveRetry,
-  isRetryableStatus,
-  isRetryableError,
-  isAbortError,
-  backoffDelay,
-  parseRetryAfter,
   abortableDelay,
+  backoffDelay,
+  isAbortError,
+  isRetryableError,
+  isRetryableStatus,
+  parseRetryAfter,
+  resolveRetry,
 } from '../../src/xrpc/retry.js'
 
 describe('retry primitives', () => {

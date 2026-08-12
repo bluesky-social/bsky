@@ -1,12 +1,12 @@
-import { type PlanEntry } from '../xrpc/plan.js'
-import { type RowSelector } from './selector.js'
-import { blockSource } from './block-source.js'
-import { decodeBlockFrame } from '../segment/block.js'
-import { type Decompressor } from '../segment/decompressor.js'
 import { type Sha256, rawEventFromSegment } from '../decode-event.js'
 import { type EventBatch, type RawEvent } from '../event.js'
 import { type RawRecordCbor } from '../raw-record.js'
+import { decodeBlockFrame } from '../segment/block.js'
+import { type Decompressor } from '../segment/decompressor.js'
+import { type PlanEntry } from '../xrpc/plan.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
+import { blockSource } from './block-source.js'
+import { type RowSelector } from './selector.js'
 
 export interface BackfillPipelineOpts {
   host: string

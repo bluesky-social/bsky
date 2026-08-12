@@ -1,6 +1,6 @@
-import { expect, test } from 'vitest'
-import { encode as cborEncode } from '@atproto/lex-cbor'
 import { cidForCbor } from '@atproto/lex'
+import { encode as cborEncode } from '@atproto/lex-cbor'
+import { expect, test } from 'vitest'
 import { cidForRecord, nodeSha256 } from '../../src/decode-event.js'
 
 const sha256 = await nodeSha256()

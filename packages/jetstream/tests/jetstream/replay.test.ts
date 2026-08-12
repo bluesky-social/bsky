@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { Jetstream } from '../../src/jetstream.js'
 import type { LiveTransport } from '../../src/live/transport.js'
 

@@ -1,5 +1,5 @@
 import { type DidString } from '@atproto/lex'
-import { planSnapshot, type Plan } from '../xrpc/plan.js'
+import { type Plan, planSnapshot } from '../xrpc/plan.js'
 
 export interface PlanPagesOpts {
   host: string

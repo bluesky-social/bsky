@@ -1,11 +1,11 @@
-import { expect, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { zstdCompressSync } from 'node:zlib'
 import { encode as cborEncode } from '@atproto/lex-cbor'
+import { expect, test } from 'vitest'
 import { Jetstream } from '../../src/jetstream.js'
-import { RecordValidationError } from '../../src/shape.js'
 import { SegKind } from '../../src/segment/kind.js'
+import { RecordValidationError } from '../../src/shape.js'
 
 // Golden block row 0 payload is CBOR {hello: 5} (A1 65 68 65 6C 6C 6F 05).
 const goldenFrame = new Uint8Array(

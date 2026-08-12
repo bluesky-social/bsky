@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { Jetstream } from '../../src/jetstream.js'
+import { describe, expect, it } from 'vitest'
 import { MemoryCursorStore } from '../../src/execute/cursor-store.js'
+import { Jetstream } from '../../src/jetstream.js'
 
 describe('Jetstream.snapshot', () => {
   it('resolves resume cursor from the CursorStore (load) when afterSeq absent', async () => {

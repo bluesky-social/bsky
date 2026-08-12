@@ -3,13 +3,13 @@ import { DownloadError } from './errors.js'
 import {
   type RetryPolicy,
   type RetryTarget,
-  resolveRetry,
+  abortableDelay,
+  backoffDelay,
+  isAbortError,
   isRetryableError,
   isRetryableStatus,
-  isAbortError,
-  backoffDelay,
   parseRetryAfter,
-  abortableDelay,
+  resolveRetry,
 } from './retry.js'
 
 function statusOf(err: unknown): number | undefined {

@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { blockSource, type BlockChunk } from '../../src/engine/block-source.js'
+import { describe, expect, it, vi } from 'vitest'
+import { type BlockChunk, blockSource } from '../../src/engine/block-source.js'
 import type { PlanEntry } from '../../src/xrpc/plan.js'
 
 // Fake downloads: a block entry -> getBlock returns a tagged 1-byte frame;

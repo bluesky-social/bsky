@@ -5,9 +5,9 @@ import {
   type TidString,
 } from '@atproto/lex'
 import { MalformedError } from '../errors.js'
-import { ReadCursor } from './read-cursor.js'
-import { type SegKind, isValidKind } from './kind.js'
 import { type Decompressor, MAX_DECODED_BLOCK_BYTES } from './decompressor.js'
+import { type SegKind, isValidKind } from './kind.js'
+import { ReadCursor } from './read-cursor.js'
 
 /**
  * One decoded segment row. The string brands are optimistic — the segment

@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { decodeBlockFrame, type RowKeep } from '../../src/segment/block.js'
+import { describe, expect, it } from 'vitest'
+import { type RowKeep, decodeBlockFrame } from '../../src/segment/block.js'
 import { nodeDecompressor } from '../../src/segment/decompressor.js'
 import { isCommitKind } from '../../src/segment/kind.js'
 

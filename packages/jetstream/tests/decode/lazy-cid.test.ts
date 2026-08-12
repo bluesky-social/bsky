@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { decodeBlockFrame } from '../../src/segment/block.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
+import { describe, expect, it } from 'vitest'
 import {
   cidForRecord,
   nodeSha256,
   rawEventFromSegment,
 } from '../../src/decode-event.js'
 import { typedEventFromRaw } from '../../src/decode-typed.js'
+import { decodeBlockFrame } from '../../src/segment/block.js'
+import { nodeDecompressor } from '../../src/segment/decompressor.js'
 
 const decompressor = await nodeDecompressor()
 const sha256 = await nodeSha256()

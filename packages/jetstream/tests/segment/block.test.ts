@@ -1,7 +1,7 @@
-import { expect, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { zstdCompressSync } from 'node:zlib'
+import { expect, test } from 'vitest'
 import { decodeBlockFrame } from '../../src/segment/block.js'
 import { nodeDecompressor } from '../../src/segment/decompressor.js'
 import { SegKind } from '../../src/segment/kind.js'

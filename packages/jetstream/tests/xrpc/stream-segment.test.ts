@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { streamSegment } from '../../src/xrpc/download.js'
 import { DownloadError } from '../../src/xrpc/errors.js'
 

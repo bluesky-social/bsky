@@ -1,13 +1,13 @@
-import { expect, test } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { expect, test } from 'vitest'
+import { nodeSha256 } from '../../src/decode-event.js'
 import {
   type CutoverParams,
   cutoverReplay as cutoverReplayBase,
 } from '../../src/live/cutover.js'
-import { nodeSha256 } from '../../src/decode-event.js'
-import { nodeDecompressor } from '../../src/segment/decompressor.js'
 import type { LiveTransport } from '../../src/live/transport.js'
+import { nodeDecompressor } from '../../src/segment/decompressor.js'
 
 // The class layer resolves these platform defaults; supply them here since
 // cutoverReplay takes them as required params.
@@ -288,6 +288,7 @@ test('cutoverReplay: too-old that cannot advance is fatal (anti-spin)', async ()
   // Every connect throws too-old and the tail delivers nothing, so resume can
   // never advance past cutover -> fatal after the bound.
   const alwaysTooOld: LiveTransport = {
+    // eslint-disable-next-line require-yield -- every connect throws
     async *stream() {
       throw new Error('XRPCError 400: subscribe: cursor too old')
     },

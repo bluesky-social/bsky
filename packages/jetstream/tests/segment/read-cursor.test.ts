@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
-import { ReadCursor } from '../../src/segment/read-cursor.js'
 import { MalformedError } from '../../src/errors.js'
 import { SegKind, isCommitKind, isValidKind } from '../../src/segment/kind.js'
+import { ReadCursor } from '../../src/segment/read-cursor.js'
 
 test('reads little-endian integers and varints', () => {
   const buf = new Uint8Array([

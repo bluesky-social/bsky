@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { describe, expect, it } from 'vitest'
 import {
-  streamSegmentFrames,
-  readSealedHeader,
   readBlockFrame,
+  readSealedHeader,
+  streamSegmentFrames,
 } from '../../src/segment/segment-reader.js'
 
 // golden_seal.bin is a full sealed segment fixture (header + frames + footer).

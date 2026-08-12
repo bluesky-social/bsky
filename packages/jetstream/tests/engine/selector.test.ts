@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { makeSelector } from '../../src/engine/selector.js'
-import { SegKind } from '../../src/segment/kind.js'
 import type { SegEvent } from '../../src/segment/block.js'
+import { SegKind } from '../../src/segment/kind.js'
 
 const row = (over: Record<string, unknown> = {}): SegEvent =>
   ({
