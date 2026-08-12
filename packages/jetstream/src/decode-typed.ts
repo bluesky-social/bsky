@@ -6,7 +6,7 @@ import {
   type TypedEvent,
   type TypedEventV1,
 } from './event.js'
-import { type RawRecordJson, parseRawRecord } from './raw-record.js'
+import { parseRawRecord } from './raw-record.js'
 
 export function typedEventFromRaw(
   raw: RawEventV1,
@@ -14,12 +14,12 @@ export function typedEventFromRaw(
   opts?: { strict?: boolean },
 ): TypedEventV1
 export function typedEventFromRaw(
-  raw: RawEvent<RawRecordJson>,
+  raw: RawEvent,
   schemasByNsid: Map<string, RecordSchema>,
   opts?: { strict?: boolean },
 ): TypedEvent
 export function typedEventFromRaw(
-  raw: RawEventV1 | RawEvent<RawRecordJson>,
+  raw: RawEventV1 | RawEvent,
   schemasByNsid: Map<string, RecordSchema>,
   opts?: { strict?: boolean },
 ): TypedEventV1 | TypedEvent {

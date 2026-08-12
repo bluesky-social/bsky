@@ -7,8 +7,6 @@ import {
   type TypedEvent,
   type TypedEventV1,
 } from './event.js'
-import { type RawRecordJson } from './raw-record.js'
-
 /**
  * Reported through the per-call onError when a put commit's record fails
  * conversion (regardless of collection) or fails schema validation for a
@@ -44,7 +42,7 @@ export interface ShapeFlags {
   validateWire?: boolean
 }
 
-type AnyRaw = RawEventV1 | RawEvent<RawRecordJson>
+type AnyRaw = RawEventV1 | RawEvent
 
 export async function* shape(
   src: AsyncIterable<EventBatch<AnyRaw>>,
@@ -63,13 +61,9 @@ export async function* shape(
         // overload's result (TypedEvent) already sits inside the declared
         // union (TypedEventV1 | TypedEvent), so a result-side cast would be a
         // no-op that could silently swallow a future mismatch.
-        const t = typedEventFromRaw(
-          e as RawEvent<RawRecordJson>,
-          schemasByNsid,
-          {
-            strict: flags.validateWire === true,
-          },
-        )
+        const t = typedEventFromRaw(e as RawEvent, schemasByNsid, {
+          strict: flags.validateWire === true,
+        })
         if (skipInvalid(t, schemasByNsid, onError)) continue
         yield t
       }

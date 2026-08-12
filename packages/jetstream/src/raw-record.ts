@@ -1,15 +1,19 @@
 import { type JsonValue, type TypedLexMap, jsonToLex } from '@atproto/lex'
+import { decode as cborDecode } from '@atproto/lex-cbor'
 import { MalformedError } from './errors.js'
 
 /** Parsed wire JSON, NOT converted to lex values ({$link}/{$bytes} intact). */
 export type RawRecordJson = JsonValue
 
+/** Byte-exact DAG-CBOR, as archived. Snapshot/replay backfill yields this. */
+export type RawRecordCbor = Uint8Array
+
 /**
- * A record in its wire representation. One arm today; snapshot support adds a
- * byte-exact DAG-CBOR arm, which is why the raw event types are generic over
- * this.
+ * A record in either wire representation. The raw event types are generic
+ * over this so each mode narrows to the arm it yields: live is JSON, archive
+ * backfill is DAG-CBOR bytes.
  */
-export type RawRecord = RawRecordJson
+export type RawRecord = RawRecordJson | RawRecordCbor
 
 // O(1) gate for a value that is already a lex value. @atproto/lex's
 // isTypedLexMap deep-walks the record to learn these two facts; a prototype
@@ -23,9 +27,10 @@ function isTypedLexMapShallow(v: unknown): v is TypedLexMap {
 }
 
 /**
- * Converts a wire record to the lex data model: {$link} becomes a Cid,
- * {$bytes} a Uint8Array, blob refs a BlobRef. Strict mode additionally rejects
- * non-integer numbers and malformed special objects, matching what
+ * Converts a wire record (either representation) to the lex data model. CBOR
+ * bytes decode directly; wire JSON converts {$link}/{$bytes}/blob refs to
+ * Cid/Uint8Array/BlobRef. Strict mode additionally rejects non-integer
+ * numbers and malformed special objects on the JSON arm, matching what
  * validateWire asserts elsewhere. Records are $type'd maps by contract, so
  * anything else throws rather than flowing on as garbage.
  */
@@ -35,7 +40,10 @@ export function parseRawRecord(
 ): TypedLexMap {
   let lex: unknown
   try {
-    lex = jsonToLex(record, { strict: opts?.strict === true })
+    lex =
+      record instanceof Uint8Array
+        ? cborDecode(record)
+        : jsonToLex(record, { strict: opts?.strict === true })
   } catch (err) {
     // jsonToLex throws on a literal __proto__ key in either mode.
     throw new MalformedError('parse raw record', { cause: err })

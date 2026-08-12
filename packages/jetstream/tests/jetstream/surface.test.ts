@@ -4,6 +4,7 @@ import {
   JetstreamV1,
   type RawEvent,
   type RawEventV1,
+  type RawRecordJson,
 } from '../../src/index.js'
 
 describe('class surfaces', () => {
@@ -39,7 +40,7 @@ describe('class surfaces', () => {
     >()
     const v2 = new Jetstream('https://h')
     expectTypeOf(v2.live({ raw: true })).toEqualTypeOf<
-      AsyncGenerator<RawEvent>
+      AsyncGenerator<RawEvent<RawRecordJson>>
     >()
   })
 

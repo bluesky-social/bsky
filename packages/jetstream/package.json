@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@atproto/lex": "^0.3.0",
+    "@atproto/lex-cbor": "^0.1.6",
     "@atproto/ws-client": "^0.2.0"
   },
   "scripts": {
