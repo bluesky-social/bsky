@@ -26,7 +26,7 @@ for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
 }
 ```
 
-`collections` constrains **commit** events only — identity, account, and sync events flow regardless — so a commits-only stream also needs `kinds: ['commit']`. `kinds` accepts `commit`, `identity`, `account`, and `sync`, and omitting it means all kinds.
+`collections` constrains **commit** events only — identity, account, and sync events flow regardless — so a commits-only stream also needs `kinds: ['commit']`. `kinds` accepts `commit`, `identity`, `account`, and `sync`, and omitting it means all kinds. Conversely, a `kinds` list without `commit` leaves `collections` with nothing to constrain: that pair is rejected rather than silently ignoring either side.
 
 Using a lexicon as your collection filter will validate and type the events for you:
 

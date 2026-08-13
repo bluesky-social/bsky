@@ -183,6 +183,40 @@ test('cutoverReplay: a backfilled DELETE is delivered as an ordinary event', asy
   expect(seqs).toEqual([2, 3])
 })
 
+test('cutoverReplay: kinds reaches both phases — the plan body and the live wire', async () => {
+  const planBodies: Record<string, unknown>[] = []
+  const base = makeFetch([
+    { plannedThroughSeq: 3, sealedTipSeq: 3, segments: [SEALED_ENTRY] },
+  ])
+  const fetchImpl = (async (
+    url: string | URL,
+    init?: Parameters<typeof fetch>[1],
+  ) => {
+    if (String(url).includes('planSnapshot')) {
+      planBodies.push(init?.body != null ? JSON.parse(String(init.body)) : {})
+    }
+    return base(url, init)
+  }) as unknown as typeof fetch
+
+  let liveUrl: string | undefined
+  const seqs = await drain(
+    cutoverReplay({
+      host: 'https://h',
+      nsids: ['app.bsky.feed.post', 'app.bsky.feed.like'],
+      kinds: ['commit'],
+      fetchImpl,
+      transport: liveTransport([liveCommit(4)], (url) => {
+        liveUrl = url
+      }),
+    }),
+  )
+  expect(planBodies[0].kinds).toEqual(['commit'])
+  expect(new URL(liveUrl!).searchParams.getAll('kinds')).toEqual(['commit'])
+  // Backfill 1 and 3 (commits); 2 (identity) pruned client-side despite the
+  // one-sided plan shipping it. Live 4 delivered.
+  expect(seqs).toEqual([1, 3, 4])
+})
+
 test('cutoverReplay: empty archive (tip 0) — live owns the whole stream from the first seq', async () => {
   // v2 wire seq must be >= 1 (decodeLiveFrame rejects seq <= 0), so this
   // exercises the undefined-dedupFloor path at seq 1 rather than seq 0.
@@ -234,7 +268,9 @@ test('cutoverReplay: an empty-after-filter batch still yields (lastCursor preser
   const batches: { events: unknown[]; lastCursor: number }[] = []
   for await (const b of cutoverReplay({
     host: 'https://h',
-    nsids: ['app.bsky.feed.post', 'app.bsky.feed.like'],
+    // No collections filter: pairing one with a kinds list that excludes
+    // 'commit' is unsatisfiable and rejected (see assertWireFilters).
+    nsids: [],
     kinds: ['identity'], // inverse: keep ONLY the identity, drop both commits
     fetchImpl: makeFetch([
       { plannedThroughSeq: 2, sealedTipSeq: 3, segments: [SEALED_ENTRY] },

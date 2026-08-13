@@ -7,16 +7,24 @@ import type { Plan } from '../../src/xrpc/plan.js'
 // the afterSeq/beforeSeq pagination wiring.
 function fakePlanFetch(pages: Array<Partial<Plan>>): {
   fetch: typeof fetch
-  bodies: Array<{ afterSeq?: number; beforeSeq?: number }>
+  bodies: Array<{ afterSeq?: number; beforeSeq?: number; kinds?: string[] }>
 } {
-  const bodies: Array<{ afterSeq?: number; beforeSeq?: number }> = []
+  const bodies: Array<{
+    afterSeq?: number
+    beforeSeq?: number
+    kinds?: string[]
+  }> = []
   let i = 0
   const fetch: typeof globalThis.fetch = async (_url, init) => {
     const body =
       (init as RequestInit | undefined)?.body != null
         ? JSON.parse(String((init as RequestInit).body))
         : {}
-    bodies.push({ afterSeq: body.afterSeq, beforeSeq: body.beforeSeq })
+    bodies.push({
+      afterSeq: body.afterSeq,
+      beforeSeq: body.beforeSeq,
+      kinds: body.kinds,
+    })
     const page = pages[Math.min(i, pages.length - 1)]
     i++
     const full = {
@@ -121,6 +129,39 @@ describe('planPages', () => {
     )
     expect(bodies[0].beforeSeq).toBe(250)
     expect(bodies[1].beforeSeq).toBe(100)
+  })
+
+  it('forwards the kinds filter on every page', async () => {
+    const { fetch, bodies } = fakePlanFetch([
+      { plannedThroughSeq: 50, sealedTipSeq: 100 },
+      { plannedThroughSeq: 100, sealedTipSeq: 100 },
+    ])
+    await collect(
+      planPages({
+        host: 'https://h',
+        collections: [],
+        kinds: ['commit'],
+        fetchImpl: fetch,
+      }),
+    )
+    expect(bodies.map((b) => b.kinds)).toEqual([['commit'], ['commit']])
+  })
+
+  it('omits kinds when unset, keeping the marker-safe planner default', async () => {
+    // With kinds omitted the server admits the $account/$identity/$sync
+    // sentinel blocks under a collection filter, so a collection-filtered
+    // snapshot still receives the DID-level markers it must fold.
+    const { fetch, bodies } = fakePlanFetch([
+      { plannedThroughSeq: 100, sealedTipSeq: 100 },
+    ])
+    await collect(
+      planPages({
+        host: 'https://h',
+        collections: ['app.bsky.feed.post'],
+        fetchImpl: fetch,
+      }),
+    )
+    expect(bodies[0].kinds).toBeUndefined()
   })
 
   it('throws fatally if the cursor fails to advance (anti-spin)', async () => {

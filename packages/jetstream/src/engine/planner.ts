@@ -1,10 +1,13 @@
 import { type DidString } from '@atproto/lex'
+import { type Kind } from '../event.js'
 import { type Plan, planSnapshot } from '../xrpc/plan.js'
 
 export interface PlanPagesOpts {
   host: string
   dids?: DidString[]
   collections: string[]
+  /** Forwarded verbatim; see PlanRequest.kinds for the marker-safe default. */
+  kinds?: Kind[]
   afterSeq?: number
   beforeSeq?: number
   fetchImpl: typeof fetch
@@ -29,6 +32,7 @@ export async function* planPages(opts: PlanPagesOpts): AsyncGenerator<Plan> {
     const page = await planSnapshot(
       {
         host: opts.host,
+        kinds: opts.kinds,
         dids: opts.dids,
         collections: opts.collections,
         afterSeq: cursor,

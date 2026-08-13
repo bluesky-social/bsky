@@ -1,5 +1,6 @@
 import { type DidString } from '@atproto/lex'
 import { type Kind, type RawEvent, type RawEventV1 } from '../event.js'
+import { assertWireFilters } from '../filter-limits.js'
 import { type RawRecordJson } from '../raw-record.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
 import { type LiveInfoFrame, SKIP_FRAME, decodeLiveFrame } from './decode.js'
@@ -20,11 +21,6 @@ const V2_NSID = 'network.bsky.jetstream.subscribeEvents'
 // never seed the dedup floor — it is not a seq, so every real seq would compare
 // as a duplicate. v1 has no split: there, seq IS time_us.
 const V2_CURSOR_SEQ_MAX_THRESHOLD = 1e15
-
-// Server-side caps on the v2 filter params. Exceeding one is a pre-upgrade 400
-// whose body `ws` discards, so check locally and say why.
-const V2_MAX_DIDS = 10_000
-const V2_MAX_COLLECTIONS = 100
 
 export interface LiveEventsOpts {
   host: string
@@ -78,18 +74,8 @@ export async function* liveEvents(
       'jetstream v1 does not support the kinds filter (v1 /subscribe has no equivalent parameter)',
     )
   }
-  if (version === 2) {
-    if ((opts.dids?.length ?? 0) > V2_MAX_DIDS) {
-      throw new RangeError(
-        `dids filter exceeds the server limit of ${V2_MAX_DIDS}`,
-      )
-    }
-    if ((opts.collections?.length ?? 0) > V2_MAX_COLLECTIONS) {
-      throw new RangeError(
-        `collections filter exceeds the server limit of ${V2_MAX_COLLECTIONS}`,
-      )
-    }
-  }
+  // v2 only: v1's wanted* params have their own (looser) server contract.
+  if (version === 2) assertWireFilters(opts)
   // The decoder-select union is the truth: the v1 decoder yields RawEventV1 (a
   // subtype), the v2 decoder yields RawEvent plus LiveInfoFrame, and both can
   // yield SKIP_FRAME.
