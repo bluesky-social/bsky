@@ -7,8 +7,10 @@ Client library for [Jetstream](https://github.com/bluesky-social/jetstream), a f
 Install the Jetstream client:
 
 ```
-npm install @bsky/jetstream
+npm install @bsky/jetstream @atproto/lex
 ```
+
+`@atproto/lex` is a peer dependency providing the lexicon type system that events are typed with.
 
 This package speaks Jetstream's v2 wire and supports all three of its consumption modes: `live()` for realtime events, `snapshot()` for the sealed archive of past events, and `replay()` for the archive followed by a seamless handoff to realtime. Consuming live events looks like:
 
