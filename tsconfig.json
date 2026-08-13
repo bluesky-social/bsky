@@ -1,7 +1,6 @@
 {
   "include": [],
   "references": [
-    { "path": "./packages/internal-smoke-test" },
     { "path": "./packages/jetstream" },
     { "path": "./packages/sdk" },
   ],

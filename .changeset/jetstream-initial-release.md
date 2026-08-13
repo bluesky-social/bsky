@@ -4,7 +4,7 @@
 
 Client library for Jetstream, a friendly way to consume data published to AT Protocol. The package provides:
 
-- `Jetstream` with three consumption modes: `live()` streams events in realtime, `snapshot()` streams the sealed archive of past events, and `replay()` streams the archive then hands off seamlessly to the live stream — no gap, no duplicate, recovering on its own when a long replay falls behind the live retention window.
+- `Jetstream` with three consumption modes: `live()` streams the network in realtime, `replay()` continuously streams full network history, and `snapshot()` streams network history up to the current moment.
 - Typed events by default: records arrive as lex data, validated against schemas when collections are given as lexicon schema filters. `raw: true` yields wire-faithful events instead (parsed JSON from the live stream, DAG-CBOR bytes from snapshots, with lazily computed CIDs).
 - `isCreate()`, `isUpdate()`, `isDelete()`, and `isPut()` narrow an event to a commit with that operation, and to one collection's records when given a lexicon — the same narrowing `$isTypeOf()` performs.
 - Filtering by `collections` (exact NSIDs or `ns.*` wildcards), `dids`, and `kinds`, applied consistently across all three modes.
