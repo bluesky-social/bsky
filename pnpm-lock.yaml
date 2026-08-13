@@ -269,9 +269,6 @@ importers:
 
   packages/jetstream:
     dependencies:
-      '@atproto/lex':
-        specifier: ^0.3.0
-        version: 0.3.3
       '@atproto/lex-cbor':
         specifier: ^0.1.6
         version: 0.1.6
@@ -279,6 +276,9 @@ importers:
         specifier: ^0.2.0
         version: 0.2.0
     devDependencies:
+      '@atproto/lex':
+        specifier: ^0.3.0
+        version: 0.3.3
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1

@@ -8,6 +8,8 @@ export type {
 export { JetstreamV1 } from './jetstream-v1.js'
 export type { LiveV1Opts } from './jetstream-v1.js'
 export { typedEventFromRaw } from './decode-typed.js'
+export { isCreate, isDelete, isPut, isUpdate } from './narrow.js'
+export type { EventLexicon, NarrowedEvent } from './narrow.js'
 export { parseRawRecord } from './raw-record.js'
 export type { RawRecord, RawRecordCbor, RawRecordJson } from './raw-record.js'
 export { websocketTransport } from './live/transport.js'

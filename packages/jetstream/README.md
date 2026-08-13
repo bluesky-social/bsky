@@ -7,18 +7,20 @@ Client library for [Jetstream](https://github.com/bluesky-social/jetstream), a f
 Install the Jetstream client:
 
 ```
-npm install @bsky/jetstream
+npm install @bsky/jetstream @atproto/lex
 ```
+
+`@atproto/lex` is a peer dependency providing the lexicon type system that events are typed with.
 
 This package speaks Jetstream's v2 wire and supports all three of its consumption modes: `live()` for realtime events, `snapshot()` for the sealed archive of past events, and `replay()` for the archive followed by a seamless handoff to realtime. Consuming live events looks like:
 
 ```ts
-import { Jetstream } from '@bsky/jetstream'
+import { Jetstream, isCreate } from '@bsky/jetstream'
 
 const js = new Jetstream('https://jetstream.us-east.bsky.network')
 
 for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
-  if (evt.kind === 'commit' && evt.commit.operation === 'create') {
+  if (isCreate(evt)) {
     console.log(evt.commit.collection, evt.commit.record)
   }
 }
@@ -29,17 +31,19 @@ for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
 Using a lexicon as your collection filter will validate and type the events for you:
 
 ```ts
-import { Jetstream } from '@bsky/jetstream'
+import { Jetstream, isCreate } from '@bsky/jetstream'
 import { app } from '@bsky/sdk/lexicons'
 
 const js = new Jetstream('https://jetstream.us-east.bsky.network')
 
 for await (const evt of js.live({ collections: [app.bsky.feed.post] })) {
-  if (evt.kind === 'commit' && evt.commit.operation === 'create') {
+  if (isCreate(evt)) {
     console.log(evt.commit.collection, evt.commit.record.text)
   }
 }
 ```
+
+`isCreate()`, `isUpdate()`, `isDelete()`, and `isPut()` (create-or-update) narrow an event to a commit with that operation. Pass a lexicon — or a bare NSID — as a second argument to also narrow to its collection: `isCreate(evt, app.bsky.feed.post)`. The record narrows exactly as `app.bsky.feed.post.$isTypeOf()` would narrow it, so a record the event already types precisely keeps that type. Like `$isTypeOf()`, these helpers narrow types without validating; when shape guarantees matter, use a validating collection filter as above.
 
 Typed records are converted lex data — `Cid`, `Uint8Array`, and `BlobRef` values rather than wire JSON's `{$link}` / `{$bytes}` shapes. Pass `live({ raw: true })` when you want the wire-faithful record instead (its `$link`/`$bytes` markers intact).
 
