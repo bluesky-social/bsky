@@ -85,9 +85,11 @@ export async function* cutoverReplay(
     collections: ctx.nsids,
     window,
   })
-  // The archive has no server-side kinds filter (unlike the live tail, which
-  // sends `kinds=` on the wire), so filter client-side to make kinds uniform
-  // across both phases. Only when non-empty: no kinds pays zero overhead.
+  // kinds goes on the wire in both phases (live params, plan input), but the
+  // plan is a one-sided transport hint — a selected block can still carry
+  // other kinds — so the client-side prune is what makes kinds exact and
+  // uniform across the two phases. Only when non-empty: no kinds pays zero
+  // overhead.
   const kindsFilter =
     ctx.kinds && ctx.kinds.length > 0 ? new Set(ctx.kinds) : undefined
 
@@ -105,6 +107,7 @@ export async function* cutoverReplay(
       try {
         for await (const page of planPages({
           host: ctx.host,
+          kinds: ctx.kinds,
           dids: ctx.dids,
           collections: ctx.nsids,
           afterSeq: snapshotResume,

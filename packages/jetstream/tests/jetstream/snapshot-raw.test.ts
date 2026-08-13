@@ -231,6 +231,34 @@ test('snapshot: beforeSeq mid-block prunes rows above the ceiling', async () => 
   expect(seqs).toEqual([1, 2]) // seq 3 excluded (inclusive upper bound)
 })
 
+test('snapshot: forwards kinds to the plan AND still prunes client-side', async () => {
+  // The plan is a transport planner with a one-sided contract, so the server
+  // may ship non-commit rows inside a selected block even with kinds=commit.
+  // Pushing kinds down cuts download volume; the client filter stays
+  // authoritative. golden_block.bin: seq 2 is an identity event.
+  const planBodies: Record<string, unknown>[] = []
+  const capturingFetch = (async (
+    url: string | URL,
+    init?: Parameters<typeof fetch>[1],
+  ) => {
+    if (String(url).includes('planSnapshot')) {
+      planBodies.push(init?.body != null ? JSON.parse(String(init.body)) : {})
+    }
+    return fetchImpl(url, init)
+  }) as unknown as typeof fetch
+
+  const js = new Jetstream({
+    service: 'https://js.example',
+    fetchImpl: capturingFetch,
+  })
+  const seqs: number[] = []
+  for await (const b of js.snapshotRawBatches({ kinds: ['commit'] })) {
+    for (const e of b.events) seqs.push(e.seq)
+  }
+  expect(planBodies[0].kinds).toEqual(['commit'])
+  expect(seqs).toEqual([1, 3]) // seq 2 (identity) pruned by the kinds filter
+})
+
 test('snapshot: onError DownloadError names the failed plan entry', async () => {
   failOnce = true
   const errored: Error[] = []

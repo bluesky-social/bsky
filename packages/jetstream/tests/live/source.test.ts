@@ -290,6 +290,46 @@ test('rejects parameter lists the server would refuse pre-upgrade', async () => 
       collections: Array.from({ length: 101 }, (_, i) => `app.test.c${i}`),
     }),
   ).rejects.toThrow(RangeError)
+  await expect(
+    run({
+      host: 'https://h',
+      transport,
+      kinds: ['commit', 'commit', 'commit', 'commit', 'commit'],
+    }),
+  ).rejects.toThrow(RangeError)
+})
+
+test('rejects a collections filter that can never apply (kinds excludes commit)', async () => {
+  // The server refuses this pair pre-upgrade with a 400 the default websocket
+  // transport cannot read the body of; inside a replay cutover a bare 400 is
+  // even classified as cursor-too-old and burns the re-plan budget. Say why
+  // here instead.
+  const { transport, urls } = scriptedTransport([[commitFrame(1)]])
+  await expect(async () => {
+    for await (const _ of liveEvents({
+      host: 'https://h',
+      transport,
+      collections: ['app.bsky.feed.post'],
+      kinds: ['account'],
+    }))
+      void _
+  }).rejects.toThrow(/can never apply/)
+  expect(urls).toEqual([]) // never dialed
+})
+
+test('accepts collections together with a kinds list that includes commit', async () => {
+  const { transport, urls } = scriptedTransport([[commitFrame(1)]])
+  const got: number[] = []
+  for await (const ev of liveEvents({
+    host: 'https://h',
+    transport,
+    collections: ['app.bsky.feed.post'],
+    kinds: ['commit', 'account'],
+  })) {
+    got.push(ev.seq)
+  }
+  expect(got).toEqual([1])
+  expect(urls[0]).toContain('collections=app.bsky.feed.post')
 })
 
 test('signal abort stops iteration', async () => {

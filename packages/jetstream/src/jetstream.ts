@@ -94,7 +94,9 @@ export interface LiveOpts<
   dids?: DidString[]
   /**
    * Event kinds to receive. Omitted means all kinds. The collections filter
-   * constrains only commits, so a commits-only stream needs kinds: ['commit'].
+   * constrains only commits, so a commits-only stream needs kinds: ['commit'] —
+   * and conversely, a kinds list without 'commit' makes a collections filter
+   * unsatisfiable and is rejected rather than silently ignored.
    */
   kinds?: Kind[]
   cursor?: CursorStore
@@ -116,8 +118,13 @@ export interface ReplayOpts<
   collections?: F
   dids?: DidString[]
   /**
-   * Event kinds to receive, uniform across both phases: sent on the live
-   * wire, applied client-side over the snapshot phase.
+   * Event kinds to receive, uniform across both phases: sent on the live wire
+   * and to the snapshot planner, then re-applied client-side (the plan only
+   * narrows which blocks are downloaded).
+   *
+   * Note the interaction with `collections`, which constrains commits only: a
+   * `kinds` list without `'commit'` makes a collections filter unsatisfiable
+   * and is rejected rather than silently ignored.
    */
   kinds?: Kind[]
   /**
@@ -157,9 +164,13 @@ export interface SnapshotOpts<
   collections?: F
   dids?: DidString[]
   /**
-   * Event kinds to receive. The snapshot plan has no kinds filter, so this
-   * is applied client-side after download — same semantics as replay's
-   * snapshot phase.
+   * Event kinds to receive. Sent to the planner so whole blocks can be skipped
+   * before download, then re-applied client-side (the plan may still ship
+   * other kinds from a selected block).
+   *
+   * Note the interaction with `collections`, which constrains commits only: a
+   * `kinds` list without `'commit'` makes a collections filter unsatisfiable
+   * and is rejected rather than silently ignored.
    */
   kinds?: Kind[]
   /**
@@ -349,9 +360,11 @@ export class Jetstream {
     const sha256 = this.opts.sha256 ?? defaultRuntime.sha256()
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
     const maxReplans = opts.maxReplans ?? 50
-    // The plan has no kinds filter, so kinds prune client-side. lastCursor is
-    // preserved so the watermark advances past pruned events, and an
-    // empty-after-filter batch still yields (same rule as replay's phase).
+    // kinds also goes to the planner (below), but the plan is a one-sided
+    // transport hint — a selected block can still carry other kinds — so the
+    // client-side prune stays authoritative. lastCursor is preserved so the
+    // watermark advances past pruned events, and an empty-after-filter batch
+    // still yields (same rule as replay's phase).
     const kindsFilter =
       opts.kinds && opts.kinds.length > 0 ? new Set(opts.kinds) : undefined
 
@@ -377,6 +390,7 @@ export class Jetstream {
       try {
         for await (const page of planPages({
           host,
+          kinds: opts.kinds,
           dids: opts.dids,
           collections: nsids,
           afterSeq: resume,
