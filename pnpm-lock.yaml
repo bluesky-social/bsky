@@ -265,8 +265,6 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@26.1.0)(@vitest/coverage-v8@4.1.10)(vite@8.1.2(@types/node@26.1.0)(yaml@2.9.0))
 
-  packages/internal-smoke-test: {}
-
   packages/jetstream:
     dependencies:
       '@atproto/lex-cbor':
