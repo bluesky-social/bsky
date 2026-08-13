@@ -1,5 +1,20 @@
 # @atproto/api
 
+## 1.0.0
+
+### Major Changes
+
+- [#1](https://github.com/bluesky-social/bsky/pull/1) [`c3f0c47`](https://github.com/bluesky-social/bsky/commit/c3f0c47c5644767315adeff63601bd07eccadff9) Thanks [@devinivy](https://github.com/devinivy)! - The Bluesky SDK, built on `@atproto/lex`. The package provides:
+
+  - Typed actions for common Bluesky operations — posts, likes, reposts, follows, profile upserts, graph mutes/blocks, notifications, and the full preferences suite — invoked via `client.call(action, input)` on a lex `Client`.
+  - `/lexicons` — generated schemas and types for the `app.bsky`, `com.atproto`, and `chat.bsky` namespaces, importable by namespace root.
+  - `/moderation` — the moderation engine (`moderatePost`, `moderateProfile`, label handling, mute words) for interpreting labels and preferences into UI decisions.
+  - `/richtext` — `RichText` with facet detection and handle resolution (including the one-step `RichText.resolve()`), sanitization, and unicode utilities.
+  - `/utils` — age assurance helpers, `ClientHandleResolver`, muted-word and nux utilities.
+  - `api.*` constants with Bluesky-operated service addresses (AppView, chat, moderation).
+
+  Note: this package supersedes the Bluesky portions of `@atproto/api` (Agent classes are not carried over — a lex `Client` fills that role). See `skills/upgrade-from-atproto-api` for migration guidance.
+
 ## 0.20.25
 
 ### Patch Changes
@@ -1495,12 +1510,10 @@
     - `XrpcClient` is the base class.
 
   #### Non-breaking changes
-
   - The `com.*` and `app.*` namespaces have been made directly available to every
     `Agent` instances.
 
   #### Deprecations
-
   - The default export of the `@atproto/xrpc` package has been deprecated. Use
     named exports instead.
   - The `Client` and `ServiceClient` classes are now deprecated. They are replaced by a single `XrpcClient` class.
