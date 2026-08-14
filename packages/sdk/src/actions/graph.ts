@@ -2,6 +2,7 @@ import {
   type Action,
   type AtIdentifierString,
   type CreateOutput,
+  type DidString,
 } from '@atproto/lex'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
 import { app as appLexicons } from '../lexicons/index.js'
@@ -34,6 +35,33 @@ export const unmuteActor: Action<{ actor: AtIdentifierString }, void> = async (
   { actor },
 ) => {
   await client.call(appLexicons.bsky.graph.unmuteActor.main, { actor })
+}
+
+/**
+ * Block an actor (user) by creating a block record.
+ */
+export const blockActor: Action<{ did: DidString }, CreateOutput> = async (
+  client,
+  { did },
+) => {
+  return client.create(appLexicons.bsky.graph.block.main, {
+    subject: did,
+    createdAt: currentDatetimeString(),
+  })
+}
+
+/**
+ * Unblock an actor (user) by deleting a block record by URI.
+ */
+export const unblockActor: Action<AtUriString, void> = async (
+  client,
+  blockUri,
+) => {
+  const urip = new AtUri(blockUri)
+  await client.delete(appLexicons.bsky.graph.block.main, {
+    rkey: urip.rkeySafe,
+    repo: urip.hostname,
+  })
 }
 
 /**
