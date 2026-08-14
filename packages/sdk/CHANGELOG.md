@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.0.1
+
+### Patch Changes
+
+- [#29](https://github.com/bluesky-social/bsky/pull/29) [`66ce5dd`](https://github.com/bluesky-social/bsky/commit/66ce5dd3f747dce703ff8259a769ae296355494c) Thanks [@mozzius](https://github.com/mozzius)! - Fix `lab_treeViewEnabled` and `lab_mergeFeedEnabled` preferences
+
 ## 1.0.0
 
 ### Major Changes
