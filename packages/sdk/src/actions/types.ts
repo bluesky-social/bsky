@@ -8,11 +8,13 @@ export interface BskyFeedViewPreference {
   hideRepliesByLikeCount: number
   hideReposts: boolean
   hideQuotePosts: boolean
+  lab_mergeFeedEnabled?: boolean
   [key: string]: unknown
 }
 
 export interface BskyThreadViewPreference {
   sort: string
+  lab_treeViewEnabled?: boolean
   [key: string]: unknown
 }
 

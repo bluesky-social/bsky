@@ -341,12 +341,16 @@ export const getPreferences: Action<
   // Build feedViewPrefs
   const feedViewPrefs: Record<string, BskyFeedViewPreference> = {}
   for (const fvp of feedViewPrefsArr) {
+    const appFeedViewPref: Partial<BskyFeedViewPreference> = fvp
     feedViewPrefs[fvp.feed] = {
       hideReplies: fvp.hideReplies ?? false,
       hideRepliesByUnfollowed: fvp.hideRepliesByUnfollowed ?? true,
       hideRepliesByLikeCount: fvp.hideRepliesByLikeCount ?? 0,
       hideReposts: fvp.hideReposts ?? false,
       hideQuotePosts: fvp.hideQuotePosts ?? false,
+      ...(typeof appFeedViewPref.lab_mergeFeedEnabled === 'boolean' && {
+        lab_mergeFeedEnabled: appFeedViewPref.lab_mergeFeedEnabled,
+      }),
     }
   }
   // Always have 'home' defaults
@@ -360,8 +364,13 @@ export const getPreferences: Action<
     }
   }
 
+  const appThreadViewPref: Partial<BskyThreadViewPreference> | undefined =
+    threadView
   const threadViewPrefs: BskyThreadViewPreference = {
     sort: threadView?.sort ?? 'hotness',
+    ...(typeof appThreadViewPref?.lab_treeViewEnabled === 'boolean' && {
+      lab_treeViewEnabled: appThreadViewPref.lab_treeViewEnabled,
+    }),
   }
 
   // Build labelers list: app labelers + user's labeler prefs

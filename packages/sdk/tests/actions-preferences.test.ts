@@ -103,6 +103,31 @@ describe('getPreferences', () => {
     expect(prefs.threadViewPrefs.sort).toBe('hotness')
   })
 
+  it.each([true, false])(
+    'interprets app-specific view preferences set to %s',
+    async (enabled) => {
+      const { client } = fakeClient({
+        'app.bsky.actor.getPreferences': () => ({
+          preferences: [
+            {
+              $type: 'app.bsky.actor.defs#feedViewPref',
+              feed: 'home',
+              lab_mergeFeedEnabled: enabled,
+            },
+            {
+              $type: 'app.bsky.actor.defs#threadViewPref',
+              lab_treeViewEnabled: enabled,
+            },
+          ],
+        }),
+        'app.bsky.actor.putPreferences': () => ({}),
+      })
+      const prefs = await client.call(getPreferences)
+      expect(prefs.feedViewPrefs.home.lab_mergeFeedEnabled).toBe(enabled)
+      expect(prefs.threadViewPrefs.lab_treeViewEnabled).toBe(enabled)
+    },
+  )
+
   it('interprets adult content + label prefs', async () => {
     const { client } = fakeClient({
       'app.bsky.actor.getPreferences': () => ({
