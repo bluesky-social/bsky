@@ -64,6 +64,18 @@ describe('detectFacets', () => {
     'punctuation https://foo.com, https://bar.com/whatever; https://baz.com.',
     'parenthentical (https://foo.com)',
     'except for https://foo.com/thing_(cool)',
+
+    "possessive stream.place's feature",
+    'possessive stream.place’s feature',
+    'possessive https://stream.place’s feature',
+    'ellipsis bsky.app… end',
+    'em dash bsky.app—end',
+    'repeated punctuation bsky.app!!',
+    'repeated punctuation in a path https://foo.com/bar!! wow',
+    'made up tld https://example.zzzz end',
+    'scheme-prefixed domain http.cat/404 end',
+    'ip literal https://1.1.1.1/dns end',
+    'userinfo https://example.com@elsewhere.com/x end',
   ]
   const outputs: string[][][] = [
     [['no mention']],
@@ -215,6 +227,37 @@ describe('detectFacets', () => {
     [
       ['except for '],
       ['https://foo.com/thing_(cool)', 'https://foo.com/thing_(cool)'],
+    ],
+
+    [['possessive '], ['stream.place', 'https://stream.place'], ["'s feature"]],
+    [['possessive '], ['stream.place', 'https://stream.place'], ['’s feature']],
+    [
+      ['possessive '],
+      ['https://stream.place', 'https://stream.place'],
+      ['’s feature'],
+    ],
+    [['ellipsis '], ['bsky.app', 'https://bsky.app'], ['… end']],
+    [['em dash '], ['bsky.app', 'https://bsky.app'], ['—end']],
+    [['repeated punctuation '], ['bsky.app', 'https://bsky.app'], ['!!']],
+    [
+      ['repeated punctuation in a path '],
+      ['https://foo.com/bar', 'https://foo.com/bar'],
+      ['!! wow'],
+    ],
+    [['made up tld https://example.zzzz end']],
+    [
+      ['scheme-prefixed domain '],
+      ['http.cat/404', 'https://http.cat/404'],
+      [' end'],
+    ],
+    [['ip literal '], ['https://1.1.1.1/dns', 'https://1.1.1.1/dns'], [' end']],
+    [
+      ['userinfo '],
+      [
+        'https://example.com@elsewhere.com/x',
+        'https://example.com@elsewhere.com/x',
+      ],
+      [' end'],
     ],
   ]
   it('correctly handles a set of text inputs', async () => {
