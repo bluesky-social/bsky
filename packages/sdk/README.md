@@ -126,6 +126,7 @@ client with `client.call(action, input)`:
 
 ```typescript
 import {
+  blockActor,
   blockActorList,
   deleteFollow,
   deleteLike,
@@ -138,6 +139,7 @@ import {
   muteActorList,
   post,
   repost,
+  unblockActor,
   unblockActorList,
   unmuteActor,
   unmuteActorList,
@@ -162,6 +164,8 @@ await bskyClient.call(follow, { did })
 await bskyClient.call(deleteFollow, followUri)
 await bskyClient.call(muteActor, { actor })
 await bskyClient.call(unmuteActor, { actor })
+await bskyClient.call(blockActor, { did })
+await bskyClient.call(unblockActor, blockUri)
 await bskyClient.call(muteActorList, { list })
 await bskyClient.call(unmuteActorList, { list })
 await bskyClient.call(blockActorList, { list })

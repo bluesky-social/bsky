@@ -1,6 +1,14 @@
 import { Client } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
-import { follow, like, muteActor, post, upsertProfile } from '../src/index.js'
+import {
+  blockActor,
+  follow,
+  like,
+  muteActor,
+  post,
+  unblockActor,
+  upsertProfile,
+} from '../src/index.js'
 
 function fakeClient(
   routes: Record<string, (init: { url: URL; body?: unknown }) => unknown>,
@@ -149,6 +157,38 @@ describe('record actions', () => {
       actor: 'did:plc:bad',
       onlyReposts: true,
       onlyQuoteposts: true,
+    })
+  })
+
+  it('blockActor creates a graph block record', async () => {
+    const { client, calls } = fakeClient({
+      'com.atproto.repo.createRecord': () => ({
+        uri: 'at://did:plc:test/app.bsky.graph.block/1',
+        cid: 'b',
+      }),
+    })
+    await client.call(blockActor, { did: 'did:plc:blocked' })
+    const body = calls[0].body as any
+    expect(body.collection).toBe('app.bsky.graph.block')
+    expect(body.record.subject).toBe('did:plc:blocked')
+    expect(body.record.createdAt).toBeTruthy()
+  })
+
+  it('unblockActor deletes a graph block record by URI', async () => {
+    const { client, calls } = fakeClient({
+      'com.atproto.repo.deleteRecord': () => ({}),
+    })
+    await client.call(
+      unblockActor,
+      'at://did:plc:test/app.bsky.graph.block/3jqfcqzm3fo2j',
+    )
+    expect(calls.map((call) => call.nsid)).toEqual([
+      'com.atproto.repo.deleteRecord',
+    ])
+    expect(calls[0].body).toMatchObject({
+      repo: 'did:plc:test',
+      collection: 'app.bsky.graph.block',
+      rkey: '3jqfcqzm3fo2j',
     })
   })
 
