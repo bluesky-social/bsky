@@ -11,6 +11,7 @@
           "filter": {
             "type": "string",
             "description": "Which notification feed to return. Grouping behavior and the application of the account's notification preferences vary per feed: 'all' and 'people-i-follow' respect notification preferences, while dedicated feeds do not.",
+            "maxLength": 32,
             "knownValues": [
               "all",
               "people-i-follow",
@@ -27,7 +28,7 @@
             "maximum": 50,
             "default": 30
           },
-          "cursor": { "type": "string" }
+          "cursor": { "type": "string", "maxLength": 1024 }
         }
       },
       "output": {
@@ -36,7 +37,7 @@
           "type": "object",
           "required": ["groups"],
           "properties": {
-            "cursor": { "type": "string" },
+            "cursor": { "type": "string", "maxLength": 1024 },
             "groups": {
               "type": "array",
               "description": "Notification groups, newest first. Clients should ignore group types they do not recognize.",
@@ -73,7 +74,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -108,7 +110,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -143,7 +146,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -178,7 +182,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -213,7 +218,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -248,7 +254,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -278,7 +285,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this group, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -313,7 +321,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -347,7 +356,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -381,7 +391,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -415,7 +426,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -440,7 +452,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -465,7 +478,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -490,7 +504,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
@@ -520,7 +535,8 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it."
+          "description": "Opaque identifier for this notification, unique within the notification feed. Clients must not attempt to derive meaning from it.",
+          "maxLength": 256
         },
         "isRead": {
           "type": "boolean",
