@@ -121,6 +121,11 @@
         "subject": {
           "type": "ref",
           "ref": "app.bsky.actor.defs#profileView"
+        },
+        "subjectOptedOut": {
+          "type": "boolean",
+          "const": true,
+          "description": "Set to true when the subject has opted out of appearing in the reference list. Only set when the viewer owns the list."
         }
       }
     },
@@ -257,6 +262,14 @@
         "blocked": {
           "type": "string",
           "format": "at-uri"
+        },
+        "referenceListOptOuts": {
+          "type": "array",
+          "description": "The authenticated viewer's matching app.bsky.graph.referencelistOptOut record URIs for this reference list. Only set for reference lists. Clients should delete all listed records to undo the opt-out.",
+          "items": {
+            "type": "string",
+            "format": "at-uri"
+          }
         }
       }
     },
