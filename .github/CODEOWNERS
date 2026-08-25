@@ -1,5 +1,8 @@
 # Lexicon governance: changes to published schemas require codeowner review.
 /lexicons/ @devinivy
+/lexicons/app/bsky/ @devinivy @estrattonbailey @mozzius @rafaeleyng
+/lexicons/chat/bsky/ @devinivy @estrattonbailey @mozzius @rafaeleyng
+/lexicons/network/bsky/ @devinivy @jcalabro
 
 # The gate protects itself and its enforcement mechanism.
 /.github/CODEOWNERS @devinivy
