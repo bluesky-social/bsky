@@ -18,17 +18,17 @@ describe('generated lexicons', () => {
   })
 
   it('builds and validates a reference-list opt-out record', () => {
-    const optOut = app.bsky.graph.referencelistOptOut.$build({
+    const optOut = app.bsky.graph.referencelistoptout.$build({
       subject:
         'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/app.bsky.graph.list/3m2lp5zsc7422',
       createdAt: '2026-08-25T12:30:00.000Z',
     })
 
-    expect(optOut.$type).toBe('app.bsky.graph.referencelistOptOut')
-    expect(app.bsky.graph.referencelistOptOut.$matches(optOut)).toBe(true)
+    expect(optOut.$type).toBe('app.bsky.graph.referencelistoptout')
+    expect(app.bsky.graph.referencelistoptout.$matches(optOut)).toBe(true)
     expect(
-      app.bsky.graph.referencelistOptOut.$matches({
-        $type: 'app.bsky.graph.referencelistOptOut',
+      app.bsky.graph.referencelistoptout.$matches({
+        $type: 'app.bsky.graph.referencelistoptout',
         subject: 'not-an-at-uri',
         createdAt: '2026-08-25T12:30:00.000Z',
       }),
@@ -37,8 +37,8 @@ describe('generated lexicons', () => {
 
   it('leaves reference-list subject semantics to consuming services', () => {
     expect(
-      app.bsky.graph.referencelistOptOut.$matches({
-        $type: 'app.bsky.graph.referencelistOptOut',
+      app.bsky.graph.referencelistoptout.$matches({
+        $type: 'app.bsky.graph.referencelistoptout',
         subject:
           'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/app.bsky.feed.post/3m2lp5zsc7422',
         createdAt: '2026-08-25T12:30:00.000Z',
@@ -60,7 +60,7 @@ describe('generated lexicons', () => {
     expect(
       app.bsky.graph.defs.listViewerState.matches({
         referenceListOptOuts: [
-          'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/app.bsky.graph.referencelistOptOut/3m2lp5zsc7422',
+          'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/app.bsky.graph.referencelistoptout/3m2lp5zsc7422',
         ],
       }),
     ).toBe(true)

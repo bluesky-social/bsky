@@ -101,7 +101,7 @@
     "app.bsky.graph.muteActor",
     "app.bsky.graph.muteActorList",
     "app.bsky.graph.muteThread",
-    "app.bsky.graph.referencelistOptOut",
+    "app.bsky.graph.referencelistoptout",
     "app.bsky.graph.searchStarterPacks",
     "app.bsky.graph.searchStarterPacksV2",
     "app.bsky.graph.starterpack",
@@ -343,7 +343,7 @@
     },
     "app.bsky.authFullApp": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authFullApp",
-      "cid": "bafyreiehetsqsmhix2mni2rlebyrxcui3prdyo4ciqzdl5rhszoxdoy6ku"
+      "cid": "bafyreib6ka4petecklfuu6xo744fjxfgn7cgylwblv4ovcg23uxilfhvby"
     },
     "app.bsky.authManageFeedDeclarations": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authManageFeedDeclarations",
@@ -583,7 +583,7 @@
     },
     "app.bsky.graph.defs": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.graph.defs",
-      "cid": "bafyreicnqghjrxnxwizzfux6v2bjsa5cruxn4ol75hnz4bobvfbfbknati"
+      "cid": "bafyreih7d44ntwsqbnhw6kaby37al5ebaopenagdspohgsqenravelg57e"
     },
     "app.bsky.graph.follow": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.graph.follow",
@@ -677,9 +677,9 @@
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.graph.muteThread",
       "cid": "bafyreibp7yqwkx5anwxj2sg6qlhy2whp4wnuzytyi2iot73xs4osu277tu"
     },
-    "app.bsky.graph.referencelistOptOut": {
-      "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.graph.referencelistOptOut",
-      "cid": "bafyreic4vhvktz5kab2sgu4yyh2vt3gjul6mwjym2dt7lii76zsxkud6tu"
+    "app.bsky.graph.referencelistoptout": {
+      "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.graph.referencelistoptout",
+      "cid": "bafyreigvmyqs5ugces7zsncjamactrfyifrza73vm6hi7b2p6jiiv5ilae"
     },
     "app.bsky.graph.searchStarterPacks": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.graph.searchStarterPacks",
