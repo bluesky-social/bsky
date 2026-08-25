@@ -59,11 +59,15 @@ describe('generated lexicons', () => {
     ).toBe(true)
     expect(
       app.bsky.graph.defs.listViewerState.matches({
-        referenceListOptOuts: [
+        referenceListOptOut:
           'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/app.bsky.graph.referencelistoptout/3m2lp5zsc7422',
-        ],
       }),
     ).toBe(true)
+    expect(
+      app.bsky.graph.defs.listViewerState.matches({
+        referenceListOptOut: 'not-an-at-uri',
+      }),
+    ).toBe(false)
     expect(
       app.bsky.graph.defs.listItemView.matches({
         uri: 'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/app.bsky.graph.listitem/3m2lp5zsc7422',
