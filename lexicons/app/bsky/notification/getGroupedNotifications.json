@@ -93,6 +93,7 @@
         },
         "actors": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the actors who liked the post, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.actor.defs#profileView" }
         },
@@ -129,6 +130,7 @@
         },
         "actors": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the actors who reposted the post, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.actor.defs#profileView" }
         },
@@ -165,6 +167,7 @@
         },
         "actors": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the actors who liked the repost, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.actor.defs#profileView" }
         },
@@ -201,6 +204,7 @@
         },
         "actors": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the actors who reposted the repost, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.actor.defs#profileView" }
         },
@@ -232,6 +236,7 @@
         },
         "actors": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the accounts that followed, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.actor.defs#profileView" }
         },
@@ -268,6 +273,7 @@
         },
         "posts": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the new posts, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.feed.defs#postView" }
         },
@@ -304,6 +310,7 @@
         },
         "actors": {
           "type": "array",
+          "minLength": 1,
           "description": "Sample of the actors who liked the feed generator, newest first. May contain fewer entries than count.",
           "items": { "type": "ref", "ref": "app.bsky.actor.defs#profileView" }
         },
