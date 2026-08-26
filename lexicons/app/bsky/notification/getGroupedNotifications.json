@@ -4,7 +4,7 @@
   "defs": {
     "main": {
       "type": "query",
-      "description": "Enumerate notifications for the requesting account, pre-grouped for rendering. Supercedes listNotifications. Requires auth.",
+      "description": "Enumerate notifications for the requesting account, pre-grouped for rendering. Supersedes listNotifications. Requires auth.",
       "parameters": {
         "type": "params",
         "properties": {
