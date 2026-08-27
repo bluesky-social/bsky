@@ -16,8 +16,7 @@ jobs:
           node-version-file: '.nvmrc'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @bsky/sdk exec lex install --ci
-      # Generate src/lexicons (gitignored) so lint/typecheck can resolve imports
+      # Generate the gitignored SDK sources before lint resolves their imports.
       - run: pnpm --filter @bsky/sdk run codegen
       - run: pnpm format:check
       - run: pnpm lint
@@ -39,7 +38,6 @@ jobs:
           node-version-file: '.nvmrc'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @bsky/sdk exec lex install --ci
       - run: pnpm --filter @bsky/sdk run build
       - run: pnpm --filter @bsky/sdk run test:peer-matrix
 

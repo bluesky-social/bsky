@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
+import * as lexicons from '../src/lexicons/index.js'
 import { app } from '../src/lexicons/index.js'
 
 describe('generated lexicons', () => {
+  it('uses the canonical root namespaces without exporting internal schemas', () => {
+    expect(app.bsky.video.startUpload.$nsid).toBe('app.bsky.video.startUpload')
+    expect('unspecced' in app.bsky).toBe(false)
+    expect('network' in lexicons).toBe(false)
+    expect('tools' in lexicons).toBe(false)
+  })
+
   it('builds and validates a post record', () => {
     const post = app.bsky.feed.post.$build({
       text: 'hello world',
