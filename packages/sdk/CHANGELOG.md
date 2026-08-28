@@ -1,5 +1,17 @@
 # @atproto/api
 
+## 1.1.0
+
+### Minor Changes
+
+- [#35](https://github.com/bluesky-social/bsky/pull/35) [`37b42eb`](https://github.com/bluesky-social/bsky/commit/37b42ebfa1017c8ff5152cf221a1d12b9a3516da) Thanks [@blackmichael](https://github.com/blackmichael)! - Add reference-list opt-out record and view lexicons
+
+- [#28](https://github.com/bluesky-social/bsky/pull/28) [`3b5b5f2`](https://github.com/bluesky-social/bsky/commit/3b5b5f2d1492f56f7dd0a91a82b6c565db0646a8) Thanks [@mozzius](https://github.com/mozzius)! - Add `blockActor` and `unblockActor` sugar actions
+
+### Patch Changes
+
+- [#39](https://github.com/bluesky-social/bsky/pull/39) [`1a154a4`](https://github.com/bluesky-social/bsky/commit/1a154a445df3178af6f40250080c0f464d1b22c7) Thanks [@mozzius](https://github.com/mozzius)! - Support rich-text cloning in browsers without `structuredClone`
+
 ## 1.0.1
 
 ### Patch Changes
