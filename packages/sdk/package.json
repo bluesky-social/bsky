@@ -41,8 +41,6 @@
   },
   "files": [
     "dist",
-    "lexicons",
-    "lexicons.json",
     "README.md",
     "CHANGELOG.md"
   ],
@@ -65,7 +63,7 @@
     "vitest": "^4.1.10"
   },
   "scripts": {
-    "codegen": "lex build --clear --index-file --out ./src/lexicons --exclude 'app.bsky.unspecced.*' 'tools.ozone.*' 'chat.bsky.convo.exportAccountData'",
+    "codegen": "node ./scripts/codegen-lexicons.mjs",
     "codegen:labels": "node ./scripts/generate-code.mjs",
     "prebuild": "pnpm run codegen && pnpm run codegen:labels",
     "build": "tsc --build tsconfig.build.json",

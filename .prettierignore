@@ -6,5 +6,4 @@ pnpm-lock.yaml
 .changeset
 CHANGELOG.md
 __snapshots__
-# lex install rewrites this without a trailing newline
-packages/sdk/lexicons.json
+packages/sdk/.lexicons
