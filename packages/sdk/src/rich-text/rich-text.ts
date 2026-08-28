@@ -206,13 +206,13 @@ export class RichText {
   clone() {
     return new RichText({
       text: this.unicodeText.utf16,
-      facets: structuredClone(this.facets),
+      facets: cloneDeep(this.facets),
     })
   }
 
   copyInto(target: RichText) {
     target.unicodeText = this.unicodeText
-    target.facets = structuredClone(this.facets)
+    target.facets = cloneDeep(this.facets)
   }
 
   *segments(): Generator<RichTextSegment, void, void> {
@@ -454,4 +454,14 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
     }
   }
   return facets
+}
+
+function cloneDeep<T>(value: T): T {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value)
+  }
+  if (typeof value === 'undefined') {
+    return value
+  }
+  return JSON.parse(JSON.stringify(value))
 }

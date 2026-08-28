@@ -1,5 +1,5 @@
 import type { Unknown$Type } from '@atproto/lex'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { RichText } from '../src/rich-text/index.js'
 
 describe('RichText', () => {
@@ -108,6 +108,34 @@ describe('RichText', () => {
       const rt = new RichText({ text: '👨‍👩‍👧‍👧🔥 good!✅' })
       expect(rt.length).toBe(38)
       expect(rt.graphemeLength).toBe(9)
+    }
+  })
+
+  it('clones facets without structuredClone', () => {
+    vi.stubGlobal('structuredClone', undefined)
+    try {
+      const rt = new RichText({
+        text: 'test',
+        facets: [
+          {
+            index: { byteStart: 0, byteEnd: 4 },
+            features: [
+              {
+                $type: 'app.bsky.richtext.facet#link',
+                uri: 'https://example.com',
+              },
+            ],
+          },
+        ],
+      })
+
+      const clone = rt.clone()
+      clone.facets![0].index.byteStart = 1
+
+      expect(rt.facets![0].index.byteStart).toBe(0)
+      expect(new RichText({ text: 'test' }).clone().facets).toBeUndefined()
+    } finally {
+      vi.unstubAllGlobals()
     }
   })
 })
