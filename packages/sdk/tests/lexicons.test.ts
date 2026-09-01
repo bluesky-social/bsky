@@ -1,3 +1,4 @@
+import { parseCid } from '@atproto/lex'
 import { describe, expect, it } from 'vitest'
 import { app } from '../src/lexicons/index.js'
 
@@ -15,6 +16,32 @@ describe('generated lexicons', () => {
     expect(
       app.bsky.feed.post.$matches({ $type: 'app.bsky.feed.post', text: 42 }),
     ).toBe(false)
+  })
+
+  it('accepts video alt text longer than 1,000 graphemes', () => {
+    const alt = 'a'.repeat(1_814)
+
+    expect(
+      app.bsky.embed.video.$matches({
+        $type: 'app.bsky.embed.video',
+        video: {
+          $type: 'blob',
+          ref: parseCid(
+            'bafkreieq5jui4j25lacwomsqgjeswwl3y5zcdrresptwgmfylxo2depppq',
+          ),
+          mimeType: 'video/mp4',
+          size: 1,
+        },
+        alt,
+      }),
+    ).toBe(true)
+    expect(
+      app.bsky.embed.video.view.matches({
+        cid: 'bafyreiclp443lavogvhj3d2ob2cxbfuscni2k5jk7bebjzg7khl3esabwq',
+        playlist: 'https://example.test/video.m3u8',
+        alt,
+      }),
+    ).toBe(true)
   })
 
   it('builds and validates a reference-list opt-out record', () => {
