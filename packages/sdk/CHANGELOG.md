@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.1.1
+
+### Patch Changes
+
+- [#40](https://github.com/bluesky-social/bsky/pull/40) [`feff3bf`](https://github.com/bluesky-social/bsky/commit/feff3bf868470a23b25f1cdb9c97e0d3c348a7eb) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Remove the `maxGraphemes` and `maxLength` constraints from video alt text, matching image alt text validation.
+
 ## 1.1.0
 
 ### Minor Changes
