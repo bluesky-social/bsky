@@ -481,8 +481,9 @@
       "required": ["tags"],
       "properties": {
         "updatedAt": {
-          "type": "integer",
-          "description": "The timestamp in milliseconds when the account owner last updated their interests."
+          "type": "string",
+          "format": "datetime",
+          "description": "The timestamp when the account owner last updated their interests."
         },
         "tags": {
           "type": "array",
