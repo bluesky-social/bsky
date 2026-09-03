@@ -951,7 +951,7 @@
     },
     "chat.bsky.convo.leaveConvo": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/chat.bsky.convo.leaveConvo",
-      "cid": "bafyreihvv4vhpnyct2ge4tzwk3n6bjmjfnhv6e3r4hocmobbubej3qgb3a"
+      "cid": "bafyreig6lc2kyksjbhjn7dllutffxmy7xu67hlibary7sykogslgrkc5k4"
     },
     "chat.bsky.convo.listConvoRequests": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/chat.bsky.convo.listConvoRequests",
