@@ -795,17 +795,21 @@ export const setPersonalDetails: Action<
 export const setInterestsPref: Action<{ tags: string[] }, void> = prefsUpdater(
   ({ tags }) =>
     (prefs) => {
+      const updatedAt = Date.now()
       const existing = prefs.find((p) => is$typedObject(p, interestsPref.$type))
 
       if (existing) {
         return prefs.map((p) =>
-          is$typedObject(p, interestsPref.$type) ? { ...p, tags } : p,
+          is$typedObject(p, interestsPref.$type)
+            ? { ...p, tags, updatedAt }
+            : p,
         )
       }
       return [
         ...prefs,
         interestsPref.$build({
           tags,
+          updatedAt,
         }),
       ]
     },
