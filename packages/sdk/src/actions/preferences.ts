@@ -1,6 +1,11 @@
 import { type Action, Client, type Service } from '@atproto/lex'
 import type { AtUriString, DatetimeString, DidString } from '@atproto/syntax'
-import { AtUri, ensureValidDidRegex, toDatetimeString } from '@atproto/syntax'
+import {
+  AtUri,
+  currentDatetimeString,
+  ensureValidDidRegex,
+  toDatetimeString,
+} from '@atproto/syntax'
 import {
   adultContentPref,
   bskyAppStatePref,
@@ -798,7 +803,7 @@ export const setPersonalDetails: Action<
 export const setInterestsPref: Action<{ tags: string[] }, void> = prefsUpdater(
   ({ tags }) =>
     (prefs) => {
-      const updatedAt = Date.now()
+      const updatedAt = currentDatetimeString()
       const existing = prefs.find((p) => is$typedObject(p, interestsPref.$type))
 
       if (existing) {

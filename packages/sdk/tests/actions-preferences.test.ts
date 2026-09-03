@@ -348,34 +348,34 @@ describe('updatePreferences round-trip', () => {
         return {}
       },
     })
-    const dateNow = vi.spyOn(Date, 'now')
+    vi.useFakeTimers()
 
     try {
-      dateNow.mockReturnValue(1_777_777_777_777)
+      vi.setSystemTime(new Date('2026-09-03T16:00:00.000Z'))
       await client.call(setInterestsPref, { tags: ['cats'] })
       expect(
         stored.find((pref) => app.bsky.actor.defs.interestsPref.matches(pref)),
       ).toMatchObject({
         tags: ['cats'],
-        updatedAt: 1_777_777_777_777,
+        updatedAt: '2026-09-03T16:00:00.000Z',
       })
 
-      dateNow.mockReturnValue(1_888_888_888_888)
+      vi.setSystemTime(new Date('2026-09-03T17:00:00.000Z'))
       await client.call(setInterestsPref, { tags: ['birds'] })
       expect(
         stored.find((pref) => app.bsky.actor.defs.interestsPref.matches(pref)),
       ).toMatchObject({
         tags: ['birds'],
-        updatedAt: 1_888_888_888_888,
+        updatedAt: '2026-09-03T17:00:00.000Z',
       })
 
       const preferences = await client.call(getPreferences)
       expect(preferences.interests).toEqual({
         tags: ['birds'],
-        updatedAt: 1_888_888_888_888,
+        updatedAt: '2026-09-03T17:00:00.000Z',
       })
     } finally {
-      dateNow.mockRestore()
+      vi.useRealTimers()
     }
   })
 

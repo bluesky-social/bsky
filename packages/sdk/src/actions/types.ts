@@ -1,4 +1,4 @@
-import type { AtUriString } from '@atproto/syntax'
+import type { AtUriString, DatetimeString } from '@atproto/syntax'
 import type { app } from '../lexicons/index.js'
 import type { ModerationPrefs } from '../moderation/index.js'
 
@@ -20,7 +20,7 @@ export interface BskyThreadViewPreference {
 
 export interface BskyInterestsPreference {
   tags: string[]
-  updatedAt?: number
+  updatedAt?: DatetimeString
   [key: string]: unknown
 }
 
