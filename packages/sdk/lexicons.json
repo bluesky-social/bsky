@@ -279,7 +279,7 @@
   "resolutions": {
     "app.bsky.actor.defs": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.defs",
-      "cid": "bafyreiatsvgowu4kulkmpmy365kl34iomvnsk34pd6sbuaevmmsrntg3um"
+      "cid": "bafyreihoopgnp2wxlyvmgh7h36jxdy6xowk7wt3ih4zr5b6cmn7gn267uy"
     },
     "app.bsky.actor.getPreferences": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.getPreferences",

@@ -1,5 +1,5 @@
 import { Client } from '@atproto/lex'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   DEFAULT_LABEL_SETTINGS,
   addLabeler,
@@ -12,6 +12,7 @@ import {
   removeLabeler,
   setAdultContentEnabled,
   setContentLabelPref,
+  setInterestsPref,
   setIsBetaUser,
   updatePreferences,
 } from '../src/index.js'
@@ -336,6 +337,46 @@ describe('updatePreferences round-trip', () => {
     await client.call(setAdultContentEnabled, true)
     const prefs2 = await client.call(getPreferences)
     expect(prefs2.moderationPrefs.adultContentEnabled).toBe(true)
+  })
+
+  it('setInterestsPref stamps the preference when creating and updating it', async () => {
+    let stored: unknown[] = []
+    const { client } = fakeClient({
+      'app.bsky.actor.getPreferences': () => ({ preferences: stored }),
+      'app.bsky.actor.putPreferences': ({ body }) => {
+        stored = (body as { preferences: unknown[] }).preferences
+        return {}
+      },
+    })
+    vi.useFakeTimers()
+
+    try {
+      vi.setSystemTime(new Date('2026-09-03T16:00:00.000Z'))
+      await client.call(setInterestsPref, { tags: ['cats'] })
+      expect(
+        stored.find((pref) => app.bsky.actor.defs.interestsPref.matches(pref)),
+      ).toMatchObject({
+        tags: ['cats'],
+        updatedAt: '2026-09-03T16:00:00.000Z',
+      })
+
+      vi.setSystemTime(new Date('2026-09-03T17:00:00.000Z'))
+      await client.call(setInterestsPref, { tags: ['birds'] })
+      expect(
+        stored.find((pref) => app.bsky.actor.defs.interestsPref.matches(pref)),
+      ).toMatchObject({
+        tags: ['birds'],
+        updatedAt: '2026-09-03T17:00:00.000Z',
+      })
+
+      const preferences = await client.call(getPreferences)
+      expect(preferences.interests).toEqual({
+        tags: ['birds'],
+        updatedAt: '2026-09-03T17:00:00.000Z',
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('setContentLabelPref double-writes for legacy labels', async () => {
