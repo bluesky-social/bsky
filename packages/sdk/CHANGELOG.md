@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.1.2
+
+### Patch Changes
+
+- [#42](https://github.com/bluesky-social/bsky/pull/42) [`ea67f45`](https://github.com/bluesky-social/bsky/commit/ea67f45d021a598bb11c9ac86f7e2d15d9b39e1b) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Set `updatedAt` when updating interests via `setInterestsPref`
+
 ## 1.1.1
 
 ### Patch Changes
