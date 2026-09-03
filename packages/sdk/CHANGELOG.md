@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.1.3
+
+### Patch Changes
+
+- [#46](https://github.com/bluesky-social/bsky/pull/46) [`08167e8`](https://github.com/bluesky-social/bsky/commit/08167e88c5fb3ff3c67f41783127930ef0d54d35) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Add `AlreadyLeftConvo` to the `chat.bsky.convo.leaveConvo` lexicon errors.
+
 ## 1.1.2
 
 ### Patch Changes
