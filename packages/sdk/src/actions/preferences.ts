@@ -420,6 +420,9 @@ export const getPreferences: Action<
     declaredAge,
     interests: {
       tags: interests?.tags ?? [],
+      ...(interests?.updatedAt !== undefined && {
+        updatedAt: interests.updatedAt,
+      }),
     },
     bskyAppState: {
       queuedNudges: bskyAppState?.queuedNudges ?? [],

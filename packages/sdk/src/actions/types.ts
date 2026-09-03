@@ -20,6 +20,7 @@ export interface BskyThreadViewPreference {
 
 export interface BskyInterestsPreference {
   tags: string[]
+  updatedAt?: number
   [key: string]: unknown
 }
 

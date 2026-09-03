@@ -368,6 +368,12 @@ describe('updatePreferences round-trip', () => {
         tags: ['birds'],
         updatedAt: 1_888_888_888_888,
       })
+
+      const preferences = await client.call(getPreferences)
+      expect(preferences.interests).toEqual({
+        tags: ['birds'],
+        updatedAt: 1_888_888_888_888,
+      })
     } finally {
       dateNow.mockRestore()
     }
