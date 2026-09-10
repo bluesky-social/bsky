@@ -1139,6 +1139,89 @@ describe(`matchMuteWords`, () => {
   })
 
   describe(`returning MuteWordMatch`, () => {
+    it(`preserves mute order, duplicates, and the first matching predicate`, () => {
+      const mutedWords = [
+        'missing',
+        'SUPER BAD',
+        'bad',
+        'superbad',
+        'SUPER',
+        'world',
+        'superbad',
+      ].map((value) => ({ value, targets: ['content'], actorTarget: 'all' }))
+
+      const matches = matchMuteWords({
+        mutedWords,
+        text: 'Hello, SUPER--BAD! superbad world.',
+      })
+
+      expect(matches).toEqual([
+        { word: mutedWords[1], predicate: 'super--bad!' },
+        { word: mutedWords[2], predicate: 'super--bad!' },
+        { word: mutedWords[3], predicate: 'super--bad!' },
+        { word: mutedWords[4], predicate: 'super--bad!' },
+        { word: mutedWords[5], predicate: 'world.' },
+        { word: mutedWords[6], predicate: 'super--bad!' },
+      ])
+      matches?.forEach((match, i) => expect(match.word).toBe(mutedWords[i + 1]))
+    })
+
+    it(`keeps punctuation matching independent across calls and words`, () => {
+      const mutedWords = ['alphabeta', 'gamma', 'delta', 'omega'].map(
+        (value) => ({
+          value,
+          targets: ['content'],
+          actorTarget: 'all',
+        }),
+      )
+
+      for (let i = 0; i < 3; i++) {
+        expect(
+          matchMuteWords({
+            mutedWords,
+            text: '«Alpha—Beta!» (Gamma_Delta) Omega.',
+          }),
+        ).toEqual([
+          { word: mutedWords[0], predicate: '«alpha—beta!»' },
+          { word: mutedWords[1], predicate: '(gamma_delta)' },
+          { word: mutedWords[2], predicate: '(gamma_delta)' },
+          { word: mutedWords[3], predicate: 'omega.' },
+        ])
+        expect(
+          matchMuteWords({ mutedWords, text: 'unrelated content' }),
+        ).toBeUndefined()
+        expect(matchMuteWords({ mutedWords, text: 'Gamma!' })).toEqual([
+          { word: mutedWords[1], predicate: 'gamma!' },
+        ])
+      }
+    })
+
+    it(`preserves the length-dependent early exit at internal slashes`, () => {
+      const mutedWords = ['andor', 'tomatoes', 'and/or'].map((value) => ({
+        value,
+        targets: ['content'],
+        actorTarget: 'all',
+      }))
+
+      expect(
+        matchMuteWords({ mutedWords, text: 'and/or andor tomatoes' }),
+      ).toEqual([
+        { word: mutedWords[1], predicate: 'tomatoes' },
+        { word: mutedWords[2], predicate: 'and/or' },
+      ])
+      expect(
+        matchMuteWords({ mutedWords, text: 'Andor and/or tomatoes' }),
+      ).toEqual([
+        { word: mutedWords[0], predicate: 'andor' },
+        { word: mutedWords[1], predicate: 'tomatoes' },
+        { word: mutedWords[2], predicate: 'and/or' },
+      ])
+      expect(matchMuteWords({ mutedWords, text: '/Andor/ tomatoes' })).toEqual([
+        { word: mutedWords[0], predicate: '/andor/' },
+        { word: mutedWords[1], predicate: 'tomatoes' },
+      ])
+    })
+
     it(`matches all`, () => {
       const rt = new RichText({
         text: `This is a post about javascript`,

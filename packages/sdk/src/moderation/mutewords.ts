@@ -4,8 +4,10 @@ import { is$typedObject } from '../utils/types.js'
 
 const REGEX = {
   LEADING_TRAILING_PUNCTUATION: /(?:^\p{P}+|\p{P}+$)/gu,
-  ESCAPE: /[[\]{}()*+?.\\^$|\s]/g,
-  SEPARATORS: /[/\-–—()[\]_]+/g,
+  PUNCTUATION_OR_SPACE: /[\s\p{P}]/u,
+  PUNCTUATION: /\p{P}+/u,
+  PUNCTUATION_GLOBAL: /\p{P}+/gu,
+  SPACE: /\s/gu,
   WORD_BOUNDARY: /[\s\n\t\r\f\v]+?/g,
 }
 
@@ -55,6 +57,9 @@ export function matchMuteWords({
   languages,
   actor,
 }: Params): MuteWordMatch[] | undefined {
+  if (!mutedWords.length) return undefined
+
+  const postText = text.toLowerCase()
   const exception = LANGUAGE_EXCEPTIONS.includes(languages?.[0] || '')
   const tags = ([] as string[])
     .concat(outlineTags || [])
@@ -68,10 +73,16 @@ export function matchMuteWords({
     .map((t) => t.toLowerCase())
 
   const matches: MuteWordMatch[] = []
+  // Prepare the text only when needed, and reuse each word's punctuation
+  // variants across muted words. Keep this local to the current post.
+  let words: string[] | undefined
+  const wordCache: {
+    trimmed: string
+    punctuationVariants?: string[] | null
+  }[] = []
 
   outer: for (const muteWord of mutedWords) {
     const mutedWord = muteWord.value.toLowerCase()
-    const postText = text.toLowerCase()
 
     // expired, ignore
     if (muteWord.expiresAt && muteWord.expiresAt < currentDatetimeString())
@@ -103,14 +114,18 @@ export function matchMuteWords({
       continue
     }
     // any muted phrase with space or punctuation
-    if (/(?:\s|\p{P})+?/u.test(mutedWord) && postText.includes(mutedWord)) {
+    if (
+      REGEX.PUNCTUATION_OR_SPACE.test(mutedWord) &&
+      postText.includes(mutedWord)
+    ) {
       matches.push({ word: muteWord, predicate: muteWord.value })
       continue
     }
 
     // check individual character groups
-    const words = postText.split(REGEX.WORD_BOUNDARY)
-    for (const word of words) {
+    words ??= postText.split(REGEX.WORD_BOUNDARY)
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i]
       if (word === mutedWord) {
         matches.push({ word: muteWord, predicate: word })
         continue outer
@@ -118,10 +133,10 @@ export function matchMuteWords({
 
       // compare word without leading/trailing punctuation, but allow internal
       // punctuation (such as `s@ssy`)
-      const wordTrimmedPunctuation = word.replace(
-        REGEX.LEADING_TRAILING_PUNCTUATION,
-        '',
-      )
+      const entry = (wordCache[i] ??= {
+        trimmed: word.replace(REGEX.LEADING_TRAILING_PUNCTUATION, ''),
+      })
+      const wordTrimmedPunctuation = entry.trimmed
 
       if (mutedWord === wordTrimmedPunctuation) {
         matches.push({ word: muteWord, predicate: word })
@@ -130,34 +145,29 @@ export function matchMuteWords({
 
       if (mutedWord.length > wordTrimmedPunctuation.length) continue
 
-      if (/\p{P}+/u.test(wordTrimmedPunctuation)) {
-        /**
-         * Exit case for any punctuation within the predicate that we _do_
-         * allow e.g. `and/or` should not match `Andor`.
-         */
-        if (/[/]+/.test(wordTrimmedPunctuation)) {
-          continue outer
-        }
+      if (entry.punctuationVariants === undefined) {
+        if (REGEX.PUNCTUATION.test(wordTrimmedPunctuation)) {
+          // Preserve the early exit for internal slashes: `and/or` must not
+          // match `Andor`, and currently also stops searching later words.
+          if (wordTrimmedPunctuation.includes('/')) continue outer
 
-        const spacedWord = wordTrimmedPunctuation.replace(/\p{P}+/gu, ' ')
-        if (spacedWord === mutedWord) {
-          matches.push({ word: muteWord, predicate: word })
-          continue outer
+          const spacedWord = wordTrimmedPunctuation.replace(
+            REGEX.PUNCTUATION_GLOBAL,
+            ' ',
+          )
+          entry.punctuationVariants = [
+            spacedWord,
+            spacedWord.replace(REGEX.SPACE, ''),
+            ...wordTrimmedPunctuation.split(REGEX.PUNCTUATION),
+          ]
+        } else {
+          entry.punctuationVariants = null
         }
+      }
 
-        const contiguousWord = spacedWord.replace(/\s/gu, '')
-        if (contiguousWord === mutedWord) {
-          matches.push({ word: muteWord, predicate: word })
-          continue outer
-        }
-
-        const wordParts = wordTrimmedPunctuation.split(/\p{P}+/u)
-        for (const wordPart of wordParts) {
-          if (wordPart === mutedWord) {
-            matches.push({ word: muteWord, predicate: word })
-            continue outer
-          }
-        }
+      if (entry.punctuationVariants?.includes(mutedWord)) {
+        matches.push({ word: muteWord, predicate: word })
+        continue outer
       }
     }
   }
