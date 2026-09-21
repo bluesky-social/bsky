@@ -735,7 +735,7 @@
     },
     "app.bsky.notification.getUnreadCount": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.getUnreadCount",
-      "cid": "bafyreidxol5yjzorzb7ceakrnsahygfxtupyingqu6rij5stds4deoxwwq"
+      "cid": "bafyreidywvnihah4wbyhk2sbnmojm22qhvglnz5spdv5h3rlvh6k2zqc6a"
     },
     "app.bsky.notification.listActivitySubscriptions": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.listActivitySubscriptions",
@@ -743,7 +743,7 @@
     },
     "app.bsky.notification.listNotifications": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.listNotifications",
-      "cid": "bafyreibnnyxsg2ow6pox2e76cijt7dzkv22qxpxrytb7vqyiv723xrn2tm"
+      "cid": "bafyreig4vybdtsihmwjgycwczbcwk7pojwzqjmwfrqpntnzub2vihzq7lm"
     },
     "app.bsky.notification.putActivitySubscription": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.putActivitySubscription",

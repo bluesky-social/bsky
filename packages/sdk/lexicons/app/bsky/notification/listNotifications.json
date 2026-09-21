@@ -23,7 +23,8 @@
             "default": 50
           },
           "priority": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Deprecated: this parameter is ignored."
           },
           "cursor": {
             "type": "string"
@@ -51,7 +52,8 @@
               }
             },
             "priority": {
-              "type": "boolean"
+              "type": "boolean",
+              "description": "Deprecated: this field is no longer populated."
             },
             "seenAt": {
               "type": "string",
