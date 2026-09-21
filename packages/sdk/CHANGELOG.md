@@ -1,5 +1,15 @@
 # @atproto/api
 
+## 1.1.4
+
+### Patch Changes
+
+- [#52](https://github.com/bluesky-social/bsky/pull/52) [`6aa1290`](https://github.com/bluesky-social/bsky/commit/6aa1290b04be3024eec353e4e9cfd2f0e06f5452) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Deprecate the legacy notification priority fields.
+
+- [#56](https://github.com/bluesky-social/bsky/pull/56) [`3dccaf4`](https://github.com/bluesky-social/bsky/commit/3dccaf4cb3dab684b8c148ef711ff7c3d38ba055) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Improve tree-shaking by importing only the lexicons used by each SDK module.
+
+- [#55](https://github.com/bluesky-social/bsky/pull/55) [`a76bd6e`](https://github.com/bluesky-social/bsky/commit/a76bd6e9c637a283d55de740905c72237d70d2c5) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Deprecate the unsupported `seenAt` notification parameter.
+
 ## 1.1.3
 
 ### Patch Changes
