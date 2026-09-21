@@ -743,7 +743,7 @@
     },
     "app.bsky.notification.listNotifications": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.listNotifications",
-      "cid": "bafyreig4vybdtsihmwjgycwczbcwk7pojwzqjmwfrqpntnzub2vihzq7lm"
+      "cid": "bafyreidt7fkgzafxi65rvdbhnsclu6sanvx3ci4m3x4xm225akaneuydd4"
     },
     "app.bsky.notification.putActivitySubscription": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.putActivitySubscription",

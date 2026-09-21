@@ -31,7 +31,8 @@
           },
           "seenAt": {
             "type": "string",
-            "format": "datetime"
+            "format": "datetime",
+            "description": "Deprecated: this parameter is unsupported and will cause an error."
           }
         }
       },
