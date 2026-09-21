@@ -5,7 +5,13 @@ import {
   type DidString,
 } from '@atproto/lex'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
-import { app as appLexicons } from '../lexicons/index.js'
+import { main as block } from '../lexicons/app/bsky/graph/block.defs.js'
+import { main as getList } from '../lexicons/app/bsky/graph/getList.defs.js'
+import { main as listblock } from '../lexicons/app/bsky/graph/listblock.defs.js'
+import { main as muteActorLexicon } from '../lexicons/app/bsky/graph/muteActor.defs.js'
+import { main as muteActorListLexicon } from '../lexicons/app/bsky/graph/muteActorList.defs.js'
+import { main as unmuteActorLexicon } from '../lexicons/app/bsky/graph/unmuteActor.defs.js'
+import { main as unmuteActorListLexicon } from '../lexicons/app/bsky/graph/unmuteActorList.defs.js'
 
 /**
  * Mute an actor (user). When an `only` scope is set, just the scoped content
@@ -20,7 +26,7 @@ export const muteActor: Action<
   },
   void
 > = async (client, { actor, onlyReposts, onlyQuoteposts }) => {
-  await client.call(appLexicons.bsky.graph.muteActor.main, {
+  await client.call(muteActorLexicon, {
     actor,
     onlyReposts,
     onlyQuoteposts,
@@ -34,7 +40,7 @@ export const unmuteActor: Action<{ actor: AtIdentifierString }, void> = async (
   client,
   { actor },
 ) => {
-  await client.call(appLexicons.bsky.graph.unmuteActor.main, { actor })
+  await client.call(unmuteActorLexicon, { actor })
 }
 
 /**
@@ -44,7 +50,7 @@ export const blockActor: Action<{ did: DidString }, CreateOutput> = async (
   client,
   { did },
 ) => {
-  return client.create(appLexicons.bsky.graph.block.main, {
+  return client.create(block, {
     subject: did,
     createdAt: currentDatetimeString(),
   })
@@ -58,7 +64,7 @@ export const unblockActor: Action<AtUriString, void> = async (
   blockUri,
 ) => {
   const urip = new AtUri(blockUri)
-  await client.delete(appLexicons.bsky.graph.block.main, {
+  await client.delete(block, {
     rkey: urip.rkeySafe,
     repo: urip.hostname,
   })
@@ -71,7 +77,7 @@ export const muteActorList: Action<{ list: AtUriString }, void> = async (
   client,
   { list },
 ) => {
-  await client.call(appLexicons.bsky.graph.muteActorList.main, { list })
+  await client.call(muteActorListLexicon, { list })
 }
 
 /**
@@ -81,7 +87,7 @@ export const unmuteActorList: Action<{ list: AtUriString }, void> = async (
   client,
   { list },
 ) => {
-  await client.call(appLexicons.bsky.graph.unmuteActorList.main, { list })
+  await client.call(unmuteActorListLexicon, { list })
 }
 
 /**
@@ -91,7 +97,7 @@ export const blockActorList: Action<
   { list: AtUriString },
   CreateOutput
 > = async (client, { list }) => {
-  return client.create(appLexicons.bsky.graph.listblock.main, {
+  return client.create(listblock, {
     subject: list,
     createdAt: currentDatetimeString(),
   })
@@ -105,14 +111,14 @@ export const unblockActorList: Action<{ list: AtUriString }, void> = async (
   client,
   { list },
 ) => {
-  const listRes = await client.call(appLexicons.bsky.graph.getList.main, {
+  const listRes = await client.call(getList, {
     list,
     limit: 1,
   })
   const blocked = listRes.list.viewer?.blocked
   if (blocked) {
     const urip = new AtUri(blocked)
-    await client.delete(appLexicons.bsky.graph.listblock.main, {
+    await client.delete(listblock, {
       rkey: urip.rkey,
     })
   }

@@ -1,4 +1,4 @@
-import type { app } from '../lexicons/index.js'
+import type { ListViewBasic } from '../lexicons/app/bsky/graph/defs.defs.js'
 import { type KnownLabelValue, LABELS } from './const/labels.js'
 import { type MuteWordMatch } from './mutewords.js'
 import {
@@ -218,9 +218,7 @@ export class ModerationDecision {
     }
   }
 
-  addBlockingByList(
-    blockingByList: app.bsky.graph.defs.ListViewBasic | undefined,
-  ) {
+  addBlockingByList(blockingByList: ListViewBasic | undefined) {
     if (blockingByList) {
       this.causes.push({
         type: 'blocking',
@@ -363,7 +361,7 @@ export class ModerationDecision {
     }
   }
 
-  addMutedByList(mutedByList: app.bsky.graph.defs.ListViewBasic | undefined) {
+  addMutedByList(mutedByList: ListViewBasic | undefined) {
     if (mutedByList) {
       this.causes.push({
         type: 'muted',

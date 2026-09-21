@@ -1,4 +1,16 @@
-import { app, com } from '../lexicons/index.js'
+import {
+  type View as EmbedRecordView,
+  view as embedRecordView,
+} from '../lexicons/app/bsky/embed/record.defs.js'
+import {
+  type View as EmbedRecordWithMediaView,
+  view as embedRecordWithMediaView,
+} from '../lexicons/app/bsky/embed/recordWithMedia.defs.js'
+import type { LabelerViewDetailed } from '../lexicons/app/bsky/labeler/defs.defs.js'
+import {
+  type LabelValueDefinition,
+  labelValueDefinition,
+} from '../lexicons/com/atproto/label/defs.defs.js'
 import { is$typedObject } from '../utils/types.js'
 import {
   type InterpretedLabelValueDefinition,
@@ -11,25 +23,20 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === 'object'
 }
 
-export function isQuotedPost(
-  embed: unknown,
-): embed is app.bsky.embed.record.View {
-  return (
-    isObject(embed) && is$typedObject(embed, app.bsky.embed.record.view.$type)
-  )
+export function isQuotedPost(embed: unknown): embed is EmbedRecordView {
+  return isObject(embed) && is$typedObject(embed, embedRecordView.$type)
 }
 
 export function isQuotedPostWithMedia(
   embed: unknown,
-): embed is app.bsky.embed.recordWithMedia.View {
+): embed is EmbedRecordWithMediaView {
   return (
-    isObject(embed) &&
-    is$typedObject(embed, app.bsky.embed.recordWithMedia.view.$type)
+    isObject(embed) && is$typedObject(embed, embedRecordWithMediaView.$type)
   )
 }
 
 export function interpretLabelValueDefinition(
-  def: com.atproto.label.defs.LabelValueDefinition,
+  def: LabelValueDefinition,
   definedBy: string | undefined,
 ): InterpretedLabelValueDefinition {
   const behaviors: {
@@ -108,12 +115,10 @@ export function interpretLabelValueDefinition(
 }
 
 export function interpretLabelValueDefinitions(
-  labelerView: app.bsky.labeler.defs.LabelerViewDetailed,
+  labelerView: LabelerViewDetailed,
 ): InterpretedLabelValueDefinition[] {
   return (labelerView.policies?.labelValueDefinitions || [])
-    .filter((v): v is com.atproto.label.defs.LabelValueDefinition =>
-      com.atproto.label.defs.labelValueDefinition.matches(v),
-    )
+    .filter((v): v is LabelValueDefinition => labelValueDefinition.matches(v))
     .map((labelValDef) =>
       interpretLabelValueDefinition(labelValDef, labelerView.creator.did),
     )

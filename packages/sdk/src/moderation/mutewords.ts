@@ -1,5 +1,13 @@
 import { currentDatetimeString } from '@atproto/syntax'
-import { app } from '../lexicons/index.js'
+import type {
+  MutedWord,
+  ProfileView,
+  ProfileViewBasic,
+} from '../lexicons/app/bsky/actor/defs.defs.js'
+import {
+  type Main as Facet,
+  tag as facetTag,
+} from '../lexicons/app/bsky/richtext/facet.defs.js'
 import { is$typedObject } from '../utils/types.js'
 
 const REGEX = {
@@ -29,7 +37,7 @@ export type MuteWordMatch = {
   /**
    * The `app.bsky.actor.defs.MutedWord` that matched.
    */
-  word: app.bsky.actor.defs.MutedWord
+  word: MutedWord
   /**
    * The string that matched the muted word.
    */
@@ -37,12 +45,12 @@ export type MuteWordMatch = {
 }
 
 export type Params = {
-  mutedWords: app.bsky.actor.defs.MutedWord[]
+  mutedWords: MutedWord[]
   text: string
-  facets?: app.bsky.richtext.facet.Main[]
+  facets?: Facet[]
   outlineTags?: string[]
   languages?: string[]
-  actor?: app.bsky.actor.defs.ProfileView | app.bsky.actor.defs.ProfileViewBasic
+  actor?: ProfileView | ProfileViewBasic
 }
 
 /**
@@ -66,7 +74,7 @@ export function matchMuteWords({
     .concat(
       (facets || []).flatMap((facet) =>
         facet.features
-          .filter((f) => is$typedObject(f, app.bsky.richtext.facet.tag.$type))
+          .filter((f) => is$typedObject(f, facetTag.$type))
           .map((tag) => tag.tag),
       ),
     )

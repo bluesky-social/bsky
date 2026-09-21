@@ -7,6 +7,15 @@ import {
   toDatetimeString,
 } from '@atproto/syntax'
 import {
+  type BskyAppProgressGuide,
+  type ContentLabelPref,
+  type FeedViewPref,
+  type MutedWord,
+  type Nux,
+  type PostInteractionSettingsPref,
+  type Preferences,
+  type SavedFeed,
+  type VerificationPrefs,
   adultContentPref,
   bskyAppStatePref,
   contentLabelPref,
@@ -24,8 +33,10 @@ import {
   threadViewPref,
   verificationPrefs,
 } from '../lexicons/app/bsky/actor/defs.defs.js'
-import type { app } from '../lexicons/index.js'
-import { app as appLexicons } from '../lexicons/index.js'
+import { main as getPreferencesLexicon } from '../lexicons/app/bsky/actor/getPreferences.defs.js'
+import { main as putPreferences } from '../lexicons/app/bsky/actor/putPreferences.defs.js'
+import { $type as feedGeneratorType } from '../lexicons/app/bsky/feed/generator.defs.js'
+import { $type as listType } from '../lexicons/app/bsky/graph/list.defs.js'
 import { DEFAULT_LABEL_SETTINGS } from '../moderation/const/labels.js'
 import type {
   LabelPreference,
@@ -40,9 +51,6 @@ import type {
   BskyPreferences,
   BskyThreadViewPreference,
 } from './types.js'
-
-type Preferences = app.bsky.actor.defs.Preferences
-type SavedFeed = app.bsky.actor.defs.SavedFeed
 
 // Serializes preference read-modify-write cycles per client, replacing the
 // old Agent's per-instance AwaitLock. Keyed weakly so clients can be GC'd.
@@ -86,7 +94,7 @@ const LABEL_REMAP_REVERSE = /*#__PURE__*/ new Map<string, string[]>([
  * unchanged, matching the old agent's behavior.
  */
 function normalizeVisibility(
-  visibility: app.bsky.actor.defs.ContentLabelPref['visibility'],
+  visibility: ContentLabelPref['visibility'],
 ): LabelPreference {
   if (visibility === 'show') return 'ignore'
   return visibility as LabelPreference
@@ -98,9 +106,8 @@ function getSavedFeedType(
   if (uri === 'following') return 'timeline'
   try {
     const parsed = new AtUri(uri)
-    if (parsed.collection === appLexicons.bsky.feed.generator.$type)
-      return 'feed'
-    if (parsed.collection === appLexicons.bsky.graph.list.$type) return 'list'
+    if (parsed.collection === feedGeneratorType) return 'feed'
+    if (parsed.collection === listType) return 'list'
   } catch {
     // ignore
   }
@@ -113,18 +120,12 @@ function validateSavedFeed(feed: SavedFeed): void {
   }
   if (['feed', 'list'].includes(feed.type)) {
     const uri = new AtUri(feed.value)
-    if (
-      feed.type === 'feed' &&
-      uri.collection !== appLexicons.bsky.feed.generator.$type
-    ) {
+    if (feed.type === 'feed' && uri.collection !== feedGeneratorType) {
       throw new Error(
         `Saved feed of type 'feed' must be a feed, got ${uri.collection}`,
       )
     }
-    if (
-      feed.type === 'list' &&
-      uri.collection !== appLexicons.bsky.graph.list.$type
-    ) {
+    if (feed.type === 'list' && uri.collection !== listType) {
       throw new Error(
         `Saved feed of type 'list' must be a list, got ${uri.collection}`,
       )
@@ -187,17 +188,13 @@ export const updatePreferences: Action<UpdatePreferencesInput, Preferences> = (
     typeof input === 'function' ? { update: input } : input
   return serializedPrefsWrite(client, async () => {
     const { preferences: current } = await client.call(
-      appLexicons.bsky.actor.getPreferences.main,
+      getPreferencesLexicon,
       {},
       { service },
     )
     const result = cb(current)
     if (result === false) return current
-    await client.call(
-      appLexicons.bsky.actor.putPreferences.main,
-      { preferences: result },
-      { service },
-    )
+    await client.call(putPreferences, { preferences: result }, { service })
     return result
   })
 }
@@ -212,7 +209,7 @@ export const getPreferences: Action<
 > = async (client, input) => {
   const service = input?.service ?? null
   const { preferences: prefs } = await client.call(
-    appLexicons.bsky.actor.getPreferences.main,
+    getPreferencesLexicon,
     {},
     { service },
   )
@@ -734,7 +731,7 @@ export const setFeedViewPrefs: Action<
     .filter((p) => is$typedObject(p, feedViewPref.$type))
     .find((p) => p.feed === feed)
 
-  const current: app.bsky.actor.defs.FeedViewPref = existing ?? {
+  const current: FeedViewPref = existing ?? {
     feed,
   }
   const updated = feedViewPref.$build({
@@ -826,9 +823,7 @@ export const setInterestsPref: Action<{ tags: string[] }, void> = prefsUpdater(
 /**
  * Helper: backfill id for legacy muted words without id (old agent.ts:1626-1631)
  */
-function migrateLegacyMutedWordsItems(
-  items: app.bsky.actor.defs.MutedWord[],
-): app.bsky.actor.defs.MutedWord[] {
+function migrateLegacyMutedWordsItems(items: MutedWord[]): MutedWord[] {
   return items.map((item) => ({
     ...item,
     id: item.id || nextTid(),
@@ -839,10 +834,7 @@ function migrateLegacyMutedWordsItems(
  * Helper: match muted word by id (preferred) or by value (legacy fallback)
  * (old agent.ts:1633-1645)
  */
-function matchMutedWord(
-  existingWord: app.bsky.actor.defs.MutedWord,
-  newWord: app.bsky.actor.defs.MutedWord,
-): boolean {
+function matchMutedWord(existingWord: MutedWord, newWord: MutedWord): boolean {
   const existingId = existingWord.id
   const matchById = existingId && existingId === newWord.id
   const legacyMatchByValue = !existingId && existingWord.value === newWord.value
@@ -853,10 +845,7 @@ function matchMutedWord(
  * Add a single muted word. (old agent.ts:1070-1112)
  */
 export const addMutedWord: Action<
-  Pick<
-    app.bsky.actor.defs.MutedWord,
-    'value' | 'targets' | 'actorTarget' | 'expiresAt'
-  >,
+  Pick<MutedWord, 'value' | 'targets' | 'actorTarget' | 'expiresAt'>,
   void
 > = prefsUpdater((mutedWord) => {
   const sanitizedValue = sanitizeMutedWordValue(mutedWord.value)
@@ -867,7 +856,7 @@ export const addMutedWord: Action<
       is$typedObject(p, mutedWordsPref.$type),
     )
 
-    const newMutedWord: app.bsky.actor.defs.MutedWord = {
+    const newMutedWord: MutedWord = {
       id: nextTid(),
       value: sanitizedValue,
       targets: mutedWord.targets || [],
@@ -896,10 +885,10 @@ export const addMutedWord: Action<
 /**
  * Convenience method to add multiple muted words. (old agent.ts:1117-1119)
  */
-export const addMutedWords: Action<
-  app.bsky.actor.defs.MutedWord[],
-  void
-> = async (client, words) => {
+export const addMutedWords: Action<MutedWord[], void> = async (
+  client,
+  words,
+) => {
   await Promise.all(words.map((word) => client.call(addMutedWord, word)))
 }
 
@@ -907,10 +896,7 @@ export const addMutedWords: Action<
  * @deprecated use addMutedWords or addMutedWord instead (old agent.ts:1124-1131)
  */
 export const upsertMutedWords: Action<
-  Pick<
-    app.bsky.actor.defs.MutedWord,
-    'value' | 'targets' | 'actorTarget' | 'expiresAt'
-  >[],
+  Pick<MutedWord, 'value' | 'targets' | 'actorTarget' | 'expiresAt'>[],
   void
 > = async (client, words) => {
   await client.call(addMutedWords, words)
@@ -919,8 +905,8 @@ export const upsertMutedWords: Action<
 /**
  * Update a muted word in user preferences. (old agent.ts:1136-1176)
  */
-export const updateMutedWord: Action<app.bsky.actor.defs.MutedWord, void> =
-  prefsUpdater((mutedWord) => (prefs) => {
+export const updateMutedWord: Action<MutedWord, void> = prefsUpdater(
+  (mutedWord) => (prefs) => {
     const mutedWordsPrefEntry = prefs.find((p) =>
       is$typedObject(p, mutedWordsPref.$type),
     )
@@ -959,13 +945,14 @@ export const updateMutedWord: Action<app.bsky.actor.defs.MutedWord, void> =
     }
 
     return prefs
-  })
+  },
+)
 
 /**
  * Remove a single muted word (old agent.ts:1182-1209)
  */
-export const removeMutedWord: Action<app.bsky.actor.defs.MutedWord, void> =
-  prefsUpdater((mutedWord) => (prefs) => {
+export const removeMutedWord: Action<MutedWord, void> = prefsUpdater(
+  (mutedWord) => (prefs) => {
     const mutedWordsPrefEntry = prefs.find((p) =>
       is$typedObject(p, mutedWordsPref.$type),
     )
@@ -987,15 +974,16 @@ export const removeMutedWord: Action<app.bsky.actor.defs.MutedWord, void> =
     return prefs
       .filter((p) => p.$type !== mutedWordsPref.$type)
       .concat(mutedWordsPref.$build(mutedWordsPrefEntry))
-  })
+  },
+)
 
 /**
  * Convenience method to remove multiple muted words. (old agent.ts:1214-1216)
  */
-export const removeMutedWords: Action<
-  app.bsky.actor.defs.MutedWord[],
-  void
-> = async (client, words) => {
+export const removeMutedWords: Action<MutedWord[], void> = async (
+  client,
+  words,
+) => {
   await Promise.all(words.map((word) => client.call(removeMutedWord, word)))
 }
 
@@ -1138,7 +1126,7 @@ export const setIsBetaUser: Action<boolean, void> = prefsUpdater(
 )
 
 export const setActiveProgressGuide: Action<
-  app.bsky.actor.defs.BskyAppProgressGuide | undefined,
+  BskyAppProgressGuide | undefined,
   void
 > = prefsUpdater((guide) => (prefs) => {
   const existing = prefs.find((p) => is$typedObject(p, bskyAppStatePref.$type))
@@ -1158,39 +1146,37 @@ export const setActiveProgressGuide: Action<
   ]
 })
 
-export const upsertNux: Action<app.bsky.actor.defs.Nux, void> = prefsUpdater(
-  (nux) => {
-    validateNux(nux)
-    return (prefs) => {
-      const existing = prefs.find((p) =>
-        is$typedObject(p, bskyAppStatePref.$type),
-      )
-      const currentNuxs = existing?.nuxs ?? []
+export const upsertNux: Action<Nux, void> = prefsUpdater((nux) => {
+  validateNux(nux)
+  return (prefs) => {
+    const existing = prefs.find((p) =>
+      is$typedObject(p, bskyAppStatePref.$type),
+    )
+    const currentNuxs = existing?.nuxs ?? []
 
-      const idx = currentNuxs.findIndex((n) => n.id === nux.id)
-      let updatedNuxs: app.bsky.actor.defs.Nux[]
-      if (idx >= 0) {
-        updatedNuxs = currentNuxs.map((n, i) => (i === idx ? nux : n))
-      } else {
-        updatedNuxs = [...currentNuxs, nux]
-      }
-
-      if (existing) {
-        return prefs.map((p) =>
-          is$typedObject(p, bskyAppStatePref.$type)
-            ? { ...p, nuxs: updatedNuxs }
-            : p,
-        )
-      }
-      return [
-        ...prefs,
-        bskyAppStatePref.$build({
-          nuxs: updatedNuxs,
-        }),
-      ]
+    const idx = currentNuxs.findIndex((n) => n.id === nux.id)
+    let updatedNuxs: Nux[]
+    if (idx >= 0) {
+      updatedNuxs = currentNuxs.map((n, i) => (i === idx ? nux : n))
+    } else {
+      updatedNuxs = [...currentNuxs, nux]
     }
-  },
-)
+
+    if (existing) {
+      return prefs.map((p) =>
+        is$typedObject(p, bskyAppStatePref.$type)
+          ? { ...p, nuxs: updatedNuxs }
+          : p,
+      )
+    }
+    return [
+      ...prefs,
+      bskyAppStatePref.$build({
+        nuxs: updatedNuxs,
+      }),
+    ]
+  }
+})
 
 export const removeNuxs: Action<string[], void> = prefsUpdater(
   (ids) => (prefs) => {
@@ -1206,27 +1192,27 @@ export const removeNuxs: Action<string[], void> = prefsUpdater(
   },
 )
 
-export const setVerificationPrefs: Action<
-  app.bsky.actor.defs.VerificationPrefs,
-  void
-> = prefsUpdater((updates) => (prefs) => {
-  const existing = prefs.find((p) => is$typedObject(p, verificationPrefs.$type))
-
-  if (existing) {
-    return prefs.map((p) =>
-      is$typedObject(p, verificationPrefs.$type) ? { ...p, ...updates } : p,
+export const setVerificationPrefs: Action<VerificationPrefs, void> =
+  prefsUpdater((updates) => (prefs) => {
+    const existing = prefs.find((p) =>
+      is$typedObject(p, verificationPrefs.$type),
     )
-  }
-  return [
-    ...prefs,
-    verificationPrefs.$build({
-      ...updates,
-    }),
-  ]
-})
+
+    if (existing) {
+      return prefs.map((p) =>
+        is$typedObject(p, verificationPrefs.$type) ? { ...p, ...updates } : p,
+      )
+    }
+    return [
+      ...prefs,
+      verificationPrefs.$build({
+        ...updates,
+      }),
+    ]
+  })
 
 export const setPostInteractionSettings: Action<
-  app.bsky.actor.defs.PostInteractionSettingsPref,
+  PostInteractionSettingsPref,
   void
 > = prefsUpdater((settings) => (prefs) => {
   const existing = prefs.find((p) =>

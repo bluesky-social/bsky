@@ -1,5 +1,24 @@
 import type { AtUriString, DidString } from '@atproto/syntax'
-import type { app, chat, com } from '../lexicons/index.js'
+import type {
+  MutedWord,
+  ProfileView,
+  ProfileViewBasic,
+  ProfileViewDetailed,
+} from '../lexicons/app/bsky/actor/defs.defs.js'
+import type {
+  GeneratorView,
+  PostView,
+} from '../lexicons/app/bsky/feed/defs.defs.js'
+import type {
+  ListView,
+  ListViewBasic,
+} from '../lexicons/app/bsky/graph/defs.defs.js'
+import type { Notification } from '../lexicons/app/bsky/notification/listNotifications.defs.js'
+import type { ProfileViewBasic as ChatProfileViewBasic } from '../lexicons/chat/bsky/actor/defs.defs.js'
+import type {
+  Label as ComAtprotoLabel,
+  LabelValueDefinition,
+} from '../lexicons/com/atproto/label/defs.defs.js'
 import { type KnownLabelValue } from './const/labels.js'
 import { type MuteWordMatch } from './mutewords.js'
 
@@ -48,15 +67,14 @@ export const NOOP_BEHAVIOR: ModerationBehavior = {}
 // labels
 // =
 
-export type Label = com.atproto.label.defs.Label
+export type Label = ComAtprotoLabel
 export type LabelTarget = 'account' | 'profile' | 'content'
 export type LabelPreference = 'ignore' | 'warn' | 'hide'
 
 export type LabelValueDefinitionFlag =
   'no-override' | 'adult' | 'unauthed' | 'no-self'
 
-export interface InterpretedLabelValueDefinition
-  extends com.atproto.label.defs.LabelValueDefinition {
+export interface InterpretedLabelValueDefinition extends LabelValueDefinition {
   definedBy?: string | undefined // did of labeler or undefined for global
   configurable: boolean
   defaultSetting: LabelPreference // type narrowing
@@ -77,20 +95,15 @@ export type LabelDefinitionMap = Record<
 // =
 
 export type ModerationSubjectProfile =
-  | app.bsky.actor.defs.ProfileViewBasic
-  | app.bsky.actor.defs.ProfileView
-  | app.bsky.actor.defs.ProfileViewDetailed
-  | chat.bsky.actor.defs.ProfileViewBasic
+  ProfileViewBasic | ProfileView | ProfileViewDetailed | ChatProfileViewBasic
 
-export type ModerationSubjectPost = app.bsky.feed.defs.PostView
+export type ModerationSubjectPost = PostView
 
-export type ModerationSubjectNotification =
-  app.bsky.notification.listNotifications.Notification
+export type ModerationSubjectNotification = Notification
 
-export type ModerationSubjectFeedGenerator = app.bsky.feed.defs.GeneratorView
+export type ModerationSubjectFeedGenerator = GeneratorView
 
-export type ModerationSubjectUserList =
-  app.bsky.graph.defs.ListViewBasic | app.bsky.graph.defs.ListView
+export type ModerationSubjectUserList = ListViewBasic | ListView
 
 export type ModerationSubject =
   | ModerationSubjectProfile
@@ -104,7 +117,7 @@ export type ModerationSubject =
 
 export type ModerationCauseSource =
   | { type: 'user' }
-  | { type: 'list'; list: app.bsky.graph.defs.ListViewBasic }
+  | { type: 'list'; list: ListViewBasic }
   | { type: 'labeler'; did: string }
 
 export type ModerationCause =
@@ -167,7 +180,7 @@ export interface ModerationPrefs {
   adultContentEnabled: boolean
   labels: Record<string, LabelPreference>
   labelers: ModerationPrefsLabeler[]
-  mutedWords: app.bsky.actor.defs.MutedWord[]
+  mutedWords: MutedWord[]
   hiddenPosts: AtUriString[]
 }
 

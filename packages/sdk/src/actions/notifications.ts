@@ -1,7 +1,7 @@
 import { type Action } from '@atproto/lex'
 import type { DatetimeString } from '@atproto/syntax'
 import { currentDatetimeString } from '@atproto/syntax'
-import { app as appLexicons } from '../lexicons/index.js'
+import { main as updateSeen } from '../lexicons/app/bsky/notification/updateSeen.defs.js'
 
 /**
  * Mark notifications as seen up to (and including) the given ISO timestamp.
@@ -11,5 +11,5 @@ export const updateSeenNotifications: Action<
   DatetimeString | undefined,
   void
 > = async (client, seenAt = currentDatetimeString()) => {
-  await client.call(appLexicons.bsky.notification.updateSeen.main, { seenAt })
+  await client.call(updateSeen, { seenAt })
 }
