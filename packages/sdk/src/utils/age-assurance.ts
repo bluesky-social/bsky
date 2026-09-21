@@ -11,10 +11,8 @@ import type {
   ConfigRegionRuleIfDeclaredOverAge,
   ConfigRegionRuleIfDeclaredUnderAge,
 } from '../lexicons/app/bsky/ageassurance/defs.defs.js'
-import { app } from '../lexicons/index.js'
+import * as defs from '../lexicons/app/bsky/ageassurance/defs.defs.js'
 import { is$typedObject } from './types.js'
-
-const defs = app.bsky.ageassurance.defs
 
 export type AgeAssuranceRuleID =
   | l.$TypeOf<ConfigRegionRuleDefault>

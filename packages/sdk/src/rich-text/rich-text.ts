@@ -93,18 +93,19 @@ F: 0 1 2 3 4 5 6 7 8 910   // string indices
 
 import type { Client, DidString, UriString } from '@atproto/lex'
 import type { HandleResolver } from '@atproto-labs/handle-resolver'
-import { app } from '../lexicons/index.js'
+import type * as FeedPost from '../lexicons/app/bsky/feed/post.defs.js'
+import * as RichTextFacet from '../lexicons/app/bsky/richtext/facet.defs.js'
 import { ClientHandleResolver } from '../utils/handle-resolver.js'
 import { is$typedObject } from '../utils/types.js'
 import { detectFacets } from './detection.js'
 import { sanitizeRichText } from './sanitization.js'
 import { UnicodeString } from './unicode.js'
 
-export type Facet = app.bsky.richtext.facet.Main
-export type FacetLink = app.bsky.richtext.facet.Link
-export type FacetMention = app.bsky.richtext.facet.Mention
-export type FacetTag = app.bsky.richtext.facet.Tag
-export type Entity = app.bsky.feed.post.Entity
+export type Facet = RichTextFacet.Main
+export type FacetLink = RichTextFacet.Link
+export type FacetMention = RichTextFacet.Mention
+export type FacetTag = RichTextFacet.Tag
+export type Entity = FeedPost.Entity
 
 export interface RichTextProps {
   text: string
@@ -127,7 +128,7 @@ export class RichTextSegment {
 
   get link(): FacetLink | undefined {
     return this.facet?.features.find((f) =>
-      is$typedObject(f, app.bsky.richtext.facet.link.$type),
+      is$typedObject(f, RichTextFacet.link.$type),
     )
   }
 
@@ -137,7 +138,7 @@ export class RichTextSegment {
 
   get mention(): FacetMention | undefined {
     return this.facet?.features.find((f) =>
-      is$typedObject(f, app.bsky.richtext.facet.mention.$type),
+      is$typedObject(f, RichTextFacet.mention.$type),
     )
   }
 
@@ -147,7 +148,7 @@ export class RichTextSegment {
 
   get tag(): FacetTag | undefined {
     return this.facet?.features.find((f) =>
-      is$typedObject(f, app.bsky.richtext.facet.tag.$type),
+      is$typedObject(f, RichTextFacet.tag.$type),
     )
   }
 
@@ -373,7 +374,7 @@ export class RichText {
       const promises: Promise<void>[] = []
       for (const facet of this.facets) {
         for (const feature of facet.features) {
-          if (is$typedObject(feature, app.bsky.richtext.facet.mention.$type)) {
+          if (is$typedObject(feature, RichTextFacet.mention.$type)) {
             promises.push(
               resolver
                 .resolve(feature.did)
@@ -423,13 +424,13 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
   for (const ent of entities) {
     if (ent.type === 'link') {
       facets.push(
-        app.bsky.richtext.facet.$build({
+        RichTextFacet.$build({
           index: {
             byteStart: text.utf16IndexToUtf8Index(ent.index.start),
             byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
           },
           features: [
-            app.bsky.richtext.facet.link.$build({
+            RichTextFacet.link.$build({
               // entity type checked above; value is entity string from input
               uri: ent.value as UriString,
             }),
@@ -438,13 +439,13 @@ function entitiesToFacets(text: UnicodeString, entities: Entity[]): Facet[] {
       )
     } else if (ent.type === 'mention') {
       facets.push(
-        app.bsky.richtext.facet.$build({
+        RichTextFacet.$build({
           index: {
             byteStart: text.utf16IndexToUtf8Index(ent.index.start),
             byteEnd: text.utf16IndexToUtf8Index(ent.index.end),
           },
           features: [
-            app.bsky.richtext.facet.mention.$build({
+            RichTextFacet.mention.$build({
               // entity type checked above; value is entity string from input
               did: ent.value as DidString,
             }),

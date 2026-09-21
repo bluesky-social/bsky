@@ -7,12 +7,21 @@ import {
   XrpcResponseError,
 } from '@atproto/lex'
 import { AtUri, type AtUriString, currentDatetimeString } from '@atproto/syntax'
-import type { app, com } from '../lexicons/index.js'
-import { app as appLexicons } from '../lexicons/index.js'
+import {
+  $type as profileType,
+  type Main as ProfileRecord,
+  main as profile,
+} from '../lexicons/app/bsky/actor/profile.defs.js'
+import { main as likeRecord } from '../lexicons/app/bsky/feed/like.defs.js'
+import {
+  type Main as PostRecord,
+  main as postRecord,
+} from '../lexicons/app/bsky/feed/post.defs.js'
+import { main as repostRecord } from '../lexicons/app/bsky/feed/repost.defs.js'
+import { main as followRecord } from '../lexicons/app/bsky/graph/follow.defs.js'
+import type { Main as StrongRef } from '../lexicons/com/atproto/repo/strongRef.defs.js'
 
-type StrongRef = com.atproto.repo.strongRef.Main
-
-type PostInput = Omit<app.bsky.feed.post.Main, '$type' | 'createdAt'> & {
+type PostInput = Omit<PostRecord, '$type' | 'createdAt'> & {
   createdAt?: DatetimeString
 }
 
@@ -23,7 +32,7 @@ export const post: Action<PostInput, CreateOutput> = async (
   client,
   { createdAt = currentDatetimeString(), ...input },
 ) => {
-  return client.create(appLexicons.bsky.feed.post.main, {
+  return client.create(postRecord, {
     ...input,
     createdAt,
   })
@@ -37,7 +46,7 @@ export const deletePost: Action<AtUriString, void> = async (
   postUri,
 ) => {
   const urip = new AtUri(postUri)
-  await client.delete(appLexicons.bsky.feed.post.main, {
+  await client.delete(postRecord, {
     rkey: urip.rkeySafe,
     // delete must target the record's own DID, which may differ from
     // client.assertDid in admin/mod flows.
@@ -58,7 +67,7 @@ export const like: Action<LikeInput, CreateOutput> = async (
   client,
   { uri, cid, via },
 ) => {
-  return client.create(appLexicons.bsky.feed.like.main, {
+  return client.create(likeRecord, {
     subject: { uri, cid },
     createdAt: currentDatetimeString(),
     via,
@@ -73,7 +82,7 @@ export const deleteLike: Action<AtUriString, void> = async (
   likeUri,
 ) => {
   const urip = new AtUri(likeUri)
-  await client.delete(appLexicons.bsky.feed.like.main, {
+  await client.delete(likeRecord, {
     rkey: urip.rkeySafe,
     // delete must target the record's own DID.
     repo: urip.hostname,
@@ -93,7 +102,7 @@ export const repost: Action<RepostInput, CreateOutput> = async (
   client,
   { uri, cid, via },
 ) => {
-  return client.create(appLexicons.bsky.feed.repost.main, {
+  return client.create(repostRecord, {
     subject: { uri, cid },
     createdAt: currentDatetimeString(),
     via,
@@ -108,7 +117,7 @@ export const deleteRepost: Action<AtUriString, void> = async (
   repostUri,
 ) => {
   const urip = new AtUri(repostUri)
-  await client.delete(appLexicons.bsky.feed.repost.main, {
+  await client.delete(repostRecord, {
     rkey: urip.rkeySafe,
     // delete must target the record's own DID.
     repo: urip.hostname,
@@ -124,7 +133,7 @@ export const follow: Action<FollowInput, CreateOutput> = async (
   client,
   { did, via },
 ) => {
-  return client.create(appLexicons.bsky.graph.follow.main, {
+  return client.create(followRecord, {
     subject: did,
     createdAt: currentDatetimeString(),
     via,
@@ -139,14 +148,13 @@ export const deleteFollow: Action<AtUriString, void> = async (
   followUri,
 ) => {
   const urip = new AtUri(followUri)
-  await client.delete(appLexicons.bsky.graph.follow.main, {
+  await client.delete(followRecord, {
     rkey: urip.rkeySafe,
     // delete must target the record's own DID.
     repo: urip.hostname,
   })
 }
 
-type ProfileRecord = app.bsky.actor.profile.Main
 type UpsertProfileInput = (
   existing: Partial<ProfileRecord> | undefined,
 ) => Partial<ProfileRecord> | Promise<Partial<ProfileRecord>>
@@ -162,30 +170,29 @@ export const upsertProfile: Action<UpsertProfileInput, void> = async (
   const MAX_RETRIES = 5
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     // Fetch the current profile record
-    const existing = await client
-      .get(appLexicons.bsky.actor.profile.main)
-      .catch(() => undefined)
+    const existing = await client.get(profile).catch(() => undefined)
 
     // Pass undefined to updateFn if the existing record does NOT validate as
     // app.bsky.actor.profile (old agent.ts:465-468: isValidProfile gate).
     const existingValue = existing?.value
-    const existingRecord: Partial<ProfileRecord> | undefined =
-      appLexicons.bsky.actor.profile.main.matches(existingValue)
-        ? existingValue
-        : undefined
+    const existingRecord: Partial<ProfileRecord> | undefined = profile.matches(
+      existingValue,
+    )
+      ? existingValue
+      : undefined
 
     const updated = await updateFn(existingRecord)
 
     // Validate post-update record; throw BEFORE putRecord on failure
     // (old agent.ts:471-476: validateRecord gate).
-    appLexicons.bsky.actor.profile.main.check({
-      $type: appLexicons.bsky.actor.profile.$type,
+    profile.check({
+      $type: profileType,
       ...updated,
     })
 
     try {
       await client.put(
-        appLexicons.bsky.actor.profile.main,
+        profile,
         { ...updated },
         // swapRecord: undefined when no existing cid → no swap check (permissive).
         // PutRecordOptions does not expose null (assert-not-exists); retry loop

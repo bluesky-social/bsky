@@ -1,5 +1,12 @@
 import type { AtUriString, DatetimeString } from '@atproto/syntax'
-import type { app } from '../lexicons/index.js'
+import type {
+  BskyAppProgressGuide,
+  DeclaredAgePref,
+  Nux,
+  PostInteractionSettingsPref,
+  SavedFeed,
+  VerificationPrefs,
+} from '../lexicons/app/bsky/actor/defs.defs.js'
 import type { ModerationPrefs } from '../moderation/index.js'
 
 export interface BskyFeedViewPreference {
@@ -30,21 +37,21 @@ export interface BskyPreferences {
     saved?: AtUriString[]
     pinned?: AtUriString[]
   }
-  savedFeeds: app.bsky.actor.defs.SavedFeed[]
+  savedFeeds: SavedFeed[]
   feedViewPrefs: Record<string, BskyFeedViewPreference>
   threadViewPrefs: BskyThreadViewPreference
   moderationPrefs: ModerationPrefs
   birthDate: Date | undefined
-  declaredAge?: app.bsky.actor.defs.DeclaredAgePref
+  declaredAge?: DeclaredAgePref
   interests: BskyInterestsPreference
   bskyAppState: {
     queuedNudges: string[]
-    activeProgressGuide: app.bsky.actor.defs.BskyAppProgressGuide | undefined
-    nuxs: app.bsky.actor.defs.Nux[]
+    activeProgressGuide: BskyAppProgressGuide | undefined
+    nuxs: Nux[]
     isBetaUser?: boolean
   }
-  postInteractionSettings: app.bsky.actor.defs.PostInteractionSettingsPref
-  verificationPrefs: app.bsky.actor.defs.VerificationPrefs
+  postInteractionSettings: PostInteractionSettingsPref
+  verificationPrefs: VerificationPrefs
   liveEventPreferences: {
     hiddenFeedIds: string[]
     hideAllFeeds: boolean

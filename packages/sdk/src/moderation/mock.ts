@@ -1,6 +1,21 @@
 import type { $Typed, AtUriString, HandleString, Un$Typed } from '@atproto/lex'
 import { currentDatetimeString } from '@atproto/syntax'
-import type { app, com } from '../lexicons/index.js'
+import type {
+  ProfileViewBasic,
+  ViewerState as ActorViewerState,
+} from '../lexicons/app/bsky/actor/defs.defs.js'
+import type { View as EmbedRecordView } from '../lexicons/app/bsky/embed/record.defs.js'
+import type {
+  PostView,
+  ViewerState as FeedViewerState,
+} from '../lexicons/app/bsky/feed/defs.defs.js'
+import type {
+  Main as PostRecord,
+  ReplyRef,
+} from '../lexicons/app/bsky/feed/post.defs.js'
+import type { ListViewBasic } from '../lexicons/app/bsky/graph/defs.defs.js'
+import type { Notification } from '../lexicons/app/bsky/notification/listNotifications.defs.js'
+import type { Label } from '../lexicons/com/atproto/label/defs.defs.js'
 
 const FAKE_CID = 'bafyreiclp443lavogvhj3d2ob2cxbfuscni2k5jk7bebjzg7khl3esabwq'
 
@@ -12,10 +27,10 @@ export const mock = {
     embed,
   }: {
     text: string
-    facets?: app.bsky.feed.post.Main['facets']
-    reply?: app.bsky.feed.post.ReplyRef
-    embed?: app.bsky.feed.post.Main['embed']
-  }): $Typed<app.bsky.feed.post.Main> {
+    facets?: PostRecord['facets']
+    reply?: ReplyRef
+    embed?: PostRecord['embed']
+  }): $Typed<PostRecord> {
     return {
       $type: 'app.bsky.feed.post',
       text,
@@ -37,15 +52,15 @@ export const mock = {
     viewer,
     labels,
   }: {
-    record: app.bsky.feed.post.Main
-    author: app.bsky.actor.defs.ProfileViewBasic
-    embed?: app.bsky.feed.defs.PostView['embed']
+    record: PostRecord
+    author: ProfileViewBasic
+    embed?: PostView['embed']
     replyCount?: number
     repostCount?: number
     likeCount?: number
-    viewer?: app.bsky.feed.defs.ViewerState
-    labels?: com.atproto.label.defs.Label[]
-  }): $Typed<app.bsky.feed.defs.PostView> {
+    viewer?: FeedViewerState
+    labels?: Label[]
+  }): $Typed<PostView> {
     return {
       $type: 'app.bsky.feed.defs#postView',
       uri: `at://${author.did}/app.bsky.feed.post/fake`,
@@ -67,10 +82,10 @@ export const mock = {
     author,
     labels,
   }: {
-    record: app.bsky.feed.post.Main
-    author: app.bsky.actor.defs.ProfileViewBasic
-    labels?: com.atproto.label.defs.Label[]
-  }): $Typed<app.bsky.embed.record.View> {
+    record: PostRecord
+    author: ProfileViewBasic
+    labels?: Label[]
+  }): $Typed<EmbedRecordView> {
     return {
       $type: 'app.bsky.embed.record#view',
       record: {
@@ -95,9 +110,9 @@ export const mock = {
     handle: HandleString
     displayName?: string
     description?: string
-    viewer?: app.bsky.actor.defs.ViewerState
-    labels?: com.atproto.label.defs.Label[]
-  }): app.bsky.actor.defs.ProfileViewBasic {
+    viewer?: ActorViewerState
+    labels?: Label[]
+  }): ProfileViewBasic {
     return {
       did: `did:web:${handle}`,
       handle,
@@ -119,13 +134,13 @@ export const mock = {
     followedBy,
   }: {
     muted?: boolean
-    mutedByList?: app.bsky.graph.defs.ListViewBasic
+    mutedByList?: ListViewBasic
     blockedBy?: boolean
     blocking?: AtUriString
-    blockingByList?: app.bsky.graph.defs.ListViewBasic
+    blockingByList?: ListViewBasic
     following?: AtUriString
     followedBy?: AtUriString
-  }): app.bsky.actor.defs.ViewerState {
+  }): ActorViewerState {
     return {
       muted,
       mutedByList,
@@ -137,7 +152,7 @@ export const mock = {
     }
   },
 
-  listViewBasic({ name }: { name: string }): app.bsky.graph.defs.ListViewBasic {
+  listViewBasic({ name }: { name: string }): ListViewBasic {
     return {
       uri: 'at://did:plc:fake/app.bsky.graph.list/fake',
       cid: FAKE_CID,
@@ -152,10 +167,10 @@ export const mock = {
     record,
     labels,
   }: {
-    record: app.bsky.feed.post.Main
-    author: Un$Typed<app.bsky.actor.defs.ProfileViewBasic>
-    labels?: com.atproto.label.defs.Label[]
-  }): app.bsky.notification.listNotifications.Notification {
+    record: PostRecord
+    author: Un$Typed<ProfileViewBasic>
+    labels?: Label[]
+  }): Notification {
     return {
       uri: `at://${author.did}/app.bsky.feed.post/fake`,
       cid: FAKE_CID,
@@ -174,10 +189,10 @@ export const mock = {
     subjectDid,
     labels,
   }: {
-    author: Un$Typed<app.bsky.actor.defs.ProfileViewBasic>
+    author: Un$Typed<ProfileViewBasic>
     subjectDid: string
-    labels?: com.atproto.label.defs.Label[]
-  }): app.bsky.notification.listNotifications.Notification {
+    labels?: Label[]
+  }): Notification {
     return {
       uri: `at://${author.did}/app.bsky.graph.follow/fake`,
       cid: FAKE_CID,
@@ -200,9 +215,9 @@ export const mock = {
     src,
   }: {
     val: string
-    uri: com.atproto.label.defs.Label['uri']
-    src?: com.atproto.label.defs.Label['src']
-  }): com.atproto.label.defs.Label {
+    uri: Label['uri']
+    src?: Label['src']
+  }): Label {
     return {
       src: src || 'did:plc:fake-labeler',
       uri,

@@ -5,7 +5,7 @@ import type {
   HandleResolver,
   ResolvedHandle,
 } from '@atproto-labs/handle-resolver'
-import { com } from '../lexicons/index.js'
+import { main as resolveHandle } from '../lexicons/com/atproto/identity/resolveHandle.defs.js'
 
 /**
  * Wraps a lex Client as a HandleResolver. Resolves handles using
@@ -16,7 +16,7 @@ export class ClientHandleResolver implements HandleResolver {
 
   async resolve(handle: string): Promise<ResolvedHandle> {
     try {
-      const res = await this.client.call(com.atproto.identity.resolveHandle, {
+      const res = await this.client.call(resolveHandle, {
         // caller validates handle format; xrpc will reject invalid
         handle: handle as HandleString,
       })

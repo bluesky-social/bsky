@@ -1,7 +1,7 @@
 import type { DidString, UriString } from '@atproto/lex'
 import { graphemeLen } from '@atproto/lex'
 import TLDs from 'tlds' with { type: 'json' }
-import { app } from '../lexicons/index.js'
+import * as RichTextFacet from '../lexicons/app/bsky/richtext/facet.defs.js'
 import { type UnicodeString } from './unicode.js'
 import {
   CASHTAG_REGEX,
@@ -11,7 +11,7 @@ import {
   URL_REGEX,
 } from './util.js'
 
-export type Facet = app.bsky.richtext.facet.Main
+export type Facet = RichTextFacet.Main
 
 export function detectFacets(text: UnicodeString): Facet[] | undefined {
   let match
@@ -26,13 +26,13 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
 
       const start = text.utf16.indexOf(match[3], match.index) - 1
       facets.push(
-        app.bsky.richtext.facet.$build({
+        RichTextFacet.$build({
           index: {
             byteStart: text.utf16IndexToUtf8Index(start),
             byteEnd: text.utf16IndexToUtf8Index(start + match[3].length + 1),
           },
           features: [
-            app.bsky.richtext.facet.mention.$build({
+            RichTextFacet.mention.$build({
               did: match[3] as DidString, // boundary: detected text must be resolved
             }),
           ],
@@ -69,7 +69,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index.end),
         },
         features: [
-          app.bsky.richtext.facet.link.$build({
+          RichTextFacet.link.$build({
             uri: uri as UriString, // boundary: detected text, format verified by URL_REGEX
           }),
         ],
@@ -101,7 +101,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index + 1 + tag.length),
         },
         features: [
-          app.bsky.richtext.facet.tag.$build({
+          RichTextFacet.tag.$build({
             tag: tag,
           }),
         ],
@@ -128,7 +128,7 @@ export function detectFacets(text: UnicodeString): Facet[] | undefined {
           byteEnd: text.utf16IndexToUtf8Index(index + 1 + ticker.length), // +1 for $
         },
         features: [
-          app.bsky.richtext.facet.tag.$build({
+          RichTextFacet.tag.$build({
             tag: '$' + ticker, // Store with $ prefix
           }),
         ],
