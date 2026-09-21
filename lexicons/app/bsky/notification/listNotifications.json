@@ -22,7 +22,10 @@
             "maximum": 100,
             "default": 50
           },
-          "priority": { "type": "boolean" },
+          "priority": {
+            "type": "boolean",
+            "description": "Deprecated: this parameter is ignored."
+          },
           "cursor": { "type": "string" },
           "seenAt": { "type": "string", "format": "datetime" }
         }
@@ -38,7 +41,10 @@
               "type": "array",
               "items": { "type": "ref", "ref": "#notification" }
             },
-            "priority": { "type": "boolean" },
+            "priority": {
+              "type": "boolean",
+              "description": "Deprecated: this field is no longer populated."
+            },
             "seenAt": { "type": "string", "format": "datetime" }
           }
         }
