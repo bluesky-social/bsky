@@ -14,10 +14,7 @@
               "type": "array",
               "maxLength": 4,
               "description": "Event kinds to include. Omit this field or pass an empty array to include all kinds.",
-              "items": {
-                "type": "string",
-                "enum": ["commit", "identity", "account", "sync"]
-              }
+              "items": { "type": "string", "enum": ["commit", "identity", "account", "sync"] }
             },
             "dids": {
               "type": "array",
@@ -48,12 +45,7 @@
         "encoding": "application/json",
         "schema": {
           "type": "object",
-          "required": [
-            "plannedThroughSeq",
-            "sealedTipSeq",
-            "segments",
-            "stats"
-          ],
+          "required": ["plannedThroughSeq", "sealedTipSeq", "segments", "stats"],
           "properties": {
             "plannedThroughSeq": {
               "type": "integer",
@@ -78,21 +70,9 @@
       "type": "object",
       "required": ["name", "index", "checksum", "minSeq", "maxSeq", "mode"],
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "Segment filename to pass to getSegment or getBlock."
-        },
-        "index": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Zero-based segment index."
-        },
-        "checksum": {
-          "type": "string",
-          "minLength": 16,
-          "maxLength": 16,
-          "description": "The segment's xxh3 metadata checksum, encoded as 16 hexadecimal characters."
-        },
+        "name": { "type": "string", "description": "Segment filename to pass to getSegment or getBlock." },
+        "index": { "type": "integer", "minimum": 0, "description": "Zero-based segment index." },
+        "checksum": { "type": "string", "minLength": 16, "maxLength": 16, "description": "The segment's xxh3 metadata checksum, encoded as 16 hexadecimal characters." },
         "minSeq": { "type": "integer", "minimum": 0 },
         "maxSeq": { "type": "integer", "minimum": 0 },
         "mode": {
@@ -111,26 +91,13 @@
       "type": "object",
       "required": ["first", "last"],
       "properties": {
-        "first": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Index of the first block in the range."
-        },
-        "last": {
-          "type": "integer",
-          "minimum": 0,
-          "description": "Index of the last block in the range."
-        }
+        "first": { "type": "integer", "minimum": 0, "description": "Index of the first block in the range." },
+        "last": { "type": "integer", "minimum": 0, "description": "Index of the last block in the range." }
       }
     },
     "stats": {
       "type": "object",
-      "required": [
-        "segmentsExamined",
-        "segmentsMatched",
-        "blocksMatched",
-        "entries"
-      ],
+      "required": ["segmentsExamined", "segmentsMatched", "blocksMatched", "entries"],
       "properties": {
         "segmentsExamined": { "type": "integer", "minimum": 0 },
         "segmentsMatched": { "type": "integer", "minimum": 0 },
