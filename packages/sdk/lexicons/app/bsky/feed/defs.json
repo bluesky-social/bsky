@@ -1,6 +1,5 @@
 {
   "lexicon": 1,
-  "$type": "com.atproto.lexicon.schema",
   "id": "app.bsky.feed.defs",
   "defs": {
     "postView": {
