@@ -6,6 +6,7 @@ import { decidePost } from './subjects/post.js'
 import { decideProfile } from './subjects/profile.js'
 import { decideStatus } from './subjects/status.js'
 import { decideUserList } from './subjects/user-list.js'
+import { decideViewExternal } from './subjects/view-external.js'
 import {
   type ModerationOpts,
   type ModerationSubjectFeedGenerator,
@@ -13,9 +14,10 @@ import {
   type ModerationSubjectPost,
   type ModerationSubjectProfile,
   type ModerationSubjectUserList,
+  type ModerationSubjectViewExternal,
 } from './types.js'
 
-export { ModerationUI } from './ui.js'
+export { ModerationUI, mergeModUIResults } from './ui.js'
 export { ModerationDecision } from './decision.js'
 export { hasMutedWord, matchMuteWords } from './mutewords.js'
 export {
@@ -77,4 +79,11 @@ export function moderateStatus(
   opts: ModerationOpts,
 ): ModerationDecision {
   return decideStatus(subject, opts)
+}
+
+export function moderateViewExternal(
+  subject: ModerationSubjectViewExternal,
+  opts: ModerationOpts,
+): ModerationDecision {
+  return decideViewExternal(subject, opts)
 }

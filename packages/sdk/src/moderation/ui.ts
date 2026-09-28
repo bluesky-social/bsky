@@ -19,3 +19,23 @@ export class ModerationUI {
     return this.informs.length !== 0
   }
 }
+
+/**
+ * Merges multiple ModerationUI results into one, combining their causes and
+ * preserving the strictest override behavior. Useful when a single UI element
+ * is subject to multiple moderation decisions or contexts.
+ */
+export function mergeModUIResults(
+  ...uis: (ModerationUI | undefined)[]
+): ModerationUI {
+  const merged = new ModerationUI()
+  for (const ui of uis) {
+    if (!ui) continue
+    merged.noOverride = merged.noOverride || ui.noOverride
+    merged.filters.push(...ui.filters)
+    merged.blurs.push(...ui.blurs)
+    merged.alerts.push(...ui.alerts)
+    merged.informs.push(...ui.informs)
+  }
+  return merged
+}

@@ -5,6 +5,7 @@ import type {
   ProfileViewBasic,
   ProfileViewDetailed,
 } from '../lexicons/app/bsky/actor/defs.defs.js'
+import type { ViewExternal } from '../lexicons/app/bsky/embed/external.defs.js'
 import type {
   GeneratorView,
   PostView,
@@ -105,12 +106,15 @@ export type ModerationSubjectFeedGenerator = GeneratorView
 
 export type ModerationSubjectUserList = ListViewBasic | ListView
 
+export type ModerationSubjectViewExternal = ViewExternal
+
 export type ModerationSubject =
   | ModerationSubjectProfile
   | ModerationSubjectPost
   | ModerationSubjectNotification
   | ModerationSubjectFeedGenerator
   | ModerationSubjectUserList
+  | ModerationSubjectViewExternal
 
 // behaviors
 // =
