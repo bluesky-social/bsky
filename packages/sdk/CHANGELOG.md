@@ -1,5 +1,15 @@
 # @atproto/api
 
+## 1.1.5
+
+### Patch Changes
+
+- [#60](https://github.com/bluesky-social/bsky/pull/60) [`3dbc2a3`](https://github.com/bluesky-social/bsky/commit/3dbc2a308509cb5fc9ed132aa635fc8abdb4584f) Thanks [@ds-boyce](https://github.com/ds-boyce)! - Expose OP thread position and count on feed items, and sync known-liker metadata from the published `app.bsky.feed.defs` schema.
+
+- [#61](https://github.com/bluesky-social/bsky/pull/61) [`f95bf89`](https://github.com/bluesky-social/bsky/commit/f95bf89108bb4fffd9542a7855d130de8797ed66) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add `moderateViewExternal` to compute moderation decisions from labels attached to `app.bsky.embed.external#viewExternal`, and `mergeModUIResults` to combine multiple `ModerationUI` results into one.
+
+- [#49](https://github.com/bluesky-social/bsky/pull/49) [`1651743`](https://github.com/bluesky-social/bsky/commit/16517435f3c628e8c761a9194affb181ca95fcb5) Thanks [@mozzius](https://github.com/mozzius)! - Add an optional `since` parameter and an optional `startCursor` output field to `app.bsky.feed.getTimeline` and `app.bsky.feed.getListFeed`, for fetching a bounded range of newer content.
+
 ## 1.1.4
 
 ### Patch Changes
