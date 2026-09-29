@@ -194,6 +194,7 @@ import {
   moderateFeedGenerator,
   moderateUserList,
   moderateStatus,
+  moderateViewExternal,
 } from '@bsky/sdk/moderation'
 ```
 
@@ -268,6 +269,31 @@ for (const inform of mod.ui('contentList').informs) {
   // render this inform
 }
 ```
+
+### External embeds
+
+Labels can be attached directly to an `app.bsky.embed.external#viewExternal` (for example, on link cards backed by Atmosphere records). These labels are not covered by `moderatePost`, so compute a separate decision for the embed with `moderateViewExternal` and apply it to the rendered card.
+
+An external card acts as both the "content" and the "media" of its embed, so combine the `contentView` and `contentMedia` contexts with `mergeModUIResults`:
+
+```typescript
+import { mergeModUIResults, moderateViewExternal } from '@bsky/sdk/moderation'
+
+const embedMod = moderateViewExternal(embed.external, moderationOptions)
+const ui = mergeModUIResults(
+  embedMod.ui('contentView'),
+  embedMod.ui('contentMedia'),
+)
+
+if (ui.blur) {
+  // cover the card with the explanation from ui.blurs[0]
+  if (ui.noOverride) {
+    // don't allow the cover to be removed
+  }
+}
+```
+
+`mergeModUIResults` accepts any number of `ModerationUI` values (undefined entries are skipped), combining their causes and preserving the strictest `noOverride`.
 
 ## Sending moderation reports
 
