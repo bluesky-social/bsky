@@ -288,7 +288,7 @@ const ui = mergeModUIResults(
 if (ui.blur) {
   // cover the card with the explanation from ui.blurs[0]
   if (ui.noOverride) {
-    // dont allow the cover to be removed
+    // don't allow the cover to be removed
   }
 }
 ```
