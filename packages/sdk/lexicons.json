@@ -114,6 +114,7 @@
     "app.bsky.labeler.service",
     "app.bsky.notification.declaration",
     "app.bsky.notification.defs",
+    "app.bsky.notification.getGroupedNotifications",
     "app.bsky.notification.getPreferences",
     "app.bsky.notification.getUnreadCount",
     "app.bsky.notification.listActivitySubscriptions",
@@ -359,7 +360,7 @@
     },
     "app.bsky.authManageNotifications": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authManageNotifications",
-      "cid": "bafyreihdmduvsbkc36pwtk4ddrt3wfrncckjebpyywkwci753vpptkpk5u"
+      "cid": "bafyreiagate5s2d6tzdgqdyjwhxxlxksbgwpeig6uzjfefwh2qc5luef7e"
     },
     "app.bsky.authManageProfile": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authManageProfile",
@@ -728,6 +729,10 @@
     "app.bsky.notification.defs": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.defs",
       "cid": "bafyreigj3h2srtgnai46quxnkal3vzpkje4xmsirrydfpopaa2azammkwq"
+    },
+    "app.bsky.notification.getGroupedNotifications": {
+      "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.getGroupedNotifications",
+      "cid": "bafyreiabwse5z2vz5za6wwxmn6rujugz33wnvdv2gesvv4xo3oeie2wmem"
     },
     "app.bsky.notification.getPreferences": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.getPreferences",
