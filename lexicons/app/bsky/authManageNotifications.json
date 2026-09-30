@@ -14,8 +14,8 @@
           "resource": "rpc",
           "inheritAud": true,
           "lxm": [
-            "app.bsky.notification.getGroupedNotifications",
             "app.bsky.notification.getPreferences",
+            "app.bsky.notification.getGroupedNotifications",
             "app.bsky.notification.getUnreadCount",
             "app.bsky.notification.listActivitySubscriptions",
             "app.bsky.notification.listNotifications",
