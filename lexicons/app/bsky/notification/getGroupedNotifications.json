@@ -21,13 +21,6 @@
             ],
             "default": "all"
           },
-          "utcOffset": {
-            "type": "integer",
-            "description": "Offset from UTC in minutes, positive east, used to determine local day boundaries when grouping. Groups never span the current day boundary. Defaults to UTC.",
-            "minimum": -720,
-            "maximum": 840,
-            "default": 0
-          },
           "limit": {
             "type": "integer",
             "description": "Maximum number of groups to return.",
