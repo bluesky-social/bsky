@@ -1,5 +1,13 @@
 # @atproto/api
 
+## 1.2.0
+
+### Minor Changes
+
+- [#63](https://github.com/bluesky-social/bsky/pull/63) [`b58345e`](https://github.com/bluesky-social/bsky/commit/b58345ef8c01c27ef14fd9eb3147627a84f675b1) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Add the grouped notifications lexicon and update the notification permissions.
+
+- [#66](https://github.com/bluesky-social/bsky/pull/66) [`0484458`](https://github.com/bluesky-social/bsky/commit/0484458b26618d7000e1889a4e02b966147a6aab) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Use a typed `relatedViews` array for grouped notifications and remove the `utcOffset` parameter.
+
 ## 1.1.5
 
 ### Patch Changes
