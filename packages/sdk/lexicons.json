@@ -732,7 +732,7 @@
     },
     "app.bsky.notification.getGroupedNotifications": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.getGroupedNotifications",
-      "cid": "bafyreiabwse5z2vz5za6wwxmn6rujugz33wnvdv2gesvv4xo3oeie2wmem"
+      "cid": "bafyreihyv25gx7iysovm7k7nohyb4i5yiutkvtbyk6hzwhm5cnu3apim3m"
     },
     "app.bsky.notification.getPreferences": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.notification.getPreferences",
