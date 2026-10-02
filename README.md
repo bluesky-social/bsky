@@ -5,7 +5,7 @@ TypeScript monorepo for Bluesky packages published under the [`@bsky`](https://w
 ## Layout
 
 - `packages/*` — publishable libraries (node-only and isomorphic)
-- `services/*` — private service entrypoints (not published)
+- `services/*` — private service entrypoints (not published), including `bskyembed`
 - `tsconfig/*` — shared TypeScript presets (`node`, `isomorphic`, `tests`)
 
 ## Development
@@ -14,12 +14,12 @@ Requires Node.js >=22.12 and pnpm 11 (enforced via `devEngines`).
 
 ```sh
 pnpm install
-pnpm build      # tsc project builds, topological
-pnpm typecheck  # tsc --build tsconfig.json
-pnpm lint       # eslint
+pnpm build      # package builds, then embed bundle + snippet
+pnpm typecheck  # package projects and embed
+pnpm lint       # root ESLint and embed ESLint
 pnpm format     # prettier --write
 pnpm test       # vitest
-pnpm verify     # format:check + lint + typecheck + test (what CI runs)
+pnpm verify     # build + format:check + lint + typecheck + test
 ```
 
 ## Package conventions
@@ -29,6 +29,7 @@ pnpm verify     # format:check + lint + typecheck + test (what CI runs)
 - `tsconfig.json` is references-only, pointing at `tsconfig.build.json` (and `tsconfig.tests.json` if present), which extend a preset from `tsconfig/`
 - Tests live in `tests/` and run with vitest via a per-package `vitest.config.ts`
 - New packages must be added to the root `tsconfig.json` `references` list
+- Private services use the workspace scripts and are not changeset-published
 
 ## Releases
 
