@@ -45,7 +45,7 @@ jobs:
         run: |
           set +e
           # xargs maps goat's exit 255 to 124; Enforce only tests nonzero-ness
-          xargs goat lex lint --json < changed.txt > findings.jsonl
+          xargs goat lex lint --json lexicons/app/bsky < changed.txt > findings.jsonl
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           cat findings.jsonl
       - name: Build report
@@ -170,7 +170,7 @@ jobs:
         run: |
           set +e
           # xargs maps goat's exit 255 to 124; Enforce only tests nonzero-ness
-          xargs goat lex breaking --json < changed.txt > findings.jsonl
+          xargs goat lex breaking --json lexicons/app/bsky < changed.txt > findings.jsonl
           echo "exit=$?" >> "$GITHUB_OUTPUT"
           cat findings.jsonl
       - name: Build report
