@@ -1,5 +1,19 @@
 # @atproto/api
 
+## 1.2.0
+
+### Minor Changes
+
+- [#63](https://github.com/bluesky-social/bsky/pull/63) [`b58345e`](https://github.com/bluesky-social/bsky/commit/b58345ef8c01c27ef14fd9eb3147627a84f675b1) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Add the grouped notifications lexicon and update the notification permissions.
+
+- [#66](https://github.com/bluesky-social/bsky/pull/66) [`0484458`](https://github.com/bluesky-social/bsky/commit/0484458b26618d7000e1889a4e02b966147a6aab) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Use a typed `relatedViews` array for grouped notifications and remove the `utcOffset` parameter.
+
+- [#69](https://github.com/bluesky-social/bsky/pull/69) [`bc6737a`](https://github.com/bluesky-social/bsky/commit/bc6737a4b52dd2458c7aecbc296ec660e068af89) Thanks [@ds-boyce](https://github.com/ds-boyce)! - Expose OP thread numbering fields on quoted record views.
+
+### Patch Changes
+
+- [#71](https://github.com/bluesky-social/bsky/pull/71) [`a4f646e`](https://github.com/bluesky-social/bsky/commit/a4f646e1c92fdad091d7e76fd1cb0786e01fd586) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Update the grouped notification lexicon with repost-related spotlight groups.
+
 ## 1.1.5
 
 ### Patch Changes
