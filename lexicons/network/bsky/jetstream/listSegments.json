@@ -38,48 +38,17 @@
     },
     "segment": {
       "type": "object",
-      "required": [
-        "name",
-        "index",
-        "sizeBytes",
-        "checksum",
-        "eventCount",
-        "minSeq",
-        "maxSeq",
-        "minWitnessedAt",
-        "maxWitnessedAt"
-      ],
+      "required": ["name", "index", "sizeBytes", "checksum", "eventCount", "minSeq", "maxSeq", "minWitnessedAt", "maxWitnessedAt"],
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "Segment filename; pass to getSegment."
-        },
-        "index": {
-          "type": "integer",
-          "description": "Zero-based segment index."
-        },
-        "sizeBytes": {
-          "type": "integer",
-          "description": "File size in bytes."
-        },
-        "checksum": {
-          "type": "string",
-          "description": "Segment-format xxh3 metadata checksum as 16-char hex; equals the getSegment ETag."
-        },
-        "eventCount": {
-          "type": "integer",
-          "description": "Number of events in the segment."
-        },
+        "name": { "type": "string", "description": "Segment filename; pass to getSegment." },
+        "index": { "type": "integer", "description": "Zero-based segment index." },
+        "sizeBytes": { "type": "integer", "description": "File size in bytes." },
+        "checksum": { "type": "string", "description": "Segment-format xxh3 metadata checksum as 16-char hex; equals the getSegment ETag." },
+        "eventCount": { "type": "integer", "description": "Number of events in the segment." },
         "minSeq": { "type": "integer" },
         "maxSeq": { "type": "integer" },
-        "minWitnessedAt": {
-          "type": "integer",
-          "description": "Earliest witnessed-at, unix microseconds."
-        },
-        "maxWitnessedAt": {
-          "type": "integer",
-          "description": "Latest witnessed-at, unix microseconds."
-        }
+        "minWitnessedAt": { "type": "integer", "description": "Earliest witnessed-at, unix microseconds." },
+        "maxWitnessedAt": { "type": "integer", "description": "Latest witnessed-at, unix microseconds." }
       }
     }
   }
