@@ -1,6 +1,7 @@
 import type { AtUriString, DidString } from '@atproto/syntax'
 import type {
   MutedWord,
+  ProfileLinkView,
   ProfileView,
   ProfileViewBasic,
   ProfileViewDetailed,
@@ -108,6 +109,8 @@ export type ModerationSubjectUserList = ListViewBasic | ListView
 
 export type ModerationSubjectViewExternal = ViewExternal
 
+export type ModerationSubjectProfileLink = ProfileLinkView
+
 export type ModerationSubject =
   | ModerationSubjectProfile
   | ModerationSubjectPost
@@ -115,6 +118,7 @@ export type ModerationSubject =
   | ModerationSubjectFeedGenerator
   | ModerationSubjectUserList
   | ModerationSubjectViewExternal
+  | ModerationSubjectProfileLink
 
 // behaviors
 // =

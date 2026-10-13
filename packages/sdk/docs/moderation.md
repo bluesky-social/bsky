@@ -195,6 +195,7 @@ import {
   moderateUserList,
   moderateStatus,
   moderateViewExternal,
+  moderateProfileLink,
 } from '@bsky/sdk/moderation'
 ```
 
@@ -294,6 +295,33 @@ if (ui.blur) {
 ```
 
 `mergeModUIResults` accepts any number of `ModerationUI` values (undefined entries are skipped), combining their causes and preserving the strictest `noOverride`.
+
+### Profile links
+
+A detailed profile (`app.bsky.actor.defs#profileViewDetailed`) can include `links`, a list of `profileLinkView`s. Each link can carry hydrated `labels`. Moderate each link separately with `moderateProfileLink`, in addition to (not instead of) the decision for the profile itself:
+
+```typescript
+import { moderateProfile, moderateProfileLink } from '@bsky/sdk/moderation'
+
+const profileMod = moderateProfile(profile, moderationOptions)
+
+for (const link of profile.links ?? []) {
+  const linkMod = moderateProfileLink(link, moderationOptions)
+
+  if (linkMod.ui('contentView').blur) {
+    // cover the link with the explanation from linkMod.ui('contentView').blurs[0]
+  }
+  if (linkMod.ui('contentMedia').blur) {
+    // cover the link's icon with the explanation from linkMod.ui('contentMedia').blurs[0]
+  }
+}
+```
+
+Notes:
+
+- Moderation is label-only. Link labels are treated as content labels, so use the `content*` UI contexts. `moderateProfileLink` does not include the profile's account or profile labels, blocks, mutes, or muted words, and `moderateProfile` does not include link labels. Combine decisions yourself where your UI needs to.
+- The link view has no owner profile. The owner is read from the DID in the link record's `uri` (never from the destination `url` or a label's source). This is what lets the owner's own self-labels apply and sets `isMe` when the viewer owns the link. If the `uri` is handle-based, no owner is inferred, though labels from subscribed labelers still apply.
+- `labels` on a `profileLinkView` are hydrated by the app view and may be absent, so treat a missing value as no labels. This is distinct from the `labels` self-label union that the record author sets on an `app.bsky.actor.link` record.
 
 ## Sending moderation reports
 
