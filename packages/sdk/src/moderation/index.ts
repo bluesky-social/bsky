@@ -3,6 +3,7 @@ import { decideAccount } from './subjects/account.js'
 import { decideFeedGenerator } from './subjects/feed-generator.js'
 import { decideNotification } from './subjects/notification.js'
 import { decidePost } from './subjects/post.js'
+import { decideProfileLink } from './subjects/profile-link.js'
 import { decideProfile } from './subjects/profile.js'
 import { decideStatus } from './subjects/status.js'
 import { decideUserList } from './subjects/user-list.js'
@@ -13,6 +14,7 @@ import {
   type ModerationSubjectNotification,
   type ModerationSubjectPost,
   type ModerationSubjectProfile,
+  type ModerationSubjectProfileLink,
   type ModerationSubjectUserList,
   type ModerationSubjectViewExternal,
 } from './types.js'
@@ -34,6 +36,7 @@ export type {
   ModerationOpts,
   ModerationPrefs,
   ModerationPrefsLabeler,
+  ModerationSubjectProfileLink,
 } from './types.js'
 
 export function moderateProfile(
@@ -86,4 +89,11 @@ export function moderateViewExternal(
   opts: ModerationOpts,
 ): ModerationDecision {
   return decideViewExternal(subject, opts)
+}
+
+export function moderateProfileLink(
+  subject: ModerationSubjectProfileLink,
+  opts: ModerationOpts,
+): ModerationDecision {
+  return decideProfileLink(subject, opts)
 }

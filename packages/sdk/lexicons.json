@@ -6,6 +6,7 @@
     "app.bsky.actor.getProfile",
     "app.bsky.actor.getProfiles",
     "app.bsky.actor.getSuggestions",
+    "app.bsky.actor.link",
     "app.bsky.actor.profile",
     "app.bsky.actor.putPreferences",
     "app.bsky.actor.searchActors",
@@ -280,7 +281,7 @@
   "resolutions": {
     "app.bsky.actor.defs": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.defs",
-      "cid": "bafyreihoopgnp2wxlyvmgh7h36jxdy6xowk7wt3ih4zr5b6cmn7gn267uy"
+      "cid": "bafyreiehx4vin52pllf6ctb6snn4pto5asolzzfq5gio7i3u77eg34oeqm"
     },
     "app.bsky.actor.getPreferences": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.getPreferences",
@@ -298,9 +299,13 @@
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.getSuggestions",
       "cid": "bafyreidjx3lzrtwr5tw7fhjcmetmcjo5grkfuv4kgxeqrlptgv5ss23aye"
     },
+    "app.bsky.actor.link": {
+      "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.link",
+      "cid": "bafyreiaql2xx47oojyole7dqdipcwes7nrjdc2cuxrcpaboulw45f5pgea"
+    },
     "app.bsky.actor.profile": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.profile",
-      "cid": "bafyreihhja2ivgofo4myua5d4f5gs5hbw65sorfem5qz4i4rh726nt6tty"
+      "cid": "bafyreicxydzixifmkms7d6mndfsq6kdzcajakutdakcaqt2qvgzrscfqcm"
     },
     "app.bsky.actor.putPreferences": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.actor.putPreferences",
@@ -344,7 +349,7 @@
     },
     "app.bsky.authFullApp": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authFullApp",
-      "cid": "bafyreib6ka4petecklfuu6xo744fjxfgn7cgylwblv4ovcg23uxilfhvby"
+      "cid": "bafyreihvjtbt4xm4rvbck5wzdaodxecqq6t4ne3lcji63a2x7yaypjj4wa"
     },
     "app.bsky.authManageFeedDeclarations": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authManageFeedDeclarations",
@@ -364,7 +369,7 @@
     },
     "app.bsky.authManageProfile": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authManageProfile",
-      "cid": "bafyreidacpwqpmq5dg45j4aelggty3dz4tmoza37owmz2qf4cpj53ahdgi"
+      "cid": "bafyreidsdionfx655evuvue4kjlgowgucsdv6rmdtjgy3atlehu6nkioyy"
     },
     "app.bsky.authViewAll": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.authViewAll",

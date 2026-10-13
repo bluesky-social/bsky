@@ -68,11 +68,6 @@
           "type": "array",
           "items": { "type": "ref", "ref": "com.atproto.label.defs#label" }
         },
-        "links": {
-          "type": "array",
-          "description": "The profile's links, in display order. Links that were taken down or don't resolve are left out.",
-          "items": { "type": "ref", "ref": "#profileLinkView" }
-        },
         "verification": {
           "type": "ref",
           "ref": "#verificationState"
@@ -128,6 +123,11 @@
         "pinnedPost": {
           "type": "ref",
           "ref": "com.atproto.repo.strongRef"
+        },
+        "links": {
+          "type": "array",
+          "description": "The profile's links, in display order. Links that were taken down or don't resolve are left out.",
+          "items": { "type": "ref", "ref": "#profileLinkView" }
         },
         "verification": {
           "type": "ref",
@@ -206,6 +206,10 @@
           "type": "string",
           "format": "uri",
           "description": "Image URL for the destination site's icon."
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "ref", "ref": "com.atproto.label.defs#label" }
         }
       }
     },
