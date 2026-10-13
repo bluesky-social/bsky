@@ -1,5 +1,27 @@
 # @atproto/api
 
+## 1.2.0
+
+### Minor Changes
+
+- [#63](https://github.com/bluesky-social/bsky/pull/63) [`b58345e`](https://github.com/bluesky-social/bsky/commit/b58345ef8c01c27ef14fd9eb3147627a84f675b1) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Add the grouped notifications lexicon and update the notification permissions.
+
+- [#73](https://github.com/bluesky-social/bsky/pull/73) [`59d2b18`](https://github.com/bluesky-social/bsky/commit/59d2b189240ca5360c1a7646e49fe2767cac2139) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Use basic profile and starter pack views in grouped notification related views.
+
+- [#66](https://github.com/bluesky-social/bsky/pull/66) [`0484458`](https://github.com/bluesky-social/bsky/commit/0484458b26618d7000e1889a4e02b966147a6aab) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Use a typed `relatedViews` array for grouped notifications and remove the `utcOffset` parameter.
+
+- [#75](https://github.com/bluesky-social/bsky/pull/75) [`10d35cb`](https://github.com/bluesky-social/bsky/commit/10d35cb588fdc23a1d256192e8fc42e04fded53b) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add `moderateProfileLink` to `@bsky/sdk/moderation` for moderating profile link views using their content labels.
+
+- [#75](https://github.com/bluesky-social/bsky/pull/75) [`10d35cb`](https://github.com/bluesky-social/bsky/commit/10d35cb588fdc23a1d256192e8fc42e04fded53b) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Install `app.bsky.actor.link` profile link records, profile record `links` references, hydrated `profileViewDetailed.links` views, record self-labels, and hydrated `profileLinkView` labels in the SDK lexicons.
+
+- [#69](https://github.com/bluesky-social/bsky/pull/69) [`bc6737a`](https://github.com/bluesky-social/bsky/commit/bc6737a4b52dd2458c7aecbc296ec660e068af89) Thanks [@ds-boyce](https://github.com/ds-boyce)! - Expose OP thread numbering fields on quoted record views.
+
+### Patch Changes
+
+- [#71](https://github.com/bluesky-social/bsky/pull/71) [`a4f646e`](https://github.com/bluesky-social/bsky/commit/a4f646e1c92fdad091d7e76fd1cb0786e01fd586) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Update the grouped notification lexicon with repost-related spotlight groups.
+
+- [#74](https://github.com/bluesky-social/bsky/pull/74) [`611c1fd`](https://github.com/bluesky-social/bsky/commit/611c1fde5d078695590b99942d26024faa027262) Thanks [@matthieusieben](https://github.com/matthieusieben)! - Add new `app.bsky.actor.link`
+
 ## 1.1.5
 
 ### Patch Changes
