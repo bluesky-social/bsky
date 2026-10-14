@@ -28,6 +28,7 @@
             "chat.bsky.convo.getConvoMembers",
             "chat.bsky.convo.getLog",
             "chat.bsky.convo.getMessages",
+            "chat.bsky.convo.getUnreadCounts",
             "chat.bsky.convo.leaveConvo",
             "chat.bsky.convo.listConvoRequests",
             "chat.bsky.convo.listConvos",
@@ -54,7 +55,10 @@
             "chat.bsky.group.rejectJoinRequest",
             "chat.bsky.group.removeMembers",
             "chat.bsky.group.requestJoin",
-            "chat.bsky.group.withdrawJoinRequest"
+            "chat.bsky.group.updateJoinRequestsRead",
+            "chat.bsky.group.withdrawJoinRequest",
+            "chat.bsky.notification.getPreferences",
+            "chat.bsky.notification.putPreferences"
           ]
         },
         {
