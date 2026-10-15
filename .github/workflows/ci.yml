@@ -19,9 +19,11 @@ jobs:
       - run: pnpm --filter @bsky/sdk exec lex install --ci
       # Generate src/lexicons (gitignored) so lint/typecheck can resolve imports
       - run: pnpm --filter @bsky/sdk run codegen
+      - run: pnpm build
+      - name: Verify embed build artifacts
+        run: test -s services/bskyembed/dist/index.html && test -s services/bskyembed/dist/post.html && test -s services/bskyembed/dist/embed.js
       - run: pnpm format:check
       - run: pnpm lint
-      - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
 
