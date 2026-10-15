@@ -22,14 +22,8 @@
       },
       "output": { "encoding": "application/octet-stream" },
       "errors": [
-        {
-          "name": "SegmentNotFound",
-          "description": "No sealed segment exists for the given name."
-        },
-        {
-          "name": "BlockNotFound",
-          "description": "blockIndex is >= the segment's block_count."
-        }
+        { "name": "SegmentNotFound", "description": "No sealed segment exists for the given name." },
+        { "name": "BlockNotFound", "description": "blockIndex is >= the segment's block_count." }
       ]
     }
   }

@@ -18,7 +18,9 @@
       "output": {
         "encoding": "application/octet-stream"
       },
-      "errors": [{ "name": "SegmentNotFound" }]
+      "errors": [
+        { "name": "SegmentNotFound" }
+      ]
     }
   }
 }
