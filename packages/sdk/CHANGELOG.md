@@ -1,5 +1,13 @@
 # @atproto/api
 
+## 1.3.0
+
+### Minor Changes
+
+- [#80](https://github.com/bluesky-social/bsky/pull/80) [`6b84f6f`](https://github.com/bluesky-social/bsky/commit/6b84f6fe51b0769142f85d7f94fa400103b1b285) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add Atmosphere article, publication, gallery, and livestream embed view schemas. Update `getEmbedExternalView` with canonical record URI input, typed embed data, and unverified associated record responses while retaining legacy inputs and views.
+
+- [#77](https://github.com/bluesky-social/bsky/pull/77) [`08cd3cc`](https://github.com/bluesky-social/bsky/commit/08cd3cc0f4b67bc46e87ef40070c647ed55f88f8) Thanks [@mozzius](https://github.com/mozzius)! - Add the optional `parent` of `subscribedPostItem` in grouped notifications, which names the post a subscribed reply replies to.
+
 ## 1.2.0
 
 ### Minor Changes
