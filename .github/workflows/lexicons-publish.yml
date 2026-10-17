@@ -44,4 +44,4 @@ jobs:
         # --update allows modifying existing records; safe because the
         # breaking check gated the PR. Publish skips schemas identical to
         # what is live, so re-runs are idempotent.
-        run: goat lex publish --update
+        run: goat lex publish --update lexicons/app/bsky/
