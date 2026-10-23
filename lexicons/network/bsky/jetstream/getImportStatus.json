@@ -31,30 +31,12 @@
               "knownValues": ["parse_bucket", "apply"],
               "description": "Current phase: parse_bucket (Phase A+B) or apply (Phase C)."
             },
-            "error": {
-              "type": "string",
-              "description": "Failure detail; present only when state is failed."
-            },
+            "error": { "type": "string", "description": "Failure detail; present only when state is failed." },
             "submittedAt": { "type": "string", "format": "datetime" },
-            "finishedAt": {
-              "type": "string",
-              "format": "datetime",
-              "description": "Present only for a terminal job."
-            },
-            "bucketed": {
-              "type": "boolean",
-              "description": "Whether Phase A+B completed (the offset files are durable)."
-            },
-            "segmentsToApply": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Segments Phase C will process (after resume-skips)."
-            },
-            "segmentsApplied": {
-              "type": "integer",
-              "minimum": 0,
-              "description": "Segments processed so far in Phase C."
-            },
+            "finishedAt": { "type": "string", "format": "datetime", "description": "Present only for a terminal job." },
+            "bucketed": { "type": "boolean", "description": "Whether Phase A+B completed (the offset files are durable)." },
+            "segmentsToApply": { "type": "integer", "minimum": 0, "description": "Segments Phase C will process (after resume-skips)." },
+            "segmentsApplied": { "type": "integer", "minimum": 0, "description": "Segments processed so far in Phase C." },
             "rowsTotal": { "type": "integer", "minimum": 0 },
             "rowsValid": { "type": "integer", "minimum": 0 },
             "rowsRejected": { "type": "integer", "minimum": 0 },
@@ -69,10 +51,7 @@
         }
       },
       "errors": [
-        {
-          "name": "JobNotFound",
-          "description": "No import job matches the supplied id, or no job has ever run when the id is omitted."
-        }
+        { "name": "JobNotFound", "description": "No import job matches the supplied id, or no job has ever run when the id is omitted." }
       ]
     }
   }
