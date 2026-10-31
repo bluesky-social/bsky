@@ -17,4 +17,9 @@ export const defaultRuntime: JetstreamRuntime = {
       'this runtime has no default synchronous sha256: supply your own via Jetstream options (sha256) to use snapshot()/replay()',
     )
   },
+
+  // The WHATWG WebSocket exposes no upgrade response headers.
+  upgradeObserver(): undefined {
+    return undefined
+  },
 }

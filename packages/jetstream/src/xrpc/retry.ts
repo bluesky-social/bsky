@@ -3,6 +3,7 @@ import {
   XrpcFetchError,
   XrpcResponseError,
 } from '@atproto/lex'
+import { ProtocolError } from '../errors.js'
 
 export type RetryTarget =
   | { kind: 'segment'; name: string }
@@ -61,6 +62,8 @@ function statusOf(err: unknown): number | undefined {
  */
 export function isRetryableError(err: unknown): boolean {
   if (isAbortError(err)) return false
+  // A negotiated-version disagreement is permanent for this operation.
+  if (err instanceof ProtocolError) return false
   if (err instanceof XrpcFetchError) return true
   // An xrpc response error knows its own retryability — defer to it. The
   // status-set path below stays for the streaming layer, which classifies a

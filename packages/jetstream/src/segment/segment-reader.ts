@@ -1,6 +1,6 @@
 import { MalformedError } from '../errors.js'
 import { type Decompressor } from '../runtime/interface.js'
-import { type SegEvent, decodeBlockFrame } from './block.js'
+import { type FormatVersion, type SegEvent, decodeBlockFrame } from './block.js'
 import {
   RESERVED_HEADER_BYTES,
   type SegHeader,
@@ -53,10 +53,12 @@ export function readBlockFrame(
  * Streams a sealed segment's compressed block frames (no length prefix) in
  * file order, tolerating arbitrary chunk boundaries. Walks
  * [u64 LE length][frame] pairs from after the 256-byte header up to
- * footerOffset; the trailing block-index footer is not parsed.
+ * footerOffset; the trailing block-index footer is not parsed. The header's
+ * format must equal `expectedFormat`.
  */
 export async function* streamSegmentFrames(
   source: AsyncIterable<Uint8Array>,
+  expectedFormat: FormatVersion = 1,
 ): AsyncGenerator<Uint8Array> {
   // Chunk-list buffering: appending is O(1) and frame extraction copies
   // exactly the frame's bytes. Eagerly concatenating the accumulation would
@@ -106,7 +108,7 @@ export async function* streamSegmentFrames(
     throw new MalformedError('segment ended before header')
   }
   const headerBytes = takeBytes(RESERVED_HEADER_BYTES)
-  const h = readSealedHeader(headerBytes)
+  const h = readSealedHeader(headerBytes, expectedFormat)
   let consumed = RESERVED_HEADER_BYTES
 
   let emitted = 0
@@ -137,12 +139,18 @@ export async function* streamSegmentFrames(
 }
 
 /** Decodes a whole in-memory sealed segment via the footer index. */
-export function decodeSegment(buf: Uint8Array, d: Decompressor): SegEvent[] {
-  const h = readSealedHeader(buf)
+export function decodeSegment(
+  buf: Uint8Array,
+  d: Decompressor,
+  expectedFormat: FormatVersion = 1,
+): SegEvent[] {
+  const h = readSealedHeader(buf, expectedFormat)
   const out: SegEvent[] = []
   for (let i = 0; i < h.blockCount; i++) {
     const frame = readBlockFrame(buf, h, i)
-    for (const ev of decodeBlockFrame(frame, d)) out.push(ev)
+    for (const ev of decodeBlockFrame(frame, d, undefined, h.version)) {
+      out.push(ev)
+    }
   }
   return out
 }

@@ -3,9 +3,11 @@ import { MalformedError, XrpcSubscriptionError } from '../errors.js'
 import {
   type Account,
   type Identity,
+  type JetstreamProgress,
   type RawCommit,
   type RawEvent,
   type RawPutCommit,
+  type RawSpacesEvent,
   type Sync,
 } from '../event.js'
 import { type RawRecordJson } from '../raw-record.js'
@@ -18,6 +20,8 @@ const IDENTITY = `${NSID}#identity`
 const ACCOUNT = `${NSID}#account`
 const SYNC = `${NSID}#sync`
 const INFO = `${NSID}#info`
+const SCOPE = `${NSID}#scope`
+const PROGRESS = `${NSID}#progress`
 
 /**
  * A seq-less advisory (today only `OutdatedCursor`, sent when a
@@ -26,6 +30,11 @@ const INFO = `${NSID}#info`
  */
 export interface LiveInfoFrame {
   info: { name: string; message?: string }
+}
+
+/** A Spaces `#progress` coverage message (only with progress=true). */
+export interface LiveProgressFrame {
+  progress: JetstreamProgress
 }
 
 // The v2 wire contract, declared once: payload types are inferred from these
@@ -107,6 +116,34 @@ const wirePayload = l.union([
 type WirePayload = InferOutput<typeof wirePayload>
 type WireCommitPayload = InferOutput<typeof wireCommitPayload>
 
+// The Spaces additions (protocolVersion=2): an optional SpaceRef namespace on
+// #commit and #sync, the #scope lifecycle marker, and #progress coverage.
+// Validated in every mode — scope markers purge data and progress certifies
+// coverage, so neither may be read optimistically.
+const wireSpace = l.optional(l.string({ minLength: 1 }))
+const wireScopePayload = l.object({
+  $type: l.literal(SCOPE),
+  seq: l.integer({ minimum: 1 }),
+  time: l.string({ format: 'datetime' }),
+  space: l.string({ minLength: 1 }),
+  operation: l.union([l.literal('repoRemoved'), l.literal('spaceDeleted')]),
+  did: l.optional(l.string({ format: 'did' })),
+  cause: l.optional(l.string()),
+  lastKnownRev: l.optional(l.string()),
+})
+const wireProgressPayload = l.object({
+  $type: l.literal(PROGRESS),
+  throughSeq: l.integer({ minimum: 0 }),
+  caughtUp: l.boolean(),
+})
+
+export interface DecodeLiveOpts {
+  validateWire?: boolean
+  /** Decode the Spaces additions; without it they are skipped as unknown. */
+  spaces?: boolean
+  /** Deliver #progress frames (only when the stream requested them). */
+  progress?: boolean
+}
 // Pre-discrimination peek: error frames, #info advisories, and unknown types
 // are handled before the WirePayload cast (l.union rejects unknown
 // discriminants by design).
@@ -122,7 +159,26 @@ const td = new TextDecoder()
 export function decodeLiveFrame(
   data: Uint8Array | string,
   validateWire?: boolean,
-): RawEvent<RawRecordJson> | LiveInfoFrame | typeof SKIP_FRAME {
+): RawEvent<RawRecordJson> | LiveInfoFrame | typeof SKIP_FRAME
+export function decodeLiveFrame(
+  data: Uint8Array | string,
+  validateWire: boolean | undefined,
+  opts: DecodeLiveOpts,
+):
+  | RawSpacesEvent<RawRecordJson>
+  | LiveInfoFrame
+  | LiveProgressFrame
+  | typeof SKIP_FRAME
+export function decodeLiveFrame(
+  data: Uint8Array | string,
+  validateWire?: boolean,
+  opts?: DecodeLiveOpts,
+):
+  | RawSpacesEvent<RawRecordJson>
+  | LiveInfoFrame
+  | LiveProgressFrame
+  | typeof SKIP_FRAME {
+  const spaces = opts?.spaces === true
   let parsed: unknown
   try {
     parsed = JSON.parse(typeof data === 'string' ? data : td.decode(data))
@@ -156,6 +212,23 @@ export function decodeLiveFrame(
         message: message == null ? undefined : String(message),
       },
     }
+  }
+  if (spaces && payloadType === SCOPE) return liveScope(peek.payload)
+  if (spaces && payloadType === PROGRESS) {
+    // Never emitted without the opt-in; one arriving anyway is not ours to
+    // surface (an unrequested value must not reach the consumer).
+    if (!opts?.progress) return SKIP_FRAME
+    const result = wireProgressPayload.safeValidate(peek.payload)
+    if (!result.success) {
+      throw new MalformedError('invalid progress frame', {
+        cause: result.reason,
+      })
+    }
+    const { throughSeq, caughtUp } = result.value
+    if (!Number.isSafeInteger(throughSeq)) {
+      throw new MalformedError('progress throughSeq is not a safe integer')
+    }
+    return { progress: { kind: 'progress', throughSeq, caughtUp } }
   }
   if (
     payloadType !== COMMIT &&
@@ -192,10 +265,22 @@ export function decodeLiveFrame(
   // format-checks it via the wire schema.
   const time = p.time
   const base = { did, seq, time }
+  // `space` is copied only on a Spaces stream, and only when present (absent
+  // is the public namespace): public events keep exactly their old keys.
+  let scoped: typeof base & { space?: string } = base
+  if (spaces && (p.$type === COMMIT || p.$type === SYNC) && 'space' in p) {
+    const result = wireSpace.safeValidate(p.space)
+    if (!result.success) {
+      throw new MalformedError(`invalid live event space (seq=${seq})`, {
+        cause: result.reason,
+      })
+    }
+    if (result.value !== undefined) scoped = { ...base, space: result.value }
+  }
 
   switch (p.$type) {
     case COMMIT:
-      return { ...base, kind: 'commit', commit: liveCommit(p) }
+      return { ...scoped, kind: 'commit', commit: liveCommit(p) }
     case IDENTITY: {
       const identity: Identity = {
         did: p.identity.did || did,
@@ -229,8 +314,45 @@ export function decodeLiveFrame(
         rev: p.sync.rev,
         time: p.sync.time,
       }
-      return { ...base, kind: 'sync', sync }
+      return { ...scoped, kind: 'sync', sync }
     }
+  }
+}
+
+// The #scope marker: did is the removed author for repoRemoved and absent for
+// spaceDeleted — nothing is fabricated for the authorless case.
+function liveScope(payload: unknown): RawSpacesEvent<RawRecordJson> {
+  const result = wireScopePayload.safeValidate(payload)
+  if (!result.success) {
+    throw new MalformedError('invalid scope frame', { cause: result.reason })
+  }
+  const p = result.value
+  if (!Number.isSafeInteger(p.seq)) {
+    throw new MalformedError(`live seq is not a positive safe integer`)
+  }
+  const extra = {
+    ...(p.cause !== undefined ? { cause: p.cause } : {}),
+    ...(p.lastKnownRev !== undefined ? { lastKnownRev: p.lastKnownRev } : {}),
+  }
+  const envelope = { seq: p.seq, time: p.time, space: p.space }
+  if (p.operation === 'repoRemoved') {
+    if (p.did === undefined) {
+      throw new MalformedError(`repoRemoved scope without did (seq=${p.seq})`)
+    }
+    return {
+      ...envelope,
+      did: p.did,
+      kind: 'scope',
+      scope: { operation: 'repoRemoved', did: p.did, ...extra },
+    }
+  }
+  if (p.did !== undefined) {
+    throw new MalformedError(`spaceDeleted scope with did (seq=${p.seq})`)
+  }
+  return {
+    ...envelope,
+    kind: 'scope',
+    scope: { operation: 'spaceDeleted', ...extra },
   }
 }
 

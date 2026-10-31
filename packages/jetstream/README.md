@@ -95,6 +95,63 @@ for await (const evt of js.live({ collections: ['app.bsky.feed.post'] })) {
 }
 ```
 
+## Spaces archives
+
+A space-sync archive also streams records that live inside _spaces_ (private or shared namespaces). Turn this on per client with `mode: 'spaces'`. Without it, nothing changes: a public client sends the same requests and sees the same events and types as before.
+
+```ts
+import { Jetstream, scopedRecordKey } from '@bsky/jetstream'
+
+const js = new Jetstream({ service: 'https://archive.example', mode: 'spaces' })
+
+for await (const evt of js.replay({ progress: true })) {
+  switch (evt.kind) {
+    case 'commit':
+      // evt.space is set for a record inside a space, absent for a public one.
+      console.log(
+        scopedRecordKey({ space: evt.space, did: evt.did, ...evt.commit }),
+      )
+      break
+    case 'scope':
+      // repoRemoved: drop everything evt.did wrote in evt.space.
+      // spaceDeleted: drop everything in evt.space (there is no did).
+      console.log(evt.scope.operation, evt.space)
+      break
+    case 'progress':
+      // Every event up to evt.throughSeq has been delivered.
+      console.log(evt.throughSeq, evt.caughtUp)
+      break
+  }
+}
+```
+
+What Spaces mode adds:
+
+- **Version check.** Each `live()`, `snapshot()`, `replay()` or runner call asks the server for its capabilities once, requires protocol version 2, and sends that version on every request. The server must confirm it in the `Jetstream-Protocol-Version` (and, for archive files, `Jetstream-Format-Version`) response header. A server that cannot do this, including one without `getCapabilities`, fails with `ProtocolError`. There is no fallback to the public protocol.
+- **`space`** on `commit` and `sync` events. A `sync` with a `space` resets only that space; `identity` and `account` events stay global. The same record path can exist in several spaces, so key stored records with `scopedRecordKey()`, not the AT URI alone.
+- **`scope` events** (`kinds` may include `'scope'`): `repoRemoved` (with `did`, and optional `cause` and `lastKnownRev`) and `spaceDeleted` (no `did`). A `dids` filter keeps `spaceDeleted`, and a `collections` filter keeps all lifecycle events (`scope`, `sync`, `account`, `identity`).
+- **`progress: true`** (optional) adds `{ kind: 'progress', throughSeq, caughtUp }` items. `throughSeq` covers every event up to it, including events your filters removed, and `0` is a valid value. The sealed archive part of a `replay()` or `snapshot()` never reports `caughtUp: true`; only the live server does. If the client had to skip an event (an unknown live message, or a record that failed validation), it stops reporting progress for the rest of that call. Raw batch streams carry it as `batch.progress`.
+
+For indexing, use `new LexIndexer({ mode: 'spaces' })`. It runs handlers one at a time, in order, because a `scope` event or a scoped `sync` can affect many records at once (`concurrency` and `keyOf` are rejected). Handler inputs include `space` when present, and `.scope()` registers the lifecycle handler. A Spaces runner only accepts a Spaces consumer, and with `progress: true` it saves the cursor past filtered-out ranges once every earlier event has been handled:
+
+```ts
+const indexer = new LexIndexer({ mode: 'spaces' })
+  .commit(app.example.note, {
+    put: async (e) => save(scopedRecordKey(e), e.record),
+    del: async (e) => remove(scopedRecordKey(e)),
+  })
+  .sync(async (e) => resetRepo(e.did, e.space))
+  .scope(async (e) =>
+    e.operation === 'repoRemoved'
+      ? removeRepo(e.space, e.did)
+      : removeSpace(e.space),
+  )
+
+await js.runner(indexer).replay({ cursor, progress: true })
+```
+
+Live Spaces streams must check the WebSocket upgrade response headers. The built-in transport does this on Node.js. Browsers do not expose those headers, so in a browser a Spaces `live()` or `replay()` fails with `ProtocolError` unless you pass a `liveTransport` that reports them through `LiveTransportOpts.onUpgrade`.
+
 ## Connection behavior
 
 This package runs on Node.js and in the browser.
