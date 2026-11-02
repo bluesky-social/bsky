@@ -1,9 +1,26 @@
 import { type DidString } from '@atproto/lex'
-import { type Kind, type RawEvent, type RawEventV1 } from '../event.js'
+import { ProtocolError } from '../errors.js'
+import {
+  type JetstreamProgress,
+  type RawEvent,
+  type RawEventV1,
+  type RawSpacesEvent,
+  type SpacesKind,
+} from '../event.js'
 import { assertWireFilters } from '../filter-limits.js'
 import { type RawRecordJson } from '../raw-record.js'
+import {
+  PROGRESS_HEADER,
+  type SpacesProtocol,
+  assertNegotiatedHeaders,
+} from '../xrpc/protocol.js'
 import { decodeLiveFrameV1 } from './decode-v1.js'
-import { type LiveInfoFrame, SKIP_FRAME, decodeLiveFrame } from './decode.js'
+import {
+  type LiveInfoFrame,
+  type LiveProgressFrame,
+  SKIP_FRAME,
+  decodeLiveFrame,
+} from './decode.js'
 import {
   type LiveTransport,
   type LiveTransportHeaders,
@@ -22,6 +39,47 @@ const V2_NSID = 'network.bsky.jetstream.subscribeEvents'
 // as a duplicate. v1 has no split: there, seq IS time_us.
 const V2_CURSOR_SEQ_MAX_THRESHOLD = 1e15
 
+/**
+ * Certified coverage for one consumption operation, shared by all of its
+ * phases (sealed sweep, live tail, every reconnect). Coverage only moves
+ * forward; repeating a position is admitted only to add caughtUp. Once any
+ * data was skipped (`blocked`), nothing more is certified: later progress
+ * would claim the skipped data.
+ */
+export class Coverage {
+  blocked = false
+  #through: number
+  #caughtUp = false
+
+  /** `floor`: the highest position already covered before this operation. */
+  constructor(floor: number) {
+    this.#through = floor
+  }
+
+  admit(p: JetstreamProgress): boolean {
+    if (this.blocked) return false
+    if (
+      p.throughSeq > this.#through ||
+      (p.throughSeq === this.#through && p.caughtUp && !this.#caughtUp)
+    ) {
+      this.#through = p.throughSeq
+      this.#caughtUp = p.caughtUp
+      return true
+    }
+    return false
+  }
+}
+
+/** The Spaces contract for one live subscription. */
+export interface SpacesLiveContract {
+  /** Selected once per consumption operation and reused on every reconnect. */
+  protocol: SpacesProtocol
+  /** Request ordered #progress coverage (progress=true). */
+  progress?: boolean
+  /** The operation's shared coverage; a fresh one per subscription if omitted. */
+  coverage?: Coverage
+}
+
 export interface LiveEventsOpts {
   host: string
   collections?: string[]
@@ -29,9 +87,9 @@ export interface LiveEventsOpts {
   /**
    * Event kinds to receive (v2 only). Omitted means all kinds. The collections
    * filter constrains only commits, so a commits-only stream needs
-   * kinds: ['commit'].
+   * kinds: ['commit']. `scope` is accepted only with `spaces`.
    */
-  kinds?: Kind[]
+  kinds?: readonly SpacesKind[]
   cursor?: number // undefined = live from tip; 0 = replay from start
   dedupFloor?: number // undefined = nothing delivered (seq 0 passes); else drop seq <= floor
   transport?: LiveTransport
@@ -46,6 +104,8 @@ export interface LiveEventsOpts {
   onInfo?: (info: { name: string; message?: string }) => void
   version?: 1 | 2 // default 2; 1 uses the frozen /subscribe wire + v1 decoder
   validateWire?: boolean // strict wire validation: throws MalformedError (fatal), never routed to onError
+  /** Spaces mode (v2 endpoint only); absent is the unchanged public wire. */
+  spaces?: SpacesLiveContract
 }
 
 function wsScheme(host: string): string {
@@ -61,12 +121,21 @@ export function liveEvents(
   opts: LiveEventsOpts & { version: 1 },
 ): AsyncGenerator<RawEventV1>
 export function liveEvents(
+  opts: LiveEventsOpts & { spaces: SpacesLiveContract },
+): AsyncGenerator<RawSpacesEvent<RawRecordJson> | JetstreamProgress>
+export function liveEvents(
   opts: LiveEventsOpts,
 ): AsyncGenerator<RawEvent<RawRecordJson>>
 export async function* liveEvents(
   opts: LiveEventsOpts,
-): AsyncGenerator<RawEventV1 | RawEvent<RawRecordJson>> {
+): AsyncGenerator<
+  RawEventV1 | RawSpacesEvent<RawRecordJson> | JetstreamProgress
+> {
   const version = opts.version ?? 2
+  const spaces = opts.spaces
+  if (spaces && version !== 2) {
+    throw new Error('jetstream: Spaces mode requires the v2 endpoint')
+  }
   // v1 has no kinds equivalent. Ignoring the filter would deliver kinds the
   // caller asked to exclude, which is worse than failing.
   if (version === 1 && opts.kinds?.length) {
@@ -75,17 +144,26 @@ export async function* liveEvents(
     )
   }
   // v2 only: v1's wanted* params have their own (looser) server contract.
-  if (version === 2) assertWireFilters(opts)
+  if (version === 2) assertWireFilters(opts, spaces !== undefined)
   // The decoder-select union is the truth: the v1 decoder yields RawEventV1 (a
-  // subtype), the v2 decoder yields RawEvent plus LiveInfoFrame, and both can
-  // yield SKIP_FRAME.
-  const decode: (
+  // subtype), the v2 decoder yields RawEvent plus LiveInfoFrame (and, on a
+  // Spaces stream, Spaces events and progress), and all can yield SKIP_FRAME.
+  const decodeOpts = spaces
+    ? { spaces: true, progress: spaces.progress === true }
+    : undefined
+  const decode = (
     chunk: Uint8Array | string,
-    validateWire?: boolean,
-  ) =>
-    RawEventV1 | RawEvent<RawRecordJson> | LiveInfoFrame | typeof SKIP_FRAME =
-    version === 1 ? decodeLiveFrameV1 : decodeLiveFrame
-
+  ):
+    | RawEventV1
+    | RawSpacesEvent<RawRecordJson>
+    | LiveInfoFrame
+    | LiveProgressFrame
+    | typeof SKIP_FRAME =>
+    version === 1
+      ? decodeLiveFrameV1(chunk, opts.validateWire)
+      : decodeOpts
+        ? decodeLiveFrame(chunk, opts.validateWire, decodeOpts)
+        : decodeLiveFrame(chunk, opts.validateWire)
   const origin = wsScheme(opts.host)
   const transport = opts.transport ?? websocketTransport()
   const signal = opts.signal ?? new AbortController().signal
@@ -119,29 +197,77 @@ export async function* liveEvents(
       for (const d of opts.dids ?? []) u.searchParams.append('dids', d)
       for (const k of opts.kinds ?? []) u.searchParams.append('kinds', k)
     }
+    if (spaces) {
+      u.searchParams.set(
+        'protocolVersion',
+        String(spaces.protocol.protocolVersion),
+      )
+      if (spaces.progress) u.searchParams.set('progress', 'true')
+    }
     return u.toString()
   }
 
-  const transportOpts: LiveTransportOpts | undefined = opts.headers
-    ? { headers: opts.headers }
+  // Spaces: every accepted connection must echo the selected protocol (and
+  // acknowledge progress when requested) — checked by the transport per
+  // connection; a transport that never reports a handshake is rejected at
+  // its first frame rather than trusted.
+  let upgradeVerified = false
+  const onUpgrade = spaces
+    ? (headers: Headers): void => {
+        assertNegotiatedHeaders(headers, spaces.protocol, 'subscribeEvents')
+        if (spaces.progress && headers.get(PROGRESS_HEADER) !== 'true') {
+          throw new ProtocolError(
+            'jetstream: subscribeEvents: progress requested but the upgrade did not acknowledge it (Jetstream-Progress)',
+          )
+        }
+        upgradeVerified = true
+      }
     : undefined
+  const transportOpts: LiveTransportOpts | undefined =
+    opts.headers || onUpgrade
+      ? {
+          ...(opts.headers ? { headers: opts.headers } : {}),
+          ...(onUpgrade ? { onUpgrade } : {}),
+        }
+      : undefined
+
+  // Coverage certification (Spaces progress only): see Coverage. Without a
+  // shared one, the resume floor counts as already covered.
+  const coverage = spaces?.coverage ?? new Coverage(lastSeq ?? -1)
   for await (const chunk of transport.stream(getUrl, signal, transportOpts)) {
+    if (onUpgrade && !upgradeVerified) {
+      throw new ProtocolError(
+        'jetstream: the live transport did not report the WebSocket upgrade headers Spaces mode must verify (LiveTransportOpts.onUpgrade)',
+      )
+    }
     let ev:
-      RawEventV1 | RawEvent<RawRecordJson> | LiveInfoFrame | typeof SKIP_FRAME
+      | RawEventV1
+      | RawSpacesEvent<RawRecordJson>
+      | LiveInfoFrame
+      | LiveProgressFrame
+      | typeof SKIP_FRAME
     try {
-      ev = decode(chunk, opts.validateWire)
+      ev = decode(chunk)
     } catch (err) {
       // Strict-mode violations are fatal by contract (the flag asserts the
       // data source) — rethrow past the malformed-frame skip.
       if (opts.validateWire) throw err
+      coverage.blocked = true
       opts.onError?.(err instanceof Error ? err : new Error(String(err)))
       continue // skip malformed / error frames; never fatal in default mode
     }
-    if (ev === SKIP_FRAME) continue
+    if (ev === SKIP_FRAME) {
+      coverage.blocked = true
+      continue
+    }
     if ('info' in ev) {
       // Seq-less advisory: never fatal, and it does not move the cursor. Not
       // an error, so drop it silently when no onInfo is registered.
       opts.onInfo?.(ev.info)
+      continue
+    }
+    if ('progress' in ev) {
+      if (coverage.admit(ev.progress)) yield ev.progress
       continue
     }
     // v1 note: seq is time_us from v1's monotonic clock (strictly increasing,

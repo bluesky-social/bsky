@@ -20,6 +20,21 @@ export const MAX_DECODED_BLOCK_BYTES = 1 << 30 // 1 GiB
 export type Sha256 = (bytes: Uint8Array) => Uint8Array
 
 /**
+ * Observes the HTTP response headers of WebSocket upgrades. Spaces mode must
+ * verify the negotiated `Jetstream-Protocol-Version` (and, with progress,
+ * `Jetstream-Progress`) on every live connection, and the websocket client
+ * underneath does not surface the upgrade response.
+ */
+export interface UpgradeObserver {
+  /**
+   * Runs `fn`; every upgrade response for a connection that `fn` (including
+   * async work it starts) dials is reported to `onUpgrade` before that
+   * connection opens.
+   */
+  observe<T>(onUpgrade: (headers: Headers) => void, fn: () => T): T
+}
+
+/**
  * The platform defaults behind the `#runtime` imports condition. Both
  * branches (node/browser) export a `defaultRuntime` of this shape; injection
  * via JetstreamOpts always wins over these defaults.
@@ -29,6 +44,11 @@ export interface JetstreamRuntime {
   zstdDecompressor(): Decompressor
   /** May throw where the platform has no sync sha256 (browser default). */
   sha256(): Sha256
+  /**
+   * Undefined where upgrade responses are unobservable (browsers: the
+   * WHATWG WebSocket hides them).
+   */
+  upgradeObserver(): UpgradeObserver | undefined
 }
 
 /**

@@ -10,10 +10,12 @@ import {
   type EventBase,
   type EventBaseV1,
   type Identity,
+  type SpaceScopeEvent,
   type Sync,
   type TypedEvent,
   type TypedEventV1,
   type TypedPutCommit,
+  type TypedSpacesEvent,
 } from './event.js'
 
 // Unwrap Main<S> = S | { main: S } to the schema itself.
@@ -74,6 +76,26 @@ export type TypedEventV1For<F extends readonly CollectionFilter[]> =
       | (EventBaseV1 & { kind: 'identity'; identity: Identity })
       | (EventBaseV1 & { kind: 'account'; account: Account })
 
+// The Spaces equivalent of TypedEventFor: the same correlated commit arms,
+// plus `space` on commit/sync and the scope arm. Separate from TypedEventFor
+// so public consumers keep the four-kind union.
+export type TypedSpacesEventFor<F extends readonly CollectionFilter[]> =
+  F extends readonly []
+    ? TypedSpacesEvent
+    : | (EventBase & {
+          space?: string
+          kind: 'commit'
+          commit: TypedCommitFor<F[number]>
+        })
+      | (EventBase & {
+          space?: undefined
+          kind: 'identity'
+          identity: Identity
+        })
+      | (EventBase & { space?: undefined; kind: 'account'; account: Account })
+      | (EventBase & { space?: string; kind: 'sync'; sync: Sync })
+      | SpaceScopeEvent
+
 // The widest event a live() implementation signature accepts: CollectionFilter[]
 // (not a specific tuple) makes TypedCommitFor<F[number]> assignable for any
 // concrete filter tuple a caller might pass. The empty-tuple case (no filter
@@ -85,3 +107,5 @@ export type TypedEventV1For<F extends readonly CollectionFilter[]> =
 export type WideTypedEvent = TypedEventFor<CollectionFilter[]> | TypedEvent
 export type WideTypedEventV1 =
   TypedEventV1For<CollectionFilter[]> | TypedEventV1
+export type WideTypedSpacesEvent =
+  TypedSpacesEventFor<CollectionFilter[]> | TypedSpacesEvent

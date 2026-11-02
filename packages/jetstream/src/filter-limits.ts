@@ -1,16 +1,18 @@
-import { type Kind } from './event.js'
+import { type SpacesKind } from './event.js'
 
 /**
  * Server-side caps on the v2 filter axes, shared by the live wire
  * (`subscribeEvents` params) and the archive planner (`planSnapshot` input).
- * Both lexicons declare the same maxLengths.
+ * Both lexicons declare the same maxLengths. A Spaces server accepts the fifth
+ * kind, `scope`.
  */
 export const MAX_FILTER_KINDS = 4
+export const MAX_SPACES_FILTER_KINDS = 5
 export const MAX_FILTER_DIDS = 10_000
 export const MAX_FILTER_COLLECTIONS = 100
 
 export interface WireFilters {
-  kinds?: readonly Kind[]
+  kinds?: readonly SpacesKind[]
   dids?: readonly string[]
   collections?: readonly string[]
 }
@@ -24,12 +26,19 @@ export interface WireFilters {
  * the default websocket transport discards, and inside `cutoverReplay` a bare
  * 400 handshake is classified as cursor-too-old — so a bad filter would burn
  * the whole re-plan budget before failing with the wrong reason.
+ *
+ * `spaces` selects the Spaces contract. Without it the `scope` kind is never
+ * sent: a public server does not know it.
  */
-export function assertWireFilters(f: WireFilters): void {
-  if ((f.kinds?.length ?? 0) > MAX_FILTER_KINDS) {
-    throw new RangeError(
-      `kinds filter exceeds the server limit of ${MAX_FILTER_KINDS}`,
+export function assertWireFilters(f: WireFilters, spaces = false): void {
+  if (!spaces && f.kinds?.includes('scope')) {
+    throw new Error(
+      "the scope kind exists only on a Spaces archive: construct Jetstream with mode: 'spaces'",
     )
+  }
+  const maxKinds = spaces ? MAX_SPACES_FILTER_KINDS : MAX_FILTER_KINDS
+  if ((f.kinds?.length ?? 0) > maxKinds) {
+    throw new RangeError(`kinds filter exceeds the server limit of ${maxKinds}`)
   }
   if ((f.dids?.length ?? 0) > MAX_FILTER_DIDS) {
     throw new RangeError(

@@ -1,5 +1,8 @@
 import { l, xrpc } from '@atproto/lex'
+import { ProtocolError } from '../errors.js'
+import { type FormatVersion } from '../segment/block.js'
 import { DownloadError } from './errors.js'
+import { type SpacesProtocol, assertNegotiatedHeaders } from './protocol.js'
 import {
   type RetryPolicy,
   type RetryTarget,
@@ -32,6 +35,33 @@ const getBlockDef = l.query(
   l.payload('application/octet-stream'),
   ['SegmentNotFound', 'BlockNotFound'],
 )
+// The Spaces contract adds protocolVersion; the public defs stay untouched.
+const spacesGetSegmentDef = l.query(
+  GET_SEGMENT_NSID,
+  l.params({ name: l.string(), protocolVersion: l.integer({ minimum: 1 }) }),
+  l.payload('application/octet-stream'),
+  ['SegmentNotFound'],
+)
+const spacesGetBlockDef = l.query(
+  'network.bsky.jetstream.getBlock',
+  l.params({
+    segment: l.string(),
+    blockIndex: l.integer({ minimum: 0 }),
+    protocolVersion: l.integer({ minimum: 1 }),
+  }),
+  l.payload('application/octet-stream'),
+  ['SegmentNotFound', 'BlockNotFound'],
+)
+
+/**
+ * The Spaces contract for one artifact download: the operation's selected
+ * protocol and the plan entry's format, which every response's negotiated
+ * headers must agree with. Absent on public downloads.
+ */
+export interface ArtifactContract {
+  protocol: SpacesProtocol
+  format: FormatVersion
+}
 
 function agent(host: string, fetchImpl: typeof fetch) {
   return { service: host, fetch: fetchImpl }
@@ -73,6 +103,7 @@ export async function getSegment(
   fetchImpl: typeof fetch = fetch,
   signal?: AbortSignal,
   retry?: RetryPolicy,
+  contract?: ArtifactContract,
 ): Promise<Uint8Array> {
   try {
     return await withRetry(
@@ -80,15 +111,28 @@ export async function getSegment(
       signal,
       retry,
       async () => {
-        const res = await xrpc(agent(host, fetchImpl), getSegmentDef, {
-          params: { name },
+        if (!contract) {
+          const res = await xrpc(agent(host, fetchImpl), getSegmentDef, {
+            params: { name },
+            signal,
+          })
+          return res.body
+        }
+        const res = await xrpc(agent(host, fetchImpl), spacesGetSegmentDef, {
+          params: { name, protocolVersion: contract.protocol.protocolVersion },
           signal,
         })
+        assertNegotiatedHeaders(
+          res.headers,
+          contract.protocol,
+          `getSegment ${name}`,
+          contract.format,
+        )
         return res.body
       },
     )
   } catch (err) {
-    if (isAbortError(err)) throw err
+    if (isAbortError(err) || err instanceof ProtocolError) throw err
     throw new DownloadError(`jetstream: getSegment ${name} failed`, {
       cause: err,
       status: statusOf(err),
@@ -107,9 +151,16 @@ export async function* streamSegment(
   fetchImpl: typeof fetch = fetch,
   signal?: AbortSignal,
   retry?: RetryPolicy,
+  contract?: ArtifactContract,
 ): AsyncGenerator<Uint8Array> {
   const url = new URL(`/xrpc/${GET_SEGMENT_NSID}`, host)
   url.searchParams.set('name', name)
+  if (contract) {
+    url.searchParams.set(
+      'protocolVersion',
+      String(contract.protocol.protocolVersion),
+    )
+  }
   const policy = resolveRetry(retry)
   const target: RetryTarget = { kind: 'segment', name }
 
@@ -211,6 +262,22 @@ export async function* streamSegment(
       }
       etag = res.headers.get('etag') ?? undefined
     }
+    // Every successful response — the initial 200 and each resumed 206 —
+    // must carry the negotiated versions; a resume served by a different
+    // contract cannot be spliced onto the bytes already yielded.
+    if (contract) {
+      try {
+        assertNegotiatedHeaders(
+          res.headers,
+          contract.protocol,
+          `getSegment ${name}`,
+          contract.format,
+        )
+      } catch (err) {
+        await res.body?.cancel()
+        throw err
+      }
+    }
 
     if (!res.body) {
       throw new DownloadError(`jetstream: getSegment ${name} has no body`)
@@ -252,6 +319,7 @@ export async function getBlock(
   fetchImpl: typeof fetch = fetch,
   signal?: AbortSignal,
   retry?: RetryPolicy,
+  contract?: ArtifactContract,
 ): Promise<Uint8Array> {
   try {
     return await withRetry(
@@ -259,15 +327,32 @@ export async function getBlock(
       signal,
       retry,
       async () => {
-        const res = await xrpc(agent(host, fetchImpl), getBlockDef, {
-          params: { segment, blockIndex },
+        if (!contract) {
+          const res = await xrpc(agent(host, fetchImpl), getBlockDef, {
+            params: { segment, blockIndex },
+            signal,
+          })
+          return res.body
+        }
+        const res = await xrpc(agent(host, fetchImpl), spacesGetBlockDef, {
+          params: {
+            segment,
+            blockIndex,
+            protocolVersion: contract.protocol.protocolVersion,
+          },
           signal,
         })
+        assertNegotiatedHeaders(
+          res.headers,
+          contract.protocol,
+          `getBlock ${segment}#${blockIndex}`,
+          contract.format,
+        )
         return res.body
       },
     )
   } catch (err) {
-    if (isAbortError(err)) throw err
+    if (isAbortError(err) || err instanceof ProtocolError) throw err
     throw new DownloadError(
       `jetstream: getBlock ${segment}#${blockIndex} failed`,
       { cause: err, status: statusOf(err) },
