@@ -444,13 +444,12 @@
             "app.bsky.feed.defs#interactionReply",
             "app.bsky.feed.defs#interactionQuote",
             "app.bsky.feed.defs#interactionShare",
-            "app.bsky.feed.defs#interactionVideoWatch"
+            "app.bsky.feed.defs#interactionUnspecced"
           ]
         },
         "payload": {
-          "type": "union",
-          "description": "Additional data for the interaction. The payload type corresponds to the interaction event.",
-          "refs": ["#payloadVideoWatch"]
+          "type": "unknown",
+          "description": "Additional data for the interaction, with an application-defined structure."
         },
         "feedContext": {
           "type": "string",
@@ -520,30 +519,9 @@
       "type": "token",
       "description": "User shared the feed item"
     },
-    "interactionVideoWatch": {
+    "interactionUnspecced": {
       "type": "token",
-      "description": "User watched a video in the feed item"
-    },
-    "payloadVideoWatch": {
-      "type": "object",
-      "description": "Additional data for an interactionVideoWatch event.",
-      "properties": {
-        "elapsedDurationMs": {
-          "type": "integer",
-          "description": "Time the user has spent watching the video, in milliseconds.",
-          "minimum": 0
-        },
-        "currentTimestampMs": {
-          "type": "integer",
-          "description": "Current playback position in the video, in milliseconds.",
-          "minimum": 0
-        },
-        "videoDurationMs": {
-          "type": "integer",
-          "description": "Total duration of the video, in milliseconds.",
-          "minimum": 0
-        }
-      }
+      "description": "Application-defined interaction with the feed item"
     }
   }
 }

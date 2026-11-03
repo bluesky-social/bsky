@@ -108,87 +108,29 @@ describe('generated lexicons', () => {
   })
 
   describe('feed interaction payloads', () => {
-    const event = 'app.bsky.feed.defs#interactionVideoWatch'
-    const payload = {
-      $type: 'app.bsky.feed.defs#payloadVideoWatch',
-      elapsedDurationMs: 15_000,
-      currentTimestampMs: 5_000,
-      videoDurationMs: 10_000,
-    }
-
-    it('builds a typed video-watch payload that consumers can parse', () => {
-      const built = app.bsky.feed.defs.payloadVideoWatch.$build({
-        elapsedDurationMs: payload.elapsedDurationMs,
-        currentTimestampMs: payload.currentTimestampMs,
-        videoDurationMs: payload.videoDurationMs,
-      })
-      const interaction: app.bsky.feed.defs.Interaction = {
-        event,
-        payload: built,
-      }
-
-      expect(built).toEqual(payload)
-      expect(app.bsky.feed.defs.interaction.matches(interaction)).toBe(true)
-      expect(
-        app.bsky.feed.defs.payloadVideoWatch.$matches(interaction.payload),
-      ).toBe(true)
-      expect(
-        app.bsky.feed.defs.payloadVideoWatch.matches({
-          elapsedDurationMs: 0,
-          currentTimestampMs: 0,
-          videoDurationMs: 0,
-        }),
-      ).toBe(true)
-    })
-
-    it('accepts empty and partial video-watch payloads', () => {
-      for (const data of [
+    it('accepts unspecced payloads without a predefined schema', () => {
+      for (const payload of [
         {},
-        { elapsedDurationMs: 15_000 },
-        { currentTimestampMs: 5_000 },
-        { videoDurationMs: 10_000 },
+        { customField: 'custom value', nested: { count: 1 } },
+        { $type: 'app.bsky.feed.defs#customPayload', customField: true },
       ]) {
-        const built = app.bsky.feed.defs.payloadVideoWatch.$build(data)
-        expect(app.bsky.feed.defs.payloadVideoWatch.$matches(built)).toBe(true)
-        expect(
-          app.bsky.feed.defs.interaction.matches({ event, payload: built }),
-        ).toBe(true)
+        const interaction: app.bsky.feed.defs.Interaction = {
+          event: 'app.bsky.feed.defs#interactionUnspecced',
+          payload,
+        }
+        expect(app.bsky.feed.defs.interaction.matches(interaction)).toBe(true)
       }
     })
 
-    it('keeps payloads optional and accepts future event and payload types', () => {
+    it('keeps payloads optional and accepts future event types', () => {
       for (const event of [
         'app.bsky.feed.defs#interactionSeen',
-        'app.bsky.feed.defs#interactionVideoWatch',
+        'app.bsky.feed.defs#interactionUnspecced',
+        'app.bsky.feed.defs#futureInteraction',
       ]) {
         expect(app.bsky.feed.defs.interaction.matches({ event })).toBe(true)
       }
-      expect(
-        app.bsky.feed.defs.interaction.matches({
-          event: 'app.bsky.feed.defs#futureInteraction',
-          payload: { $type: 'app.bsky.feed.defs#payloadFutureInteraction' },
-        }),
-      ).toBe(true)
     })
-
-    it.each([
-      'elapsedDurationMs',
-      'currentTimestampMs',
-      'videoDurationMs',
-    ] as const)(
-      'validates %s as a non-negative integer when present',
-      (field) => {
-        for (const value of [-1, 0.5, '1000']) {
-          const invalid = { ...payload, [field]: value }
-          expect(app.bsky.feed.defs.payloadVideoWatch.$matches(invalid)).toBe(
-            false,
-          )
-          expect(
-            app.bsky.feed.defs.interaction.matches({ event, payload: invalid }),
-          ).toBe(false)
-        }
-      },
-    )
   })
 
   describe('profile links', () => {
