@@ -450,6 +450,7 @@
         "viewContext": {
           "type": "string",
           "description": "The view in which the interaction occurred.",
+          "maxLength": 64,
           "knownValues": ["feed", "thread"]
         },
         "payload": {

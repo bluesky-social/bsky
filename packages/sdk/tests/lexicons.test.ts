@@ -109,13 +109,20 @@ describe('generated lexicons', () => {
 
   describe('feed interactions', () => {
     it('accepts feed, thread, and future view contexts', () => {
-      for (const viewContext of ['feed', 'thread', 'futureView']) {
+      for (const viewContext of [
+        'feed',
+        'thread',
+        'futureView',
+        'a'.repeat(64),
+      ]) {
         const interaction: app.bsky.feed.defs.Interaction = { viewContext }
         expect(app.bsky.feed.defs.interaction.matches(interaction)).toBe(true)
       }
-      expect(app.bsky.feed.defs.interaction.matches({ viewContext: 42 })).toBe(
-        false,
-      )
+      for (const viewContext of [42, 'a'.repeat(65)]) {
+        expect(app.bsky.feed.defs.interaction.matches({ viewContext })).toBe(
+          false,
+        )
+      }
     })
 
     it('accepts unspecced payloads without a predefined schema', () => {
