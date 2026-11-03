@@ -291,6 +291,11 @@
             "app.bsky.feed.defs#interactionUnspecced"
           ]
         },
+        "viewContext": {
+          "type": "string",
+          "description": "The view in which the interaction occurred.",
+          "knownValues": ["feed", "thread"]
+        },
         "payload": {
           "type": "unknown",
           "description": "Additional data for the interaction, with an application-defined structure."
