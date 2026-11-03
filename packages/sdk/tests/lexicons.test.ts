@@ -107,6 +107,49 @@ describe('generated lexicons', () => {
     ).toBe(false)
   })
 
+  describe('feed interactions', () => {
+    it('accepts feed, thread, and future view contexts', () => {
+      for (const viewContext of [
+        'feed',
+        'thread',
+        'futureView',
+        'a'.repeat(64),
+      ]) {
+        const interaction: app.bsky.feed.defs.Interaction = { viewContext }
+        expect(app.bsky.feed.defs.interaction.matches(interaction)).toBe(true)
+      }
+      for (const viewContext of [42, 'a'.repeat(65)]) {
+        expect(app.bsky.feed.defs.interaction.matches({ viewContext })).toBe(
+          false,
+        )
+      }
+    })
+
+    it('accepts unspecced payloads without a predefined schema', () => {
+      for (const payload of [
+        {},
+        { customField: 'custom value', nested: { count: 1 } },
+        { $type: 'app.bsky.feed.defs#customPayload', customField: true },
+      ]) {
+        const interaction: app.bsky.feed.defs.Interaction = {
+          event: 'app.bsky.feed.defs#interactionUnspecced',
+          payload,
+        }
+        expect(app.bsky.feed.defs.interaction.matches(interaction)).toBe(true)
+      }
+    })
+
+    it('keeps payloads optional and accepts future event types', () => {
+      for (const event of [
+        'app.bsky.feed.defs#interactionSeen',
+        'app.bsky.feed.defs#interactionUnspecced',
+        'app.bsky.feed.defs#futureInteraction',
+      ]) {
+        expect(app.bsky.feed.defs.interaction.matches({ event })).toBe(true)
+      }
+    })
+  })
+
   describe('profile links', () => {
     const did = 'did:plc:ewvi7nxzyoun6zhxrhs64oiz' as const
     const cid = 'bafyreiclp443lavogvhj3d2ob2cxbfuscni2k5jk7bebjzg7khl3esabwq'
