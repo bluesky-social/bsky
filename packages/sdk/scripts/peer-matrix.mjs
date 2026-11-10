@@ -11,7 +11,7 @@
  *
  * Usage:
  *   node scripts/peer-matrix.mjs             # earliest + latest-per-minor
- *   node scripts/peer-matrix.mjs 0.3.0       # test specific version(s)
+ *   node scripts/peer-matrix.mjs 0.4.7       # test specific version(s)
  *
  * Requires the sdk to be built (dist/ present) and network access to npm.
  */

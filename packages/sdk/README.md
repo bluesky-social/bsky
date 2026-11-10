@@ -8,7 +8,15 @@ Bluesky SDK built on [@atproto/lex](https://github.com/bluesky-social/atproto/tr
 npm install @bsky/sdk @atproto/lex
 ```
 
-`@atproto/lex` provides the `Client` class that powers all API calls. `@bsky/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
+`@atproto/lex` ^0.4.7 is required as a peer dependency; 0.3.x is no longer supported. It provides the `Client` class that powers all API calls. `@bsky/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
+
+> [!WARNING]
+>
+> Strict NodeNext consumers with `skipLibCheck: false` currently encounter TS2834
+> in the transitive `cborg@4.5.8` declarations, exposed by Lex's CBOR re-export.
+> Lex 0.4.7 fixes the ambiguous `walk` export but not this separate upstream
+> declaration issue. The packed-consumer peer matrix remains failing until it
+> is resolved upstream.
 
 ## Getting started
 

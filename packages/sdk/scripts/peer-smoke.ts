@@ -14,7 +14,7 @@
  * Exits non-zero (typecheck error or uncaught throw) on any incompatibility.
  */
 import assert from 'node:assert/strict'
-import { Client, type DidString } from '@atproto/lex'
+import { Client, type DidString, l, walk } from '@atproto/lex'
 import { api, post } from '@bsky/sdk'
 import { app } from '@bsky/sdk/lexicons'
 import {
@@ -28,6 +28,16 @@ import { validateNux } from '@bsky/sdk/utils'
 
 const lexVersion = process.env.LEX_VERSION ?? 'unknown'
 console.log(`smoke: @bsky/sdk against @atproto/lex@${lexVersion}`)
+
+// Public schema-building namespace.
+const textSchema = l.string({ maxLength: 5 })
+assert.equal(textSchema.validate('hello'), 'hello')
+assert.throws(() => textSchema.validate('too long'))
+
+// Public walk export reaches the generated post schema.
+assert.ok(
+  [...walk({ post: app.bsky.feed.post })].includes(app.bsky.feed.post.main),
+)
 
 // Constants
 assert.equal(api.app.urlPublic, 'https://public.api.bsky.app')

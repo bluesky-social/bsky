@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "lexicons": [
     "app.bsky.actor.defs",
     "app.bsky.actor.getPreferences",
@@ -783,94 +783,6 @@
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.richtext.facet",
       "cid": "bafyreidmfvmmnzqxgkwexzt73uopc4kiycmdogbedw4ijduxobwvla6sua"
     },
-    "app.bsky.unspecced.defs": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.defs",
-      "cid": "bafyreic4tv275uaol2sdm364bmytwe7sxaqu452evvbaxibfk4kkc43hby"
-    },
-    "app.bsky.unspecced.getAgeAssuranceState": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getAgeAssuranceState",
-      "cid": "bafyreih4xza4elgwnr7oazzbuftplgvnbye2eleiaui7zfkrtlgmhiidfm"
-    },
-    "app.bsky.unspecced.getConfig": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getConfig",
-      "cid": "bafyreicy6hedmitk4y73bgtt3ogfrivhqsjg67jaksgynkonte5gjuvzjq"
-    },
-    "app.bsky.unspecced.getOnboardingSuggestedStarterPacks": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getOnboardingSuggestedStarterPacks",
-      "cid": "bafyreic5nokdcwldofzvqnxqoewjzupd6d2opfzjy72bwnn7gpgg3n3x3q"
-    },
-    "app.bsky.unspecced.getPopularFeedGenerators": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getPopularFeedGenerators",
-      "cid": "bafyreihp3bnetgcjqeaha5k6dk2z4q5pmh3ooqilotpxvznrp3cnsrniyq"
-    },
-    "app.bsky.unspecced.getPostThreadOtherV2": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getPostThreadOtherV2",
-      "cid": "bafyreiagvk6u73ztjaikuir647k3f7lj3u44t4mo7c3qihw3mmll2zokra"
-    },
-    "app.bsky.unspecced.getPostThreadV2": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getPostThreadV2",
-      "cid": "bafyreiesr6gvuhu4476lxofrv4rrw5ptsisj4lqgxmxhss5o36km2h5224"
-    },
-    "app.bsky.unspecced.getSuggestedFeeds": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestedFeeds",
-      "cid": "bafyreie4una2mjuc2ohgprqdfxotfsyxuolcmp5xktr7mcbclcs6kracce"
-    },
-    "app.bsky.unspecced.getSuggestedFeedsSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestedFeedsSkeleton",
-      "cid": "bafyreihqvsdre7oxhlpl7yucsmpdupwakipyzsu2gjlkbufgmklcgr5cbq"
-    },
-    "app.bsky.unspecced.getSuggestedStarterPacks": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestedStarterPacks",
-      "cid": "bafyreih34c76u3vbjaaukyojpsrljslmnptzpnydizyfrjtedzmwosmawy"
-    },
-    "app.bsky.unspecced.getSuggestedStarterPacksSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestedStarterPacksSkeleton",
-      "cid": "bafyreifw62zovmzhkufp723hvubrlqzuk26o5jmx7qtafnupm2olggzoe4"
-    },
-    "app.bsky.unspecced.getSuggestedUsers": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestedUsers",
-      "cid": "bafyreib5qavwbqignxipudnk5jzs2inlkjxosckpxakorbk3erlscfn6ba"
-    },
-    "app.bsky.unspecced.getSuggestedUsersSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestedUsersSkeleton",
-      "cid": "bafyreibvcocfbsxbf2s2rzuvcovkoyq6m7yz3csxrd6mdeoiwmkjqucxke"
-    },
-    "app.bsky.unspecced.getSuggestionsSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getSuggestionsSkeleton",
-      "cid": "bafyreiftdh7etcw5rkoruhixbjikw5p35c2v2r6rdeujol5iql6hpru254"
-    },
-    "app.bsky.unspecced.getTaggedSuggestions": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getTaggedSuggestions",
-      "cid": "bafyreib6e3tmwibu6qo63vixnqdzlbslm423pqow2x2u3rayaxadzh2yvi"
-    },
-    "app.bsky.unspecced.getTrendingTopics": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getTrendingTopics",
-      "cid": "bafyreibsh44yasve5t73att24aa6qqqth4ukqekkmn527w45p3nobo5d6e"
-    },
-    "app.bsky.unspecced.getTrends": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getTrends",
-      "cid": "bafyreihrlvlry47lhborwurq7b2onjxt6nrtgk2yfqrqgy6kjra56aoyvq"
-    },
-    "app.bsky.unspecced.getTrendsSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.getTrendsSkeleton",
-      "cid": "bafyreigx7kopvinimh4guojhi37oiu34o75i3xu7zohrnghselwbj2lgju"
-    },
-    "app.bsky.unspecced.initAgeAssurance": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.initAgeAssurance",
-      "cid": "bafyreicu2zecy76tjiimkb7kbottfbmi45zxn2ierhnnafl6csyjsejp7u"
-    },
-    "app.bsky.unspecced.searchActorsSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.searchActorsSkeleton",
-      "cid": "bafyreihzvsp2ghl2uj3h6blz5oalrl4hgfaixm2ic57birq2rorpbama3a"
-    },
-    "app.bsky.unspecced.searchPostsSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.searchPostsSkeleton",
-      "cid": "bafyreihmduatggtrh5kk7pggqhlh73pbwlbailysbbwau5tsoae5a77py4"
-    },
-    "app.bsky.unspecced.searchStarterPacksSkeleton": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/app.bsky.unspecced.searchStarterPacksSkeleton",
-      "cid": "bafyreibkqk7fts6bxxwb4ogatm7u4ptvzrso3ccm5imysmkecigsq24lhi"
-    },
     "app.bsky.video.defs": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.video.defs",
       "cid": "bafyreifr55h6yhrz2myhvrbct7mfumaaiwmdrt6hv72ihmrjchwnegabhi"
@@ -926,10 +838,6 @@
     "chat.bsky.convo.deleteMessageForSelf": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/chat.bsky.convo.deleteMessageForSelf",
       "cid": "bafyreifr2uytolsji26krhhnbyeweloqz4hkcdlabrfv6pf6x642qq4jwu"
-    },
-    "chat.bsky.convo.exportAccountData": {
-      "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/chat.bsky.convo.exportAccountData",
-      "cid": "bafyreihfj5irzczzucyvft5rovam7cjh6ga7t4sxkxrlrpeeamxotqemmu"
     },
     "chat.bsky.convo.getConvo": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/chat.bsky.convo.getConvo",
@@ -1474,22 +1382,6 @@
     "com.atproto.sync.subscribeRepos": {
       "uri": "at://did:plc:6msi3pj7krzih5qxqtryxlzw/com.atproto.lexicon.schema/com.atproto.sync.subscribeRepos",
       "cid": "bafyreic6fm5atifiaq67u44dtxc3ufjbq3z7yysryjrzrw37hkb32yajbi"
-    },
-    "tools.ozone.moderation.defs": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/tools.ozone.moderation.defs",
-      "cid": "bafyreihfuu5u5uiub2xvzt56re4pxor2mx7aoukt5kkvv65rfdvazyvn5e"
-    },
-    "tools.ozone.queue.defs": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/tools.ozone.queue.defs",
-      "cid": "bafyreifjvwkbrcqtxhcrkzinmsryexnzm3ug7lgpatlmshl6nppl6alaou"
-    },
-    "tools.ozone.report.defs": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/tools.ozone.report.defs",
-      "cid": "bafyreihllyf6nfscco67kl3qvjm2zju3egn4tye3ncgm7yn3mqxdu7mjbi"
-    },
-    "tools.ozone.team.defs": {
-      "uri": "at://did:plc:placeholder00000000000000000000/com.atproto.lexicon.schema/tools.ozone.team.defs",
-      "cid": "bafyreifj3hxfarkbpbcnjbckaljyyrwmrbaz3sy4ttx5pbzrdv7ea2pmby"
     }
   }
 }
