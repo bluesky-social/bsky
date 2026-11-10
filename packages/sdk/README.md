@@ -10,10 +10,6 @@ npm install @bsky/sdk @atproto/lex
 
 `@atproto/lex` provides the `Client` class that powers all API calls. `@bsky/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
 
-The supported `@atproto/lex` range is `>=0.3.0 <0.3.10`. Releases 0.3.10–0.3.14
-re-export conflicting `walk` declarations with current dependencies, so they fail
-TypeScript declaration checking.
-
 ## Getting started
 
 ```typescript

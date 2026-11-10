@@ -55,10 +55,10 @@
     "tlds": "^1.261.0"
   },
   "peerDependencies": {
-    "@atproto/lex": ">=0.3.0 <0.3.10"
+    "@atproto/lex": "^0.3.0"
   },
   "devDependencies": {
-    "@atproto/lex": ">=0.3.0 <0.3.10",
+    "@atproto/lex": "^0.3.0",
     "@atproto/lex-password-session": "^0.1.8",
     "prettier": "^3.9.5",
     "rolldown": "1.1.4",
