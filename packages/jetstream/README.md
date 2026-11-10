@@ -10,13 +10,7 @@ Install the Jetstream client:
 npm install @bsky/jetstream @atproto/lex
 ```
 
-`@atproto/lex` ^0.4.7 is required as a peer dependency, providing the lexicon type system that events are typed with. The 0.3.x peer range is no longer supported.
-
-> [!WARNING]
->
-> Strict NodeNext consumers with `skipLibCheck: false` currently encounter TS2834
-> in the transitive `cborg@4.5.8` declarations, exposed by Lex's CBOR re-export.
-> Lex 0.4.7 does not resolve this upstream declaration issue.
+`@atproto/lex` ^0.4.8 is required as a peer dependency, providing the lexicon type system that events are typed with. The 0.3.x peer range is no longer supported.
 
 This package speaks Jetstream's v2 wire and supports all three of its consumption modes: `live()` for realtime events, `snapshot()` for the sealed archive of past events, and `replay()` for the archive followed by a seamless handoff to realtime. Consuming live events looks like:
 
