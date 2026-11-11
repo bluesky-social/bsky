@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.3.1
+
+### Patch Changes
+
+- [#92](https://github.com/bluesky-social/bsky/pull/92) [`e14ff14`](https://github.com/bluesky-social/bsky/commit/e14ff14151726042f5c36921ebcdbb2985324baa) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add `moderateExternalView` for label-based moderation of external link cards, articles, publications, galleries, and livestreams. Preserve the existing `moderateViewExternal` API for legacy link cards.
+
 ## 1.3.0
 
 ### Minor Changes
