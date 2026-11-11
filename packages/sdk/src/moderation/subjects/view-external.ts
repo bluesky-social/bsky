@@ -2,11 +2,11 @@ import { AtUri, isDidIdentifier } from '@atproto/syntax'
 import { ModerationDecision } from '../decision.js'
 import {
   type ModerationOpts,
-  type ModerationSubjectViewExternal,
+  type ModerationSubjectExternalView,
 } from '../types.js'
 
 export function decideViewExternal(
-  subject: ModerationSubjectViewExternal,
+  subject: ModerationSubjectExternalView,
   opts: ModerationOpts,
 ): ModerationDecision {
   const acc = new ModerationDecision()

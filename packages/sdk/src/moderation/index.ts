@@ -10,6 +10,7 @@ import { decideUserList } from './subjects/user-list.js'
 import { decideViewExternal } from './subjects/view-external.js'
 import {
   type ModerationOpts,
+  type ModerationSubjectExternalView,
   type ModerationSubjectFeedGenerator,
   type ModerationSubjectNotification,
   type ModerationSubjectPost,
@@ -36,6 +37,7 @@ export type {
   ModerationOpts,
   ModerationPrefs,
   ModerationPrefsLabeler,
+  ModerationSubjectExternalView,
   ModerationSubjectProfileLink,
 } from './types.js'
 
@@ -84,11 +86,18 @@ export function moderateStatus(
   return decideStatus(subject, opts)
 }
 
+export function moderateExternalView(
+  subject: ModerationSubjectExternalView,
+  opts: ModerationOpts,
+): ModerationDecision {
+  return decideViewExternal(subject, opts)
+}
+
 export function moderateViewExternal(
   subject: ModerationSubjectViewExternal,
   opts: ModerationOpts,
 ): ModerationDecision {
-  return decideViewExternal(subject, opts)
+  return moderateExternalView(subject, opts)
 }
 
 export function moderateProfileLink(

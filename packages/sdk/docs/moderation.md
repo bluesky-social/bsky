@@ -194,6 +194,7 @@ import {
   moderateFeedGenerator,
   moderateUserList,
   moderateStatus,
+  moderateExternalView,
   moderateViewExternal,
   moderateProfileLink,
 } from '@bsky/sdk/moderation'
@@ -273,14 +274,17 @@ for (const inform of mod.ui('contentList').informs) {
 
 ### External embeds
 
-Labels can be attached directly to an `app.bsky.embed.external#viewExternal` (for example, on link cards backed by Atmosphere records). These labels are not covered by `moderatePost`, so compute a separate decision for the embed with `moderateViewExternal` and apply it to the rendered card.
+Use `moderateExternalView` for labels attached to `app.bsky.embed.external` views: `viewExternal`, `viewArticle`, `viewArticlePublication`, `viewGallery`, and `viewLivestream`. These labels are not covered by `moderatePost`, so compute a separate decision for each rendered view. The existing `moderateViewExternal` API remains available for legacy link cards.
+
+Moderation is label-only: labels are treated as content labels, without including associated profiles' account labels, blocks, mutes, or muted words. The DID in the first `associatedRefs` record URI identifies the owner for self-labels and `isMe`. No owner is inferred from associated profiles, later references, or handle-based URIs. Nested views (such as an article's `publisher`) must be moderated separately.
 
 An external card acts as both the "content" and the "media" of its embed, so combine the `contentView` and `contentMedia` contexts with `mergeModUIResults`:
 
 ```typescript
-import { mergeModUIResults, moderateViewExternal } from '@bsky/sdk/moderation'
+import { mergeModUIResults, moderateExternalView } from '@bsky/sdk/moderation'
 
-const embedMod = moderateViewExternal(embed.external, moderationOptions)
+// Pass a legacy embed.external or a hydrated modality view.
+const embedMod = moderateExternalView(embed.external, moderationOptions)
 const ui = mergeModUIResults(
   embedMod.ui('contentView'),
   embedMod.ui('contentMedia'),
