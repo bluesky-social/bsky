@@ -14,11 +14,18 @@ import {
   atUri,
   getMain,
 } from '@atproto/lex'
-import { type ConsumerContext, type JetstreamConsumer } from './consumer.js'
+import { type ConsumerContext } from './consumer.js'
 import { typedEventFromRaw } from './decode-typed.js'
 import { type CollectionFilter } from './engine/collections.js'
-import { type EventBatch, type Kind, type RawEvent } from './event.js'
-import { eventUri } from './event.js'
+import {
+  type EventBatch,
+  type JetstreamMode,
+  type Kind,
+  type RawEvent,
+  type RawSpacesEvent,
+  type SpacesKind,
+  eventUri,
+} from './event.js'
 
 // Shared per-run context handed to every handler as the second arg. Allocated
 // once per run (NOT per event). `signal` is REQUIRED: LexIndexer always
@@ -85,14 +92,80 @@ export type SyncEvent = {
   seq: number
 }
 
-export interface CommitHandlers<R> {
-  put?: (e: PutEvent<R>, ctx: HandlerContext) => unknown | Promise<unknown>
-  del?: (e: DelEvent, ctx: HandlerContext) => unknown | Promise<unknown>
+// Spaces handler inputs: the same flat shapes plus the record's namespace.
+// `space` is absent for the public namespace; `did` stays the author. Use
+// scopedRecordKey(e) — not `uri`, which has no space — as the record's key.
+export type SpacesPutEvent<R> = PutEvent<R> & { space?: string }
+export type SpacesDelEvent = DelEvent & { space?: string }
+export type SpacesValidationErrorEvent = ValidationErrorEvent & {
+  space?: string
+}
+/** A scoped sync resets only (space, did); an unscoped one the public repo. */
+export type SpacesSyncEvent = SyncEvent & { space?: string }
+/**
+ * A scope marker, flat like the other handler inputs. Narrow on `operation`:
+ * repoRemoved removes `did`'s contributions from `space`; spaceDeleted removes
+ * the whole space and has no author.
+ */
+export type ScopeEvent =
+  | {
+      operation: 'repoRemoved'
+      space: string
+      did: DidString
+      cause?: string
+      lastKnownRev?: string
+      time: DatetimeString
+      seq: number
+    }
+  | {
+      operation: 'spaceDeleted'
+      space: string
+      did?: undefined
+      cause?: string
+      lastKnownRev?: string
+      time: DatetimeString
+      seq: number
+    }
+
+type IsSpaces<M extends JetstreamMode> = [M] extends ['spaces'] ? true : false
+// An unresolved mode is public, so InstanceType<typeof LexIndexer> stays
+// assignable to LexIndexer.
+type ModeOf<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? 'spaces' : 'public'
+type PutEventFor<M extends JetstreamMode, R> =
+  IsSpaces<M> extends true ? SpacesPutEvent<R> : PutEvent<R>
+type DelEventFor<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? SpacesDelEvent : DelEvent
+type ValidationErrorEventFor<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? SpacesValidationErrorEvent : ValidationErrorEvent
+type SyncEventFor<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? SpacesSyncEvent : SyncEvent
+
+export interface CommitHandlers<R, M extends JetstreamMode = 'public'> {
+  put?: (
+    e: PutEventFor<M, R>,
+    ctx: HandlerContext,
+  ) => unknown | Promise<unknown>
+  del?: (e: DelEventFor<M>, ctx: HandlerContext) => unknown | Promise<unknown>
 }
 
-export interface LexIndexerOpts {
+export interface LexIndexerOpts<M extends JetstreamMode = 'public'> {
+  /**
+   * Max handlers in flight (default 16). Public mode only: a Spaces indexer
+   * runs serially (see `mode`).
+   */
   concurrency?: number
+  /** Per-key ordering for concurrent handlers. Public mode only. */
   keyOf?: (evt: RawEvent) => string
+  /**
+   * `'spaces'` builds an indexer for a Spaces runner: handlers also receive
+   * `space`, `scope()` is available, and handlers run strictly one at a time
+   * in stream order. Serial execution is what orders a lifecycle event (a
+   * repository reset, a space deletion, a global account change) against
+   * every outstanding record write it affects; it is incompatible with
+   * `concurrency`/`keyOf`, which are rejected.
+   */
+  mode?: M
 }
 
 const isThenable = (v: unknown): v is PromiseLike<unknown> =>
@@ -134,7 +207,13 @@ interface AnyCommitHandlers {
   del?: (e: DelEvent, ctx: HandlerContext) => unknown | Promise<unknown>
 }
 
-export class LexIndexer implements JetstreamConsumer {
+/**
+ * A JetstreamConsumer (default) or, constructed with `mode: 'spaces'`, a
+ * SpacesConsumer. Structural: `LexIndexer` satisfies JetstreamConsumer and
+ * `LexIndexer<'spaces'>` satisfies SpacesConsumer.
+ */
+export class LexIndexer<M extends JetstreamMode = 'public'> {
+  readonly mode: ModeOf<M>
   readonly concurrency: number
   readonly #keyOf: ((evt: RawEvent) => string) | undefined
   readonly #collections = new Map<NsidString, AnyCommitHandlers>()
@@ -147,6 +226,9 @@ export class LexIndexer implements JetstreamConsumer {
   #syncHandler:
     | ((e: SyncEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
     | undefined
+  #scopeHandler:
+    | ((e: ScopeEvent, ctx: HandlerContext) => unknown | Promise<unknown>)
+    | undefined
   #validationErrorHandler:
     | ((
         e: ValidationErrorEvent,
@@ -154,8 +236,26 @@ export class LexIndexer implements JetstreamConsumer {
       ) => unknown | Promise<unknown>)
     | undefined
 
-  constructor(opts: LexIndexerOpts = {}) {
-    this.concurrency = opts.concurrency ?? 16
+  constructor(opts: LexIndexerOpts<M> = {}) {
+    const mode = opts.mode ?? 'public'
+    if (mode !== 'public' && mode !== 'spaces') {
+      throw new TypeError(
+        `LexIndexer mode must be 'public' or 'spaces' (got ${JSON.stringify(mode)})`,
+      )
+    }
+    if (
+      mode === 'spaces' &&
+      (opts.keyOf !== undefined ||
+        (opts.concurrency !== undefined && opts.concurrency !== 1))
+    ) {
+      throw new TypeError(
+        'a Spaces LexIndexer runs handlers serially: concurrency and keyOf are not supported',
+      )
+    }
+    // ModeOf<M> is M for either literal, and the check above rejects any
+    // other value.
+    this.mode = mode as ModeOf<M>
+    this.concurrency = mode === 'spaces' ? 1 : (opts.concurrency ?? 16)
     this.#keyOf = opts.keyOf
   }
 
@@ -168,26 +268,31 @@ export class LexIndexer implements JetstreamConsumer {
   // collection already registered via commit(). Nothing registered must
   // return undefined, not []: an empty array is still a concrete kinds list
   // to a caller reading the type, and undefined is the honest "no filter."
-  get kinds(): Kind[] | undefined {
-    const kinds: Kind[] = []
+  get kinds(): IsSpaces<M> extends true
+    ? SpacesKind[] | undefined
+    : Kind[] | undefined {
+    const kinds: SpacesKind[] = []
     if (this.#collections.size > 0) kinds.push('commit')
     if (this.#identityHandler) kinds.push('identity')
     if (this.#accountHandler) kinds.push('account')
     if (this.#syncHandler) kinds.push('sync')
-    return kinds.length > 0 ? kinds : undefined
+    if (this.#scopeHandler) kinds.push('scope')
+    return (kinds.length > 0 ? kinds : undefined) as IsSpaces<M> extends true
+      ? SpacesKind[] | undefined
+      : Kind[] | undefined
   }
 
   // Simple form: register a collection with schema-validated records
   // (validateRecord defaults to true).
   commit<S extends RecordSchema>(
     collection: Main<S>,
-    handlers: CommitHandlers<InferOutput<S>>,
+    handlers: CommitHandlers<InferOutput<S>, M>,
   ): this
   // Options form, validating (default). The literal `true` (or omission) keeps
   // the schema-inferred record typing.
   commit<S extends RecordSchema>(opts: {
     collection: Main<S>
-    handlers: CommitHandlers<InferOutput<S>>
+    handlers: CommitHandlers<InferOutput<S>, M>
     validateRecord?: true
   }): this
   // Options form, non-validating. The literal `false` selects the
@@ -195,7 +300,7 @@ export class LexIndexer implements JetstreamConsumer {
   // (already enforced by record conversion) is guaranteed.
   commit<S extends RecordSchema>(opts: {
     collection: Main<S>
-    handlers: CommitHandlers<TypedLexMap<S['$type']>>
+    handlers: CommitHandlers<TypedLexMap<S['$type']>, M>
     validateRecord: false
   }): this
   commit<S extends RecordSchema>(
@@ -203,10 +308,10 @@ export class LexIndexer implements JetstreamConsumer {
       | Main<S>
       | {
           collection: Main<S>
-          handlers: CommitHandlers<never>
+          handlers: CommitHandlers<never, M>
           validateRecord?: boolean
         },
-    maybeHandlers?: CommitHandlers<InferOutput<S>>,
+    maybeHandlers?: CommitHandlers<InferOutput<S>, M>,
   ): this {
     // Overload discrimination: a lex Main<S> schema is itself an object, but it
     // never carries BOTH `collection` and `handlers` keys (its keys are
@@ -254,28 +359,53 @@ export class LexIndexer implements JetstreamConsumer {
   }
 
   sync(
-    fn: (e: SyncEvent, ctx: HandlerContext) => unknown | Promise<unknown>,
+    fn: (e: SyncEventFor<M>, ctx: HandlerContext) => unknown | Promise<unknown>,
   ): this {
-    this.#syncHandler = fn
+    this.#syncHandler = fn as (
+      e: SyncEvent,
+      ctx: HandlerContext,
+    ) => unknown | Promise<unknown>
+    return this
+  }
+
+  /**
+   * Spaces only: handles scope markers (repoRemoved / spaceDeleted). Like the
+   * other lifecycle handlers it adds its kind to `kinds`, so a consumer that
+   * folds scoped records should register it.
+   */
+  scope<T extends LexIndexer<'spaces'>>(
+    this: T,
+    fn: (e: ScopeEvent, ctx: HandlerContext) => unknown | Promise<unknown>,
+  ): T {
+    this.#scopeHandler = fn
     return this
   }
 
   onValidationError(
     fn: (
-      e: ValidationErrorEvent,
+      e: ValidationErrorEventFor<M>,
       ctx: HandlerContext,
     ) => unknown | Promise<unknown>,
   ): this {
-    this.#validationErrorHandler = fn
+    this.#validationErrorHandler = fn as (
+      e: ValidationErrorEvent,
+      ctx: HandlerContext,
+    ) => unknown | Promise<unknown>
     return this
   }
 
   async run(
-    stream: AsyncIterable<EventBatch<RawEvent>>,
+    stream: AsyncIterable<EventBatch<RawSpacesEvent>>,
     ctx: ConsumerContext,
   ): Promise<void> {
+    const spaces = this.mode === 'spaces'
     const concurrency = Math.max(1, this.concurrency)
-    const keyOf = this.#keyOf ?? ((evt: RawEvent) => eventUri(evt))
+    // Spaces: concurrency is 1, so dispatch is serial and the key is moot (a
+    // scope marker may have no did to key on). Public keys are unchanged.
+    const keyOf: (evt: RawSpacesEvent) => string = spaces
+      ? () => ''
+      : ((this.#keyOf as ((evt: RawSpacesEvent) => string) | undefined) ??
+        ((evt) => eventUri(evt as RawEvent)))
     // schemasByNsid drives typedEventFromRaw's validation; a collection
     // registered with validateRecord: false is deliberately OMITTED so its
     // records skip schema.safeValidate (routing is unaffected — handlers are
@@ -325,7 +455,7 @@ export class LexIndexer implements JetstreamConsumer {
     // PERF: plain function (not async) — a sync user handler completes without
     // any promise allocation; the CALLER inspects the return for a thenable.
     // Each branch returns the handler's result directly (may be a thenable).
-    const handle = (evt: RawEvent): unknown => {
+    const handle = (evt: RawSpacesEvent): unknown => {
       if (evt.kind === 'identity') {
         if (this.#identityHandler) {
           return this.#identityHandler(
@@ -357,39 +487,54 @@ export class LexIndexer implements JetstreamConsumer {
       }
       if (evt.kind === 'sync') {
         if (this.#syncHandler) {
-          return this.#syncHandler(
-            {
-              did: evt.sync.did,
-              rev: evt.sync.rev,
-              time: evt.sync.time,
-              seq: evt.seq,
-            },
-            hctx,
-          )
+          const syncEvt: SpacesSyncEvent = {
+            did: evt.sync.did,
+            rev: evt.sync.rev,
+            time: evt.sync.time,
+            seq: evt.seq,
+          }
+          // Only present keys are added: public handler inputs are unchanged.
+          if (evt.space !== undefined) syncEvt.space = evt.space
+          return this.#syncHandler(syncEvt, hctx)
         }
         return undefined
       }
-      if (evt.kind !== 'commit') return undefined
+      if (evt.kind === 'scope') {
+        if (!this.#scopeHandler) return undefined
+        const s = evt.scope
+        const base = { space: evt.space, time: evt.time, seq: evt.seq }
+        const extra = {
+          ...(s.cause !== undefined ? { cause: s.cause } : {}),
+          ...(s.lastKnownRev !== undefined
+            ? { lastKnownRev: s.lastKnownRev }
+            : {}),
+        }
+        return this.#scopeHandler(
+          s.operation === 'repoRemoved'
+            ? { operation: s.operation, did: s.did, ...base, ...extra }
+            : { operation: s.operation, ...base, ...extra },
+          hctx,
+        )
+      }
       const handlers = this.#collections.get(evt.commit.collection)
       if (!handlers) return undefined // unregistered collection: skip
       if (evt.commit.operation === 'delete') {
         if (handlers.del) {
           const did = evt.did
           const c = evt.commit
-          return handlers.del(
-            {
-              did,
-              seq: evt.seq,
-              operation: 'delete',
-              collection: c.collection,
-              rkey: c.rkey,
-              rev: c.rev,
-              get uri(): AtUriString {
-                return lazyUri(this, did, c)
-              },
+          const delEvt: SpacesDelEvent = {
+            did,
+            seq: evt.seq,
+            operation: 'delete',
+            collection: c.collection,
+            rkey: c.rkey,
+            rev: c.rev,
+            get uri(): AtUriString {
+              return lazyUri(this, did, c)
             },
-            hctx,
-          )
+          }
+          if (evt.space !== undefined) delEvt.space = evt.space
+          return handlers.del(delEvt, hctx)
         }
         return undefined
       }
@@ -410,7 +555,7 @@ export class LexIndexer implements JetstreamConsumer {
           // PERF: cid delegates to the commit getter — do not inline
           // `cid: tc.cid` here; the source package's v2 path computes it
           // lazily and the delegation keeps both ports identical.
-          const errEvt: ValidationErrorEvent = {
+          const errEvt: SpacesValidationErrorEvent = {
             did,
             seq: typed.seq,
             operation: tc.operation,
@@ -425,6 +570,7 @@ export class LexIndexer implements JetstreamConsumer {
             },
             error,
           }
+          if (evt.space !== undefined) errEvt.space = evt.space
           return this.#validationErrorHandler(errEvt, hctx)
         }
         return undefined
@@ -437,7 +583,7 @@ export class LexIndexer implements JetstreamConsumer {
         // type-erased site (handlers are stored as PutEvent<unknown>); the
         // commit() overloads guarantee the runtime shape matches what the
         // registered handler expects.
-        const putEvt: PutEvent<unknown> = {
+        const putEvt: SpacesPutEvent<unknown> = {
           did,
           seq: typed.seq,
           operation: tc.operation,
@@ -452,6 +598,7 @@ export class LexIndexer implements JetstreamConsumer {
           },
           record: tc.record,
         }
+        if (evt.space !== undefined) putEvt.space = evt.space
         return handlers.put(putEvt, hctx)
       }
       return undefined
@@ -462,7 +609,11 @@ export class LexIndexer implements JetstreamConsumer {
     // stopped-skip passes skipAck=true so the slot is released WITHOUT acking
     // (acking a skipped event would advance the watermark past unprocessed
     // events). Always releases the slot exactly once.
-    const settle = (evt: RawEvent, err: unknown, skipAck = false): void => {
+    const settle = (
+      evt: RawSpacesEvent,
+      err: unknown,
+      skipAck = false,
+    ): void => {
       if (err === undefined) {
         if (!skipAck) ctx.ack(evt)
       } else {
@@ -480,7 +631,7 @@ export class LexIndexer implements JetstreamConsumer {
     // when a tail exists, acquire/release pairing (settle runs once per
     // dispatched event), fail-fast without acking the failed event. The async
     // fallback below is the original chain semantics.
-    const dispatch = (evt: RawEvent): void => {
+    const dispatch = (evt: RawSpacesEvent): void => {
       // NOTE: keyOf is deliberately NOT guarded — a key-computation failure is
       // an implementer bug (broken custom keyOf) and should throw hard out of
       // run() rather than be settled like a handler error. The default

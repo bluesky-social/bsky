@@ -2,9 +2,11 @@ import { type RecordSchema } from '@atproto/lex'
 import {
   type RawEvent,
   type RawEventV1,
+  type RawSpacesEvent,
   type TypedCommit,
   type TypedEvent,
   type TypedEventV1,
+  type TypedSpacesEvent,
 } from './event.js'
 import { parseRawRecord } from './raw-record.js'
 
@@ -18,11 +20,18 @@ export function typedEventFromRaw(
   schemasByNsid: Map<string, RecordSchema>,
   opts?: { strict?: boolean },
 ): TypedEvent
+// Spaces: `space` and scope events pass through untouched (the event is
+// spread, only `commit` is replaced).
 export function typedEventFromRaw(
-  raw: RawEventV1 | RawEvent,
+  raw: RawSpacesEvent,
   schemasByNsid: Map<string, RecordSchema>,
   opts?: { strict?: boolean },
-): TypedEventV1 | TypedEvent {
+): TypedSpacesEvent
+export function typedEventFromRaw(
+  raw: RawEventV1 | RawSpacesEvent,
+  schemasByNsid: Map<string, RecordSchema>,
+  opts?: { strict?: boolean },
+): TypedEventV1 | TypedSpacesEvent {
   if (raw.kind !== 'commit') return raw
   // Delete first: DeleteCommit carries no `record`, so the put-commit handling
   // below only sees put commits.

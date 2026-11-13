@@ -1,11 +1,11 @@
 import { MalformedError } from '../errors.js'
+import { type FormatVersion } from './block.js'
 
 export const RESERVED_HEADER_BYTES = 256
 const MAGIC = 'jss0'
-const HEADER_VERSION = 1
 
 export interface SegHeader {
-  version: number
+  version: FormatVersion
   blockCount: number
   eventCount: number
   footerOffset: number
@@ -14,9 +14,14 @@ export interface SegHeader {
 
 /**
  * Parses the fixed 256-byte header of a sealed .jss segment. A zero checksum
- * marks an active (unsealed) segment, which is never served — reject it.
+ * marks an active (unsealed) segment, which is never served — reject it. The
+ * header's version field is the segment format; anything other than
+ * `expectedFormat` (default 1, the public archive) is rejected.
  */
-export function readSealedHeader(buf: Uint8Array): SegHeader {
+export function readSealedHeader(
+  buf: Uint8Array,
+  expectedFormat: FormatVersion = 1,
+): SegHeader {
   if (buf.length < RESERVED_HEADER_BYTES) {
     throw new MalformedError('segment shorter than fixed header')
   }
@@ -32,8 +37,13 @@ export function readSealedHeader(buf: Uint8Array): SegHeader {
     )
   }
   const version = view.getUint16(12, true)
-  if (version !== HEADER_VERSION) {
+  if (version !== 1 && version !== 2) {
     throw new MalformedError(`unsupported segment version ${version}`)
+  }
+  if (version !== expectedFormat) {
+    throw new MalformedError(
+      `segment format ${version} does not match expected format ${expectedFormat}`,
+    )
   }
   return {
     version,
