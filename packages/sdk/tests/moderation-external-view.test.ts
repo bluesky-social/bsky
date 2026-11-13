@@ -36,6 +36,23 @@ const opts: ModerationOpts = {
   },
 }
 
+const ownerRefs = [
+  { uri: `at://${OWNER_DID}/example.content/item` as const, cid: FAKE_CID },
+]
+const mutedOpts: ModerationOpts = {
+  ...opts,
+  prefs: {
+    ...opts.prefs,
+    mutedWords: [
+      {
+        value: 'example',
+        targets: ['content'],
+        actorTarget: 'exclude-following',
+      },
+    ],
+  },
+}
+
 function label(val: string, src: Label['src'] = LABELER_DID): Label {
   return { val, src, uri: base.uri, cts: '2026-10-16T12:00:00.000Z' }
 }
@@ -93,6 +110,155 @@ describe.each(views)('moderateExternalView ($$type)', (view) => {
     expect(ownRes.isMe).toBe(true)
     expect(ownRes.ui('contentList').filter).toBe(false)
   })
+
+  it('combines content labels with owner account and profile moderation', () => {
+    const res = moderateExternalView(
+      {
+        ...view,
+        labels: [label('!warn')],
+        associatedRefs: ownerRefs,
+        associatedProfiles: [
+          {
+            did: OWNER_DID,
+            handle: 'bob.test',
+            viewer: {
+              muted: true,
+              blocking: `at://${VIEWER_DID}/app.bsky.graph.block/item`,
+              blockedBy: true,
+            },
+            labels: [
+              { ...label('!hide'), uri: OWNER_DID },
+              {
+                ...label('porn'),
+                uri: `at://${OWNER_DID}/app.bsky.actor.profile/self`,
+              },
+            ],
+          },
+        ],
+      },
+      opts,
+    )
+    expect(res.did).toBe(OWNER_DID)
+    expect(res.isMe).toBe(false)
+    expect(res.causes).toMatchObject([
+      { type: 'label', target: 'content' },
+      { type: 'muted' },
+      { type: 'blocking' },
+      { type: 'blocked-by' },
+      { type: 'label', target: 'account' },
+      { type: 'label', target: 'profile' },
+    ])
+    expect(res.ui('contentList').filter).toBe(true)
+    expect(res.ui('contentView').noOverride).toBe(true)
+    expect(res.ui('avatar').blur).toBe(true)
+  })
+
+  it.each([undefined, {}, { texts: [] }, { texts: ['unrelated text'] }])(
+    'does not extract muted-word text from the view with options %j',
+    (externalOpts) => {
+      expect(
+        moderateExternalView(view, mutedOpts, externalOpts).causes,
+      ).toHaveLength(0)
+    },
+  )
+
+  it('adds matches from the first matching client-supplied text', () => {
+    const res = moderateExternalView(view, mutedOpts, {
+      texts: ['unrelated text', 'An example of matching', 'example again'],
+    })
+    expect(res.causes).toMatchObject([
+      {
+        type: 'mute-word',
+        matches: [
+          { word: mutedOpts.prefs.mutedWords[0], predicate: 'example' },
+        ],
+      },
+    ])
+    expect(res.ui('contentList').filter).toBe(true)
+    expect(res.ui('contentList').blur).toBe(true)
+    expect(res.ui('contentView').blur).toBe(true)
+  })
+
+  it('exempts your own content even without an owner profile', () => {
+    const res = moderateExternalView(
+      { ...view, associatedRefs: ownerRefs },
+      { ...mutedOpts, userDid: OWNER_DID },
+      { texts: ['example'] },
+    )
+    expect(res.did).toBe(OWNER_DID)
+    expect(res.isMe).toBe(true)
+    expect(res.causes).toHaveLength(0)
+  })
+
+  it.each([false, true])(
+    'uses the matching owner profile for the following exemption (following=%s)',
+    (following) => {
+      const res = moderateExternalView(
+        {
+          ...view,
+          associatedRefs: ownerRefs,
+          associatedProfiles: [
+            {
+              did: VIEWER_DID,
+              handle: 'alice.test',
+              viewer: {
+                muted: true,
+                following: following
+                  ? undefined
+                  : `at://${VIEWER_DID}/app.bsky.graph.follow/other`,
+              },
+            },
+            {
+              did: OWNER_DID,
+              handle: 'bob.test',
+              viewer: {
+                following: following
+                  ? `at://${VIEWER_DID}/app.bsky.graph.follow/owner`
+                  : undefined,
+              },
+            },
+          ],
+        },
+        mutedOpts,
+        { texts: ['example'] },
+      )
+      expect(res.did).toBe(OWNER_DID)
+      expect(res.isMe).toBe(false)
+      expect(res.causes.map((cause) => cause.type)).toEqual(
+        following ? [] : ['mute-word'],
+      )
+    },
+  )
+
+  it.each([
+    undefined,
+    'at://bob.test/example.content/item',
+    `at://${OWNER_DID}/example.content/item`,
+  ] as const)(
+    'does not use an unrelated profile for owner moderation or word-mute exemptions (ref=%s)',
+    (uri) => {
+      const res = moderateExternalView(
+        {
+          ...view,
+          associatedRefs: uri ? [{ uri, cid: FAKE_CID }] : undefined,
+          associatedProfiles: [
+            {
+              did: VIEWER_DID,
+              handle: 'alice.test',
+              viewer: {
+                muted: true,
+                following: `at://${VIEWER_DID}/app.bsky.graph.follow/other`,
+              },
+            },
+          ],
+        },
+        mutedOpts,
+        { texts: ['example'] },
+      )
+      expect(res.isMe).toBe(false)
+      expect(res.causes.map((cause) => cause.type)).toEqual(['mute-word'])
+    },
+  )
 })
 
 it('preserves the legacy moderateViewExternal API', () => {
@@ -106,4 +272,41 @@ it('preserves the legacy moderateViewExternal API', () => {
   expect(moderateViewExternal(view, opts)).toEqual(
     moderateExternalView(view, opts),
   )
+  const externalOpts = { texts: ['example'] }
+  const res = moderateViewExternal(view, mutedOpts, externalOpts)
+  expect(res).toEqual(moderateExternalView(view, mutedOpts, externalOpts))
+  expect(res.causes.map((cause) => cause.type)).toEqual(['label', 'mute-word'])
+})
+
+it('matches supplied strings independently rather than joining them', () => {
+  const res = moderateExternalView(
+    views[0],
+    {
+      ...opts,
+      prefs: {
+        ...opts.prefs,
+        mutedWords: [{ value: 'an example', targets: ['content'] }],
+      },
+    },
+    { texts: ['an', 'example'] },
+  )
+  expect(res.causes).toHaveLength(0)
+})
+
+it('only checks gallery image alt text when supplied by the client', () => {
+  const alt = 'example image'
+  const view = external.viewGallery.build({
+    ...base,
+    items: [
+      external.viewGalleryImage.build({
+        thumbnail: 'https://example.com/thumb.jpg',
+        fullsize: 'https://example.com/image.jpg',
+        alt,
+      }),
+    ],
+  })
+  expect(moderateExternalView(view, mutedOpts).causes).toHaveLength(0)
+  expect(
+    moderateExternalView(view, mutedOpts, { texts: [alt] }).causes,
+  ).toMatchObject([{ type: 'mute-word' }])
 })
