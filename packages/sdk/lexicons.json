@@ -69,6 +69,7 @@
     "app.bsky.feed.getRepostedBy",
     "app.bsky.feed.getSuggestedFeeds",
     "app.bsky.feed.getTimeline",
+    "app.bsky.feed.hydrateFeedSkeleton",
     "app.bsky.feed.like",
     "app.bsky.feed.post",
     "app.bsky.feed.postgate",
@@ -550,6 +551,10 @@
     "app.bsky.feed.getTimeline": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.feed.getTimeline",
       "cid": "bafyreibcavofg3nlnv4ubkt43f7nj5k4yhex4lz3tvpeny6nqdpqas767e"
+    },
+    "app.bsky.feed.hydrateFeedSkeleton": {
+      "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.feed.hydrateFeedSkeleton",
+      "cid": "bafyreiejnnl32itnzx7bjcsguworirev55o54qpcwfm4mrzvju2pxk6kua"
     },
     "app.bsky.feed.like": {
       "uri": "at://did:plc:4v4y5r3lwsbtmsxhile2ljac/com.atproto.lexicon.schema/app.bsky.feed.like",
