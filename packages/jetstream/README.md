@@ -10,7 +10,9 @@ Install the Jetstream client:
 npm install @bsky/jetstream @atproto/lex
 ```
 
-`@atproto/lex` is a peer dependency providing the lexicon type system that events are typed with. Supports `^0.3.0 || ^0.4.8`; for the 0.3 line, use 0.3.15 or newer to avoid the upstream `walk` export conflict.
+`@atproto/lex` is a peer dependency providing the lexicon type system that events are typed with. Supports `^0.3.0 || ^0.4.8`.
+
+For new installations on the 0.3 line, we recommend 0.3.15 or newer. The upstream `walk` export conflict affects `@atproto/lex` 0.3.10–0.3.14 when combined with `@atproto/lex-schema` 0.2.10 or newer—not every earlier 0.3 release. Existing working 0.3 installations remain supported.
 
 This package speaks Jetstream's v2 wire and supports all three of its consumption modes: `live()` for realtime events, `snapshot()` for the sealed archive of past events, and `replay()` for the archive followed by a seamless handoff to realtime. Consuming live events looks like:
 
