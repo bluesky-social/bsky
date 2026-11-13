@@ -8,6 +8,10 @@ Bluesky SDK built on [@atproto/lex](https://github.com/bluesky-social/atproto/tr
 npm install @bsky/sdk @atproto/lex
 ```
 
+Supports `@atproto/lex` `^0.3.0 || ^0.4.8`.
+
+For new installations on the 0.3 line, we recommend 0.3.15 or newer. The upstream `walk` export conflict affects `@atproto/lex` 0.3.10–0.3.14 when combined with `@atproto/lex-schema` 0.2.10 or newer—not every earlier 0.3 release. Existing working 0.3 installations remain supported.
+
 `@atproto/lex` provides the `Client` class that powers all API calls. `@bsky/sdk` provides the Bluesky-specific lexicons, actions, and utilities.
 
 ## Getting started
