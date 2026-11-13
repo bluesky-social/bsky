@@ -205,6 +205,15 @@ export interface ModerationPrefs {
   hiddenPosts: AtUriString[]
 }
 
+export interface ModerationExternalViewOpts {
+  /**
+   * Client-selected text to check for muted words, such as a title,
+   * description, or image alt text. Omitted or empty means no word matching;
+   * text is never extracted from the view automatically.
+   */
+  texts?: string[]
+}
+
 export interface ModerationOpts {
   userDid: DidString | undefined
   prefs: ModerationPrefs
