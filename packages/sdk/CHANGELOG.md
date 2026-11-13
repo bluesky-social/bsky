@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.4.0
+
+### Minor Changes
+
+- [#102](https://github.com/bluesky-social/bsky/pull/102) [`4d2b79f`](https://github.com/bluesky-social/bsky/commit/4d2b79f19243a2b4f89a71bfddfd1883534fc0b7) Thanks [@rafaeleyng](https://github.com/rafaeleyng)! - Add the `app.bsky.feed.hydrateFeedSkeleton` lexicon.
+
 ## 1.3.2
 
 ### Patch Changes
