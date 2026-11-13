@@ -11,10 +11,6 @@
           "type": "object",
           "required": ["feed"],
           "properties": {
-            "cursor": {
-              "type": "string",
-              "description": "Returned unchanged in the output."
-            },
             "feed": {
               "type": "array",
               "maxLength": 100,
@@ -37,7 +33,6 @@
           "type": "object",
           "required": ["feed"],
           "properties": {
-            "cursor": { "type": "string" },
             "feed": {
               "type": "array",
               "items": {
