@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.3.2
+
+### Patch Changes
+
+- [#97](https://github.com/bluesky-social/bsky/pull/97) [`3bc8def`](https://github.com/bluesky-social/bsky/commit/3bc8def7f944b1a5f96ac1231527a14cc60ca824) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Include backing-record owner moderation in `moderateExternalView` and `moderateViewExternal`. Both accept an optional third argument, `{ texts: string[] }`, for client-selected muted-word matching.
+
 ## 1.3.1
 
 ### Patch Changes
