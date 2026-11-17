@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.5.0
+
+### Minor Changes
+
+- [#107](https://github.com/bluesky-social/bsky/pull/107) [`9ab91e4`](https://github.com/bluesky-social/bsky/commit/9ab91e42149da4baed0ee48b73abf4dcd9e6ccd3) Thanks [@mozzius](https://github.com/mozzius)! - Add the interactionFollow feed interaction event, for when a user follows the author of a feed item.
+
 ## 1.4.0
 
 ### Minor Changes
