@@ -139,6 +139,16 @@ describe('generated lexicons', () => {
       }
     })
 
+    it('has a follow interaction for following the feed item author', () => {
+      expect(app.bsky.feed.defs.interactionFollow.value).toBe(
+        'app.bsky.feed.defs#interactionFollow',
+      )
+      const interaction: app.bsky.feed.defs.Interaction = {
+        event: app.bsky.feed.defs.interactionFollow.value,
+      }
+      expect(app.bsky.feed.defs.interaction.matches(interaction)).toBe(true)
+    })
+
     it('keeps payloads optional and accepts future event types', () => {
       for (const event of [
         'app.bsky.feed.defs#interactionSeen',
