@@ -14,7 +14,7 @@
  * Exits non-zero (typecheck error or uncaught throw) on any incompatibility.
  */
 import assert from 'node:assert/strict'
-import { Client, type DidString } from '@atproto/lex'
+import { Client, type DidString, walk } from '@atproto/lex'
 import { api, post } from '@bsky/sdk'
 import { app } from '@bsky/sdk/lexicons'
 import {
@@ -42,6 +42,11 @@ assert.equal(
   true,
 )
 assert.equal(app.bsky.feed.post.$matches({ $type: 'other' }), false)
+
+// Named walk import and schema traversal across the sdk/lex boundary.
+assert.ok(
+  [...walk({ post: app.bsky.feed.post })].includes(app.bsky.feed.post.main),
+)
 
 // Type-level: sdk record types compose with lex's branded strings.
 const postRecord: app.bsky.feed.post.Main = {
