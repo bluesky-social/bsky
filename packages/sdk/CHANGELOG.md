@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.4.0
+
+### Minor Changes
+
+- [#89](https://github.com/bluesky-social/bsky/pull/89) [`879e9ce`](https://github.com/bluesky-social/bsky/commit/879e9ce0018f49f4da719eae4ebfd9f080ef7bbe) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add the interactionUnspecced feed interaction event, an optional untyped interaction payload for application-defined data, and an optional viewContext with known values feed and thread and a 64-byte limit.
+
 ## 1.3.2
 
 ### Patch Changes
