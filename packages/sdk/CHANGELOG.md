@@ -1,5 +1,29 @@
 # @atproto/api
 
+## 1.5.0
+
+### Minor Changes
+
+- [#107](https://github.com/bluesky-social/bsky/pull/107) [`9ab91e4`](https://github.com/bluesky-social/bsky/commit/9ab91e42149da4baed0ee48b73abf4dcd9e6ccd3) Thanks [@mozzius](https://github.com/mozzius)! - Add the interactionFollow feed interaction event, for when a user follows the author of a feed item.
+
+## 1.4.0
+
+### Minor Changes
+
+- [#89](https://github.com/bluesky-social/bsky/pull/89) [`879e9ce`](https://github.com/bluesky-social/bsky/commit/879e9ce0018f49f4da719eae4ebfd9f080ef7bbe) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add the interactionUnspecced feed interaction event, an optional untyped interaction payload for application-defined data, and an optional viewContext with known values feed and thread and a 64-byte limit.
+
+## 1.3.2
+
+### Patch Changes
+
+- [#97](https://github.com/bluesky-social/bsky/pull/97) [`3bc8def`](https://github.com/bluesky-social/bsky/commit/3bc8def7f944b1a5f96ac1231527a14cc60ca824) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Include backing-record owner moderation in `moderateExternalView` and `moderateViewExternal`. Both accept an optional third argument, `{ texts: string[] }`, for client-selected muted-word matching.
+
+## 1.3.1
+
+### Patch Changes
+
+- [#92](https://github.com/bluesky-social/bsky/pull/92) [`e14ff14`](https://github.com/bluesky-social/bsky/commit/e14ff14151726042f5c36921ebcdbb2985324baa) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add `moderateExternalView` for label-based moderation of external link cards, articles, publications, galleries, and livestreams. Preserve the existing `moderateViewExternal` API for legacy link cards.
+
 ## 1.3.0
 
 ### Minor Changes

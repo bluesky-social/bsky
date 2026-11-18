@@ -11,4 +11,5 @@ minimumReleaseAgeExclude:
   - '@atproto/lex-password-session@0.1.8'
   - '@atproto/lex-resolver@0.2.2'
   - '@atproto/lex@0.3.0'
+  - '@atproto/lex@0.3.15'
   - '@atproto/ws-client@0.2.0'

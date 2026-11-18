@@ -6,7 +6,13 @@ import type {
   ProfileViewBasic,
   ProfileViewDetailed,
 } from '../lexicons/app/bsky/actor/defs.defs.js'
-import type { ViewExternal } from '../lexicons/app/bsky/embed/external.defs.js'
+import type {
+  ViewArticle,
+  ViewArticlePublication,
+  ViewExternal,
+  ViewGallery,
+  ViewLivestream,
+} from '../lexicons/app/bsky/embed/external.defs.js'
 import type {
   GeneratorView,
   PostView,
@@ -109,6 +115,13 @@ export type ModerationSubjectUserList = ListViewBasic | ListView
 
 export type ModerationSubjectViewExternal = ViewExternal
 
+export type ModerationSubjectExternalView =
+  | ViewExternal
+  | ViewArticle
+  | ViewArticlePublication
+  | ViewGallery
+  | ViewLivestream
+
 export type ModerationSubjectProfileLink = ProfileLinkView
 
 export type ModerationSubject =
@@ -117,7 +130,7 @@ export type ModerationSubject =
   | ModerationSubjectNotification
   | ModerationSubjectFeedGenerator
   | ModerationSubjectUserList
-  | ModerationSubjectViewExternal
+  | ModerationSubjectExternalView
   | ModerationSubjectProfileLink
 
 // behaviors
@@ -190,6 +203,15 @@ export interface ModerationPrefs {
   labelers: ModerationPrefsLabeler[]
   mutedWords: MutedWord[]
   hiddenPosts: AtUriString[]
+}
+
+export interface ModerationExternalViewOpts {
+  /**
+   * Client-selected text to check for muted words, such as a title,
+   * description, or image alt text. Omitted or empty means no word matching;
+   * text is never extracted from the view automatically.
+   */
+  texts?: string[]
 }
 
 export interface ModerationOpts {

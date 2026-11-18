@@ -10,7 +10,7 @@ TypeScript monorepo for Bluesky packages published under the [`@bsky`](https://w
 
 ## Development
 
-Requires Node.js >=22.12 and pnpm 11 (enforced via `devEngines`).
+Requires Node.js >=22.12 and pnpm 12 (enforced via `devEngines`).
 
 ```sh
 pnpm install
