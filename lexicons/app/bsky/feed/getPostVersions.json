@@ -25,7 +25,7 @@
             "uri": { "type": "string", "format": "at-uri" },
             "versions": {
               "type": "array",
-              "description": "Versions of the post, oldest first. Includes the current version, so an unedited post has a single entry. Each view describes the version at its CID: counts and viewer state are scoped to that CID, editedAt is when that version was indexed (absent on the original), and indexedAt is the original post's.",
+              "description": "Versions of the post, newest first. Includes the current version, so an unedited post has a single entry. Each view describes the version at its CID: counts and viewer state are scoped to that CID, editedAt is when that version was indexed (absent on the original), and indexedAt is the original post's.",
               "items": { "type": "ref", "ref": "app.bsky.feed.defs#postView" }
             }
           }
