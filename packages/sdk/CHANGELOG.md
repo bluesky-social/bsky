@@ -1,5 +1,15 @@
 # @atproto/api
 
+## 1.5.1
+
+### Patch Changes
+
+- [#90](https://github.com/bluesky-social/bsky/pull/90) [`fe2ebbe`](https://github.com/bluesky-social/bsky/commit/fe2ebbed667cc71e7c5acb832e717201570d801b) Thanks [@blackmichael](https://github.com/blackmichael)! - Add external embed data field to view lexicon
+
+- [#111](https://github.com/bluesky-social/bsky/pull/111) [`46902bd`](https://github.com/bluesky-social/bsky/commit/46902bdf3286a6f57468dc2ecab4adcfb44e6652) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add `viewer.like` to external article and gallery views, containing the requesting account's Standard.site recommendation or Grain favorite record URI. Sync the installed external lexicon with the canonical schema, including its existing `view.data` field.
+
+- [#110](https://github.com/bluesky-social/bsky/pull/110) [`2a1d731`](https://github.com/bluesky-social/bsky/commit/2a1d73194b6905535f309a160e8ca3b34484e9d0) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Add an optional `providerId` field for cosmetic attribution on external content views.
+
 ## 1.5.0
 
 ### Minor Changes
