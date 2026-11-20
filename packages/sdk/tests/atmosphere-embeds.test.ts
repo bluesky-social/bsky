@@ -23,6 +23,10 @@ const publication = external.viewArticlePublication.build({
   ...base,
   logo: 'https://example.test/logo.png',
   theme: { background: '#ffffff', foreground: '#000000', accent: '#ff0000' },
+  viewer: {
+    subscription:
+      'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/site.standard.graph.subscription/3m2lp5zsc7422',
+  },
   subscriptionCount: 3,
   subscribers: [profile],
 })
@@ -54,6 +58,7 @@ const gallery = external.viewGallery.build({
       aspectRatio: { width: 4, height: 3 },
     }),
   ],
+  photoCount: 0,
   likeCount: 0,
   likers: [profile],
 })
@@ -62,6 +67,7 @@ const livestream = external.viewLivestream.build({
   active: false,
   startedAt: '2026-10-16T12:00:00.000Z',
   endedAt: '2026-10-16T13:00:00.000Z',
+  lastSeenAt: '2026-10-16T12:59:00.000Z',
 })
 
 const views = [
@@ -150,6 +156,28 @@ describe('Atmosphere external embed views', () => {
     },
   )
 
+  it('validates optional publication subscription state', () => {
+    expect(external.viewArticlePublication.matches(base)).toBe(true)
+    expect(
+      external.viewArticlePublication.matches({ ...publication, viewer: {} }),
+    ).toBe(true)
+    expect(
+      external.viewArticlePublication.matches({
+        ...publication,
+        viewer: { subscription: 'not-an-at-uri' },
+      }),
+    ).toBe(false)
+  })
+
+  it('requires gallery photo counts to be non-negative integers', () => {
+    expect(external.viewGallery.matches({ ...gallery, photoCount: -1 })).toBe(
+      false,
+    )
+    expect(external.viewGallery.matches({ ...gallery, photoCount: 0.5 })).toBe(
+      false,
+    )
+  })
+
   it('requires gallery images to have thumbnail and fullsize URLs', () => {
     expect(external.viewGallery.matches({ ...base })).toBe(false)
     expect(external.viewGalleryImage.matches({ thumbnail: base.uri })).toBe(
@@ -175,6 +203,12 @@ describe('Atmosphere external embed views', () => {
     ).toBe(true)
     expect(
       external.viewLivestream.matches({ ...livestream, endedAt: 'yesterday' }),
+    ).toBe(false)
+    expect(
+      external.viewLivestream.matches({
+        ...livestream,
+        lastSeenAt: 'yesterday',
+      }),
     ).toBe(false)
   })
 })
