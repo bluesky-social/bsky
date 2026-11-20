@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.5.2
+
+### Patch Changes
+
+- [#112](https://github.com/bluesky-social/bsky/pull/112) [`10568c1`](https://github.com/bluesky-social/bsky/commit/10568c14656d87e6d7d3dfba7b6877fa1dd3a81e) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Sync external embed views with the canonical schema, adding publication viewer subscription state, gallery photo counts, and livestream heartbeat timestamps.
+
 ## 1.5.1
 
 ### Patch Changes
