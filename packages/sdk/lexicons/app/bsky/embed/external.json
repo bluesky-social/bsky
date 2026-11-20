@@ -344,6 +344,10 @@
           "type": "ref",
           "ref": "#viewArticlePublicationTheme"
         },
+        "viewer": {
+          "type": "ref",
+          "ref": "#viewArticlePublicationViewerState"
+        },
         "subscriptionCount": {
           "type": "integer",
           "minimum": 0
@@ -356,6 +360,17 @@
             "type": "ref",
             "ref": "app.bsky.actor.defs#profileViewBasic"
           }
+        }
+      }
+    },
+    "viewArticlePublicationViewerState": {
+      "type": "object",
+      "description": "Metadata about the requesting account's relationship with the subject publication. Only has meaningful content for authed requests.",
+      "properties": {
+        "subscription": {
+          "type": "string",
+          "format": "at-uri",
+          "description": "The requesting account's site.standard.graph.subscription record for this publication, if subscribed."
         }
       }
     },
@@ -435,6 +450,11 @@
             "refs": ["#viewGalleryImage"]
           },
           "description": "The media items in the gallery. Each item may be of a different type, but all types must be supported by the client."
+        },
+        "photoCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of gallery item backlinks, independent of the items included in this view."
         },
         "viewer": {
           "type": "ref",
@@ -553,6 +573,11 @@
         "endedAt": {
           "type": "string",
           "format": "datetime"
+        },
+        "lastSeenAt": {
+          "type": "string",
+          "format": "datetime",
+          "description": "When the livestream last reported that it was live. A livestream without endedAt is considered active until two minutes after its last heartbeat; clients can apply the same window to tell whether a cached view is still live."
         }
       }
     }
