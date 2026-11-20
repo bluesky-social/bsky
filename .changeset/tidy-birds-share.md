@@ -2,4 +2,4 @@
 '@bsky/sdk': patch
 ---
 
-Add optional provider identifiers to external content views.
+Add an optional `providerId` field for cosmetic attribution on external content views.

@@ -49,6 +49,16 @@
         "external": {
           "type": "ref",
           "ref": "#viewExternal"
+        },
+        "data": {
+          "type": "union",
+          "refs": [
+            "#viewArticle",
+            "#viewArticlePublication",
+            "#viewGallery",
+            "#viewLivestream"
+          ],
+          "description": "Hydrated modality-specific data for the external embed, when available."
         }
       }
     },
@@ -188,6 +198,11 @@
       "type": "object",
       "required": ["uri", "title", "description"],
       "properties": {
+        "providerId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Best-effort provider domain for cosmetic attribution, such as pckt.blog. Not verified provenance."
+        },
         "uri": {
           "type": "string",
           "format": "uri"
@@ -258,6 +273,11 @@
       "type": "object",
       "required": ["uri", "title", "description"],
       "properties": {
+        "providerId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Best-effort provider domain for cosmetic attribution, such as pckt.blog. Not verified provenance."
+        },
         "uri": {
           "type": "string",
           "format": "uri"
@@ -349,6 +369,11 @@
       "type": "object",
       "required": ["uri", "title", "description", "items"],
       "properties": {
+        "providerId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Best-effort provider domain for cosmetic attribution, such as grain.social. Not verified provenance."
+        },
         "uri": {
           "type": "string",
           "format": "uri"
@@ -439,6 +464,11 @@
       "type": "object",
       "required": ["uri", "title", "description", "active"],
       "properties": {
+        "providerId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Best-effort provider domain for cosmetic attribution, such as stream.place. Not verified provenance."
+        },
         "uri": {
           "type": "string",
           "format": "uri"
