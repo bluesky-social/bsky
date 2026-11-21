@@ -1,3 +1,4 @@
+import { defaultRuntime } from '#runtime'
 import {
   CloseCode,
   CloseError,
@@ -6,6 +7,7 @@ import {
   defaultShouldReconnect,
   websocket,
 } from '@atproto/ws-client'
+import { ProtocolError } from '../errors.js'
 
 // The WHATWG HeadersInit shape, spelled out because the ambient name isn't
 // in scope under this project's lib set. Narrower than undici's in one
@@ -22,6 +24,16 @@ export interface LiveTransportOpts {
    * for a static credential like an API key.
    */
   headers?: LiveTransportHeaders
+  /**
+   * Spaces mode only. When set, the transport must call it with the upgrade
+   * response headers of EVERY accepted connection (including reconnects)
+   * before yielding that connection's first frame, and end the stream with
+   * the error if it throws. Spaces mode verifies the negotiated protocol
+   * (and progress acknowledgement) this way; a transport that cannot observe
+   * upgrade responses must throw rather than ignore it, and a stream that
+   * yields a frame without ever reporting headers is rejected.
+   */
+  onUpgrade?: (headers: Headers) => void
 }
 
 export interface LiveTransport {
@@ -141,14 +153,79 @@ export function websocketTransport(
   const resolved = resolveWebsocketOptions(options)
   return {
     stream(getUrl, signal, opts) {
+      const headers = mergeHeaders(resolved.headers, opts?.headers)
+      if (opts?.onUpgrade) {
+        return verifiedStream(resolved, getUrl, signal, headers, opts.onUpgrade)
+      }
       // getUrl is passed straight through: websocket() re-resolves a function
       // url on every (re)connection, which is exactly the resume-cursor
       // contract stream() requires.
-      return websocket(getUrl, {
-        ...resolved,
-        signal,
-        headers: mergeHeaders(resolved.headers, opts?.headers),
-      })
+      return websocket(getUrl, { ...resolved, signal, headers })
     },
+  }
+}
+
+// The same websocket stream, with each connection's upgrade response handed
+// to onUpgrade before any of its frames is yielded. The response is captured
+// by the runtime's upgrade observer (the websocket client does not expose
+// it) and checked when the connection opens; a failed check aborts the
+// stream with that error.
+async function* verifiedStream(
+  resolved: WebSocketOptions<'text'> & { dataMode: 'text' },
+  getUrl: () => string,
+  signal: AbortSignal,
+  headers: WebSocketOptions<'text'>['headers'],
+  onUpgrade: (headers: Headers) => void,
+): AsyncGenerator<string> {
+  const observer = defaultRuntime.upgradeObserver()
+  if (!observer) {
+    throw new ProtocolError(
+      'jetstream: this platform cannot observe WebSocket upgrade response headers, which Spaces mode must verify; supply a liveTransport that reports them (LiveTransportOpts.onUpgrade)',
+    )
+  }
+  const inner = new AbortController()
+  const forwardAbort = () => inner.abort(signal.reason)
+  if (signal.aborted) forwardAbort()
+  else signal.addEventListener('abort', forwardAbort, { once: true })
+  let observed: Headers | undefined
+  let failure: unknown
+  const iterator = websocket(getUrl, {
+    ...resolved,
+    signal: inner.signal,
+    headers,
+    onConnect(sender) {
+      resolved.onConnect?.(sender)
+      const upgrade = observed
+      observed = undefined
+      try {
+        if (!upgrade) {
+          throw new ProtocolError(
+            'jetstream: WebSocket upgrade response headers were not observed',
+          )
+        }
+        onUpgrade(upgrade)
+      } catch (err) {
+        failure ??= err
+        inner.abort(err)
+      }
+    },
+  })[Symbol.asyncIterator]()
+  try {
+    for (;;) {
+      const next = await observer.observe(
+        (h) => {
+          observed = h
+        },
+        () => iterator.next(),
+      )
+      if (failure !== undefined) throw failure
+      if (next.done) return
+      yield next.value
+    }
+  } catch (err) {
+    throw failure ?? err
+  } finally {
+    signal.removeEventListener('abort', forwardAbort)
+    await iterator.return(undefined)
   }
 }

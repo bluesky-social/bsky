@@ -1,16 +1,17 @@
 import { rawEventFromSegment } from '../decode-event.js'
-import { type EventBatch, type RawEvent } from '../event.js'
+import { type EventBatch, type RawSpacesEvent } from '../event.js'
 import { type RawRecordCbor } from '../raw-record.js'
 import { type Decompressor, type Sha256 } from '../runtime/interface.js'
 import { decodeBlockFrame } from '../segment/block.js'
-import { type PlanEntry } from '../xrpc/plan.js'
+import { type SpacesPlanEntry } from '../xrpc/plan.js'
+import { type SpacesProtocol } from '../xrpc/protocol.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
 import { blockSource } from './block-source.js'
 import { type RowSelector } from './selector.js'
 
 export interface BackfillPipelineOpts {
   host: string
-  entries: PlanEntry[]
+  entries: SpacesPlanEntry[]
   selector: RowSelector
   fetchImpl: typeof fetch
   decompressor: Decompressor
@@ -21,17 +22,20 @@ export interface BackfillPipelineOpts {
   blockConcurrency?: number
   retry?: RetryPolicy
   validateWire?: boolean
+  /** The operation's Spaces contract; absent is the public archive. */
+  protocol?: SpacesProtocol
 }
 
 /**
  * Decompresses + decodes each block frame from blockSource into one
  * EventBatch per block, selector-filtered, in seq order. Fail-fast: a decode
  * error (MalformedError) or a propagating DownloadError throws after the
- * clean ascending prefix already yielded — never skips a block.
+ * clean ascending prefix already yielded — never skips a block. Public
+ * (format-1) rows come out as plain v2 RawEvents.
  */
 export async function* backfillBatches(
   opts: BackfillPipelineOpts,
-): AsyncGenerator<EventBatch<RawEvent<RawRecordCbor>>> {
+): AsyncGenerator<EventBatch<RawSpacesEvent<RawRecordCbor>>> {
   for await (const chunk of blockSource({
     host: opts.host,
     entries: opts.entries,
@@ -41,13 +45,15 @@ export async function* backfillBatches(
     tailHwmBytes: opts.tailHwmBytes,
     blockConcurrency: opts.blockConcurrency,
     retry: opts.retry,
+    protocol: opts.protocol,
   })) {
     const rows = decodeBlockFrame(
       chunk.frame,
       opts.decompressor,
       opts.selector.keepRow,
+      chunk.format,
     )
-    const events: RawEvent<RawRecordCbor>[] = []
+    const events: RawSpacesEvent<RawRecordCbor>[] = []
     let lastCursor = 0
     for (const r of rows) {
       const ev = rawEventFromSegment(r, {

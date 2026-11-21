@@ -39,6 +39,12 @@ export class JetstreamV1 {
 
   constructor(service: string | JetstreamOpts) {
     const opts = typeof service === 'string' ? { service } : service
+    // Spaces archives exist only on the v2 endpoint family.
+    if (opts.mode !== undefined && opts.mode !== 'public') {
+      throw new TypeError(
+        `JetstreamV1 speaks only the public v1 wire (got mode ${JSON.stringify(opts.mode)})`,
+      )
+    }
     this.service = opts.service
     this.opts = opts
   }

@@ -12,8 +12,10 @@ import {
   type Account,
   type Identity,
   type RawCommit,
-  type RawEvent,
   type RawPutCommit,
+  type RawSpacesEvent,
+  type ScopeRepoRemoved,
+  type ScopeSpaceDeleted,
   type Sync,
 } from './event.js'
 import { type RawRecordCbor } from './raw-record.js'
@@ -124,19 +126,37 @@ export interface DecodeEventOpts {
   validateWire?: boolean
 }
 
-/** Upgrades one decoded segment row to a v2 raw event. */
+/**
+ * Upgrades one decoded segment row to a raw event. Format-1 rows (the only
+ * rows a public archive serves) always come out as plain v2 RawEvents; only a
+ * format-2 row can carry a space or be a scope marker.
+ */
 export function rawEventFromSegment(
   ev: SegEvent,
   opts: DecodeEventOpts,
-): RawEvent<RawRecordCbor> {
+): RawSpacesEvent<RawRecordCbor> {
   const { sha256, validateWire } = opts
   // Same display-time rule as the server's live encoder: an imported
   // indexedAt (nonzero) wins; otherwise the witnessed time.
   const timeUs = ev.indexedAt !== 0 ? ev.indexedAt : ev.witnessedAt
-  const base = {
-    did: ev.did,
-    seq: ev.seq,
-    time: microsToDatetime(timeUs),
+  const time = microsToDatetime(timeUs)
+  if (ev.kind === SegKind.Scope) {
+    return scopeEventFromSegment(ev, time, validateWire)
+  }
+  const base = { did: ev.did, seq: ev.seq, time }
+  // `space` is added only when present: a public-namespace event has no key
+  // at all, so public events are unchanged object-for-object (and public
+  // rows allocate nothing extra).
+  let scoped: typeof base & { space?: string } = base
+  if (ev.space !== '') {
+    // Identity and account are global account lifecycle events; a space on
+    // one is not representable, and dropping it would widen its effect.
+    if (ev.kind === SegKind.Identity || ev.kind === SegKind.Account) {
+      throw new MalformedError(
+        `global ${ev.kind === SegKind.Identity ? 'identity' : 'account'} row carries a space (seq=${ev.seq})`,
+      )
+    }
+    scoped = { ...base, space: ev.space }
   }
   switch (ev.kind) {
     case SegKind.Create:
@@ -160,7 +180,7 @@ export function rawEventFromSegment(
           rkey: ev.rkey,
           rev: ev.rev,
         }
-        return { ...base, kind: 'commit', commit }
+        return { ...scoped, kind: 'commit', commit }
       }
       if (!ev.payload) throw new MalformedError('put commit missing payload')
       const commit: RawCommit<RawRecordCbor> = buildRawPutCommit(
@@ -171,7 +191,7 @@ export function rawEventFromSegment(
         ev.payload,
         sha256,
       )
-      return { ...base, kind: 'commit', commit }
+      return { ...scoped, kind: 'commit', commit }
     }
     case SegKind.Identity: {
       const m = (
@@ -227,9 +247,77 @@ export function rawEventFromSegment(
         rev: m.rev ?? ('' as Sync['rev']),
         time: m.time,
       }
-      return { ...base, kind: 'sync', sync }
+      return { ...scoped, kind: 'sync', sync }
     }
   }
+  throw new MalformedError(`unknown segment kind ${String(ev.kind)}`)
+}
+
+const SCOPE_FIELDS = ['operation', 'cause', 'lastKnownRev']
+
+/**
+ * A scope row: the outer row carries space, the removed author (repoRemoved
+ * only), seq and time; the payload is the canonical DAG-CBOR map of
+ * operation and optional cause/lastKnownRev. Strict in every mode — this is
+ * a lifecycle statement, so a misread would purge the wrong data.
+ */
+function scopeEventFromSegment(
+  ev: SegEvent,
+  time: DatetimeString,
+  validateWire: boolean | undefined,
+): RawSpacesEvent<RawRecordCbor> {
+  const fail = (why: string): never => {
+    throw new MalformedError(`invalid scope row (seq=${ev.seq}): ${why}`)
+  }
+  if (!ev.payload?.length) fail('missing payload')
+  let m: unknown
+  try {
+    m = cborDecode(ev.payload!)
+  } catch (err) {
+    throw new MalformedError(`invalid scope row (seq=${ev.seq}): payload`, {
+      cause: err,
+    })
+  }
+  if (typeof m !== 'object' || m === null || Array.isArray(m)) {
+    fail('payload is not a map')
+  }
+  const fields = m as Record<string, unknown>
+  for (const key of Object.keys(fields)) {
+    if (!SCOPE_FIELDS.includes(key)) fail(`unknown field ${key}`)
+    if (typeof fields[key] !== 'string') fail(`${key} is not a string`)
+  }
+  const { operation, cause, lastKnownRev } = fields as {
+    operation?: string
+    cause?: string
+    lastKnownRev?: string
+  }
+  if (ev.space === '') fail('missing space')
+  if (ev.collection.length + ev.rkey.length + ev.rev.length !== 0) {
+    fail('scope rows carry no record path or revision')
+  }
+  const extra = {
+    ...(cause !== undefined ? { cause } : {}),
+    ...(lastKnownRev !== undefined ? { lastKnownRev } : {}),
+  }
+  if (operation === 'repoRemoved') {
+    if (ev.did.length === 0) fail('repoRemoved without did')
+    if (validateWire) validateRow(rowDidSchema, ev, 'scope row')
+    const scope: ScopeRepoRemoved = { operation, did: ev.did, ...extra }
+    return {
+      seq: ev.seq,
+      time,
+      space: ev.space,
+      did: ev.did,
+      kind: 'scope',
+      scope,
+    }
+  }
+  if (operation === 'spaceDeleted') {
+    if (ev.did.length !== 0) fail('spaceDeleted with did')
+    const scope: ScopeSpaceDeleted = { operation, ...extra }
+    return { seq: ev.seq, time, space: ev.space, kind: 'scope', scope }
+  }
+  return fail(`unknown operation ${JSON.stringify(operation)}`)
 }
 
 function validateRow(

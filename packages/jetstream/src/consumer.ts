@@ -4,7 +4,10 @@ import {
   type EventBatch,
   type Kind,
   type RawEvent,
+  type RawSpacesEvent,
   type SeqEvent,
+  type SpacesEventBatch,
+  type SpacesKind,
 } from './event.js'
 
 /**
@@ -45,6 +48,29 @@ export interface JetstreamConsumer {
   kinds?: Kind[]
   run(
     stream: AsyncIterable<EventBatch<RawEvent>>,
+    ctx: ConsumerContext,
+  ): Promise<void>
+}
+
+/**
+ * The consumer contract for a Spaces runner (`new Jetstream({ mode:
+ * 'spaces' })`). The stream carries Spaces events — `space` on commits and
+ * syncs, scope markers — and, with progress, progress-only batches whose
+ * coverage the runner checkpoints once every earlier event is acked.
+ *
+ * `mode: 'spaces'` is the consumer's declaration that it applies lifecycle
+ * events (scope, scoped sync, account) in order with respect to record
+ * writes; a repository reset or space deletion affects many records, so a
+ * per-record concurrency key alone cannot order it. LexIndexer in Spaces
+ * mode does this by running handlers serially.
+ */
+export interface SpacesConsumer {
+  readonly mode: 'spaces'
+  collections?: CollectionFilter[]
+  dids?: DidString[]
+  kinds?: SpacesKind[]
+  run(
+    stream: AsyncIterable<SpacesEventBatch<RawSpacesEvent>>,
     ctx: ConsumerContext,
   ): Promise<void>
 }

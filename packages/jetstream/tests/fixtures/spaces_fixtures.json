@@ -1,0 +1,255 @@
+{
+  "description": "Spaces (format v2) fixtures generated from github.com/bluesky-social/jetstream segment package. Payloads are lowercase hex DAG-CBOR (null when empty). Timestamps are unix microseconds.",
+  "kindCodes": {
+    "account": 5,
+    "create": 1,
+    "createResync": 7,
+    "delete": 3,
+    "identity": 4,
+    "scope": 8,
+    "sync": 6,
+    "update": 2
+  },
+  "block": {
+    "file": "spaces_block_v2.bin",
+    "formatVersion": 2,
+    "rows": [
+      {
+        "seq": 1,
+        "witnessedAt": 1793448000001000,
+        "indexedAt": 0,
+        "kind": 1,
+        "space": "",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "app.example.note",
+        "rkey": "3l3qo2vutsw2b",
+        "rev": "3l3qo2vuowo2b",
+        "payload": "a26474657874667075626c6963652474797065706170702e6578616d706c652e6e6f7465"
+      },
+      {
+        "seq": 2,
+        "witnessedAt": 1793448000002000,
+        "indexedAt": 0,
+        "kind": 1,
+        "space": "space:a",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "app.example.note",
+        "rkey": "3l3qo2vutsw2b",
+        "rev": "3l3qo2vuqbk2b",
+        "payload": "a264746578746161652474797065706170702e6578616d706c652e6e6f7465"
+      },
+      {
+        "seq": 3,
+        "witnessedAt": 1793448000003000,
+        "indexedAt": 0,
+        "kind": 3,
+        "space": "space:b",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "app.example.note",
+        "rkey": "3l3qo2vutsw2b",
+        "rev": "3l3qo2vurgs2b",
+        "payload": null
+      },
+      {
+        "seq": 4,
+        "witnessedAt": 1793448000004000,
+        "indexedAt": 0,
+        "kind": 6,
+        "space": "space:a",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "",
+        "rkey": "",
+        "rev": "3l3qo2vusxc2b",
+        "payload": "a56364696478206469643a706c633a65777669376e787a796f756e367a687872687336346f697a637265766d336c33716f327675737863326263736571046474696d657818323032362d31302d33315431323a30303a30302e3030345a66626c6f636b7340"
+      },
+      {
+        "seq": 5,
+        "witnessedAt": 1793448000005000,
+        "indexedAt": 0,
+        "kind": 8,
+        "space": "space:b",
+        "did": "did:plc:4qtfnvqsjsl2bc6ut7ezqzhb",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a365636175736575617574686f726974794e6f74696669636174696f6e696f7065726174696f6e6b7265706f52656d6f7665646c6c6173744b6e6f776e5265766d336c33716f3276757473773262"
+      },
+      {
+        "seq": 6,
+        "witnessedAt": 1793448000006000,
+        "indexedAt": 0,
+        "kind": 8,
+        "space": "space:c",
+        "did": "",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a1696f7065726174696f6e6c737061636544656c65746564"
+      },
+      {
+        "seq": 7,
+        "witnessedAt": 1793448000007000,
+        "indexedAt": 0,
+        "kind": 5,
+        "space": "",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a46364696478206469643a706c633a65777669376e787a796f756e367a687872687336346f697a63736571076474696d657818323032362d31302d33315431323a30303a30302e3030375a66616374697665f5"
+      },
+      {
+        "seq": 8,
+        "witnessedAt": 1793448000008000,
+        "indexedAt": 0,
+        "kind": 4,
+        "space": "",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a46364696478206469643a706c633a65777669376e787a796f756e367a687872687336346f697a63736571086474696d657818323032362d31302d33315431323a30303a30302e3030385a6668616e646c656a616c6963652e74657374"
+      },
+      {
+        "seq": 9,
+        "witnessedAt": 1793448000009000,
+        "indexedAt": 1793447995000000,
+        "kind": 2,
+        "space": "space:a",
+        "did": "did:plc:4qtfnvqsjsl2bc6ut7ezqzhb",
+        "collection": "com.example.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.longRecordName",
+        "rkey": "3l3qo2vutsw2b-kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "rev": "3l3qo2vuwbs2b",
+        "payload": "a26474657874696c6f6e67207061746865247479706579011a636f6d2e6578616d706c652e6161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161612e6262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262622e6363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363632e6464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464642e6c6f6e675265636f72644e616d65"
+      }
+    ]
+  },
+  "emptyBlock": {
+    "file": "spaces_block_v2_empty.bin",
+    "formatVersion": 2,
+    "eventCount": 0,
+    "note": "produced by segment.Rewrite dropping every row of a sealed v2 block, then segment.ReadBlockFrame"
+  },
+  "segment": {
+    "file": "spaces_seal_v2.bin",
+    "version": 2,
+    "blockCount": 3,
+    "eventCount": 9,
+    "minSeq": 1,
+    "maxSeq": 9,
+    "minWitnessedAt": 1793448000001000,
+    "maxWitnessedAt": 1793448000009000,
+    "maxEventsPerBlock": 3,
+    "blockRowCounts": [3, 3, 3],
+    "rows": [
+      {
+        "seq": 1,
+        "witnessedAt": 1793448000001000,
+        "indexedAt": 0,
+        "kind": 1,
+        "space": "",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "app.example.note",
+        "rkey": "3l3qo2vutsw2b",
+        "rev": "3l3qo2vuowo2b",
+        "payload": "a26474657874667075626c6963652474797065706170702e6578616d706c652e6e6f7465"
+      },
+      {
+        "seq": 2,
+        "witnessedAt": 1793448000002000,
+        "indexedAt": 0,
+        "kind": 1,
+        "space": "space:a",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "app.example.note",
+        "rkey": "3l3qo2vutsw2b",
+        "rev": "3l3qo2vuqbk2b",
+        "payload": "a264746578746161652474797065706170702e6578616d706c652e6e6f7465"
+      },
+      {
+        "seq": 3,
+        "witnessedAt": 1793448000003000,
+        "indexedAt": 0,
+        "kind": 3,
+        "space": "space:b",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "app.example.note",
+        "rkey": "3l3qo2vutsw2b",
+        "rev": "3l3qo2vurgs2b",
+        "payload": null
+      },
+      {
+        "seq": 4,
+        "witnessedAt": 1793448000004000,
+        "indexedAt": 0,
+        "kind": 6,
+        "space": "space:a",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "",
+        "rkey": "",
+        "rev": "3l3qo2vusxc2b",
+        "payload": "a56364696478206469643a706c633a65777669376e787a796f756e367a687872687336346f697a637265766d336c33716f327675737863326263736571046474696d657818323032362d31302d33315431323a30303a30302e3030345a66626c6f636b7340"
+      },
+      {
+        "seq": 5,
+        "witnessedAt": 1793448000005000,
+        "indexedAt": 0,
+        "kind": 8,
+        "space": "space:b",
+        "did": "did:plc:4qtfnvqsjsl2bc6ut7ezqzhb",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a365636175736575617574686f726974794e6f74696669636174696f6e696f7065726174696f6e6b7265706f52656d6f7665646c6c6173744b6e6f776e5265766d336c33716f3276757473773262"
+      },
+      {
+        "seq": 6,
+        "witnessedAt": 1793448000006000,
+        "indexedAt": 0,
+        "kind": 8,
+        "space": "space:c",
+        "did": "",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a1696f7065726174696f6e6c737061636544656c65746564"
+      },
+      {
+        "seq": 7,
+        "witnessedAt": 1793448000007000,
+        "indexedAt": 0,
+        "kind": 5,
+        "space": "",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a46364696478206469643a706c633a65777669376e787a796f756e367a687872687336346f697a63736571076474696d657818323032362d31302d33315431323a30303a30302e3030375a66616374697665f5"
+      },
+      {
+        "seq": 8,
+        "witnessedAt": 1793448000008000,
+        "indexedAt": 0,
+        "kind": 4,
+        "space": "",
+        "did": "did:plc:ewvi7nxzyoun6zhxrhs64oiz",
+        "collection": "",
+        "rkey": "",
+        "rev": "",
+        "payload": "a46364696478206469643a706c633a65777669376e787a796f756e367a687872687336346f697a63736571086474696d657818323032362d31302d33315431323a30303a30302e3030385a6668616e646c656a616c6963652e74657374"
+      },
+      {
+        "seq": 9,
+        "witnessedAt": 1793448000009000,
+        "indexedAt": 1793447995000000,
+        "kind": 2,
+        "space": "space:a",
+        "did": "did:plc:4qtfnvqsjsl2bc6ut7ezqzhb",
+        "collection": "com.example.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd.longRecordName",
+        "rkey": "3l3qo2vutsw2b-kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "rev": "3l3qo2vuwbs2b",
+        "payload": "a26474657874696c6f6e67207061746865247479706579011a636f6d2e6578616d706c652e6161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161616161612e6262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262626262622e6363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363632e6464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464646464642e6c6f6e675265636f72644e616d65"
+      }
+    ]
+  }
+}

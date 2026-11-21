@@ -7,12 +7,16 @@ export const SegKind = {
   Account: 5,
   Sync: 6,
   CreateResync: 7,
+  /** Format 2 only: a service-owned space lifecycle marker. */
+  Scope: 8,
 } as const
 
 export type SegKind = (typeof SegKind)[keyof typeof SegKind]
 
-export function isValidKind(n: number): boolean {
-  return n >= SegKind.Create && n <= SegKind.CreateResync
+/** Whether `n` is a kind code the given segment format can carry. */
+export function isValidKind(n: number, formatVersion: 1 | 2 = 1): boolean {
+  const max = formatVersion === 2 ? SegKind.Scope : SegKind.CreateResync
+  return n >= SegKind.Create && n <= max
 }
 
 export function isCommitKind(k: number): boolean {

@@ -2,11 +2,15 @@ import { type DidString } from '@atproto/lex'
 import { backfillBatches } from '../engine/backfill-pipeline.js'
 import { planPages } from '../engine/planner.js'
 import { makeSelector } from '../engine/selector.js'
-import { type EventBatch, type Kind, type RawEvent } from '../event.js'
+import {
+  type RawSpacesEvent,
+  type SpacesEventBatch,
+  type SpacesKind,
+} from '../event.js'
 import { type Decompressor, type Sha256 } from '../runtime/interface.js'
 import { DownloadError } from '../xrpc/errors.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
-import { liveEvents } from './source.js'
+import { Coverage, type SpacesLiveContract, liveEvents } from './source.js'
 import {
   type LiveTransport,
   type LiveTransportHeaders,
@@ -17,7 +21,7 @@ export interface CutoverParams {
   host: string
   nsids: string[]
   dids?: DidString[]
-  kinds?: Kind[]
+  kinds?: readonly SpacesKind[]
   afterSeq?: number
   beforeSeq?: number
   outstandingHwmBytes?: number
@@ -36,6 +40,12 @@ export interface CutoverParams {
   maxReplans?: number
   retry?: RetryPolicy
   validateWire?: boolean
+  /**
+   * The Spaces contract selected once for this whole replay: reused by every
+   * plan page, download, re-plan, cursor-too-old re-backfill and reconnect.
+   * Absent is the unchanged public replay.
+   */
+  spaces?: Omit<SpacesLiveContract, 'coverage'>
 }
 
 // The server rejects a below-retention seq cursor pre-upgrade with an HTTP
@@ -70,7 +80,7 @@ function isCursorTooOld(err: unknown): boolean {
  */
 export async function* cutoverReplay(
   ctx: CutoverParams,
-): AsyncGenerator<EventBatch<RawEvent>> {
+): AsyncGenerator<SpacesEventBatch<RawSpacesEvent>> {
   if (ctx.signal?.aborted) return
 
   const maxReplans = ctx.maxReplans ?? 50
@@ -91,8 +101,14 @@ export async function* cutoverReplay(
   // uniform across the two phases. Only when non-empty: no kinds pays zero
   // overhead.
   const kindsFilter =
-    ctx.kinds && ctx.kinds.length > 0 ? new Set(ctx.kinds) : undefined
-
+    ctx.kinds && ctx.kinds.length > 0 ? new Set<string>(ctx.kinds) : undefined
+  const protocol = ctx.spaces?.protocol
+  // Spaces progress: one coverage for the whole replay, so sealed pages, the
+  // live tail and every re-backfill certify monotonically, and a skip in any
+  // phase stops certification for the rest of the run. Everything at or
+  // below the starting floor is the caller's (already covered); zero is
+  // valid coverage for an empty archive.
+  const coverage = ctx.spaces?.progress ? new Coverage(resume - 1) : undefined
   for (;;) {
     // Backfill phase: page the sealed archive, pinning the tip from page 1.
     // A DownloadError re-plans the residual (lastEmitted, tip] (bounded by
@@ -114,6 +130,7 @@ export async function* cutoverReplay(
           beforeSeq: ctx.beforeSeq,
           fetchImpl: ctx.fetchImpl,
           signal: ctx.signal,
+          protocol,
         })) {
           sealedTip = page.sealedTipSeq
           for await (const batch of backfillBatches({
@@ -129,6 +146,7 @@ export async function* cutoverReplay(
             signal: ctx.signal,
             retry: ctx.retry,
             validateWire: ctx.validateWire,
+            protocol,
           })) {
             if (batch.lastCursor > lastEmitted) lastEmitted = batch.lastCursor
             // lastCursor is preserved even when events were pruned: the
@@ -140,6 +158,18 @@ export async function* cutoverReplay(
                   lastCursor: batch.lastCursor,
                 }
               : batch
+          }
+          // The page is fully delivered: every sealed row through
+          // plannedThroughSeq that could match was planned (the plan has no
+          // false negatives) and has now been yielded or filtered. Sealed
+          // coverage never claims the live edge (caughtUp false).
+          const sealed = {
+            kind: 'progress',
+            throughSeq: page.plannedThroughSeq,
+            caughtUp: false,
+          } as const
+          if (coverage?.admit(sealed)) {
+            yield { events: [], lastCursor: 0, progress: sealed }
           }
         }
         break
@@ -173,7 +203,7 @@ export async function* cutoverReplay(
     try {
       // Trivial single-event "batches" with no buffering — a size-N batcher
       // stalls on low-throughput streams (see Jetstream.liveRawBatches).
-      for await (const ev of liveEvents({
+      const liveOpts = {
         host: ctx.host,
         collections: ctx.nsids,
         dids: ctx.dids,
@@ -186,9 +216,17 @@ export async function* cutoverReplay(
         onError: ctx.onError,
         onInfo: ctx.onInfo,
         validateWire: ctx.validateWire,
-      })) {
-        lastDelivered = ev.seq
-        yield { events: [ev], lastCursor: ev.seq }
+      }
+      const live = ctx.spaces
+        ? liveEvents({ ...liveOpts, spaces: { ...ctx.spaces, coverage } })
+        : liveEvents(liveOpts)
+      for await (const item of live) {
+        if (item.kind === 'progress') {
+          yield { events: [], lastCursor: 0, progress: item }
+          continue
+        }
+        lastDelivered = item.seq
+        yield { events: [item], lastCursor: item.seq }
       }
       return // transport ended cleanly / signal abort
     } catch (err) {

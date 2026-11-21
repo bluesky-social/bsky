@@ -1,5 +1,5 @@
 import { type SegEvent } from '../segment/block.js'
-import { type SegKind, isCommitKind } from '../segment/kind.js'
+import { SegKind, isCommitKind } from '../segment/kind.js'
 import { collectionMatches } from './collections.js'
 
 /**
@@ -45,10 +45,17 @@ export function makeSelector(opts: {
       if (seq <= window.afterSeq) return false
       if (window.beforeSeq !== undefined && seq > window.beforeSeq) return false
     }
-    // The DID filter applies to all kinds.
-    if (didSet && !didSet.has(did)) return false
+    // The DID filter applies to all kinds, except that a spaceDeleted scope
+    // marker has no author and must reach every DID-filtered consumer that
+    // may hold rows in that space (the server's subscribe policy). A
+    // repoRemoved marker carries its author and is narrowed like any row.
+    if (didSet && !didSet.has(did) && !(kind === SegKind.Scope && did === '')) {
+      return false
+    }
     // The collection filter applies only to commit events with a non-empty
-    // collection; identity/account/sync bypass it, matching the live wire.
+    // collection; identity/account/sync/scope bypass it, matching the live
+    // wire: lifecycle events are a collection-filtered consumer's only signal
+    // to purge the records it holds.
     if (isCommitKind(kind) && collection !== '') {
       if (!collectionMatches(collection, opts.collections)) return false
     }

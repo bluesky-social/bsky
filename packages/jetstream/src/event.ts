@@ -16,6 +16,20 @@ export type Operation = 'create' | 'update' | 'delete'
 export type Kind = 'commit' | 'identity' | 'account' | 'sync'
 /** Event kinds on the frozen v1 wire — it never emits sync. */
 export type KindV1 = 'commit' | 'identity' | 'account'
+/**
+ * Event kinds on a Spaces archive (protocolVersion=2): the v2 kinds plus
+ * `scope`. Deliberately separate from Kind so public exhaustive switches and
+ * `Record<Kind, …>` maps keep compiling.
+ */
+export type SpacesKind = Kind | 'scope'
+
+/**
+ * Which data contract a Jetstream instance speaks. `public` (the default) is
+ * the public Jetstream v2 wire, byte-for-byte unchanged; `spaces` is the
+ * space-sync archive contract (protocolVersion=2, archive format 2, scope
+ * events), selected only explicitly.
+ */
+export type JetstreamMode = 'public' | 'spaces'
 
 /**
  * The minimal envelope the cursor/dedup/batching/tracking machinery needs. Both
@@ -135,6 +149,95 @@ export type RawEventV1 =
   | (EventBaseV1 & { kind: 'account'; account: Account })
 
 /**
+ * A scope marker's payload: a sequenced, service-owned lifecycle statement,
+ * not an authored deletion. `lastKnownRev` is the last observed source
+ * revision, never a removal revision.
+ */
+export interface ScopeRepoRemoved {
+  operation: 'repoRemoved'
+  /** The author whose repository was removed from the event's space. */
+  did: DidString
+  cause?: string
+  lastKnownRev?: string
+}
+/** The whole space was deleted; there is no author. See ScopeRepoRemoved. */
+export interface ScopeSpaceDeleted {
+  operation: 'spaceDeleted'
+  cause?: string
+  lastKnownRev?: string
+}
+export type Scope = ScopeRepoRemoved | ScopeSpaceDeleted
+
+/**
+ * A Spaces `scope` event. `space` is always present. repoRemoved carries the
+ * removed author in `did` (also on `scope.did`); spaceDeleted has no author,
+ * so `did` is absent — narrow on `scope.operation`.
+ */
+export type SpaceScopeEvent =
+  | {
+      seq: number
+      time: DatetimeString
+      space: string
+      did: DidString
+      kind: 'scope'
+      scope: ScopeRepoRemoved
+    }
+  | {
+      seq: number
+      time: DatetimeString
+      space: string
+      did?: undefined
+      kind: 'scope'
+      scope: ScopeSpaceDeleted
+    }
+
+// Commit and sync events may carry the SpaceRef namespace they belong to;
+// absent means the public namespace. `did` stays the original author.
+// Identity and account events are global account lifecycle events and never
+// carry one (typed `undefined` so `ev.space` reads on the whole union).
+type Scoped = { space?: string }
+type Global = { space?: undefined }
+
+/** A Spaces live or archive event (see JetstreamMode). */
+export type RawSpacesEvent<T extends RawRecord = RawRecord> =
+  | (EventBase & Scoped & { kind: 'commit'; commit: RawCommit<T> })
+  | (EventBase & Global & { kind: 'identity'; identity: Identity })
+  | (EventBase & Global & { kind: 'account'; account: Account })
+  | (EventBase & Scoped & { kind: 'sync'; sync: Sync })
+  | SpaceScopeEvent
+
+/** The typed form of RawSpacesEvent. */
+export type TypedSpacesEvent<R = TypedLexMap> =
+  | (EventBase & Scoped & { kind: 'commit'; commit: TypedCommit<R> })
+  | (EventBase & Global & { kind: 'identity'; identity: Identity })
+  | (EventBase & Global & { kind: 'account'; account: Account })
+  | (EventBase & Scoped & { kind: 'sync'; sync: Sync })
+  | SpaceScopeEvent
+
+/**
+ * Ordered coverage (Spaces, opt-in via `progress: true`): every eligible
+ * event with seq <= throughSeq has already been delivered before this value,
+ * including rows the filters dropped. Zero is valid (an empty archive). It is
+ * not an event and never moves the event cursor. `caughtUp` is true only once
+ * a live subscription scanned through the live edge pinned when it connected;
+ * sealed-archive coverage never sets it.
+ */
+export interface JetstreamProgress {
+  kind: 'progress'
+  throughSeq: number
+  caughtUp: boolean
+}
+
+/** A Spaces raw batch: events, then (optionally) coverage after them. */
+export interface SpacesEventBatch<E> extends EventBatch<E> {
+  /**
+   * Coverage through the end of this batch. A progress-only batch has no
+   * events and a lastCursor of 0 — never use that lastCursor as coverage.
+   */
+  progress?: JetstreamProgress
+}
+
+/**
  * Default per-key serialization key for concurrent indexers: the record path
  * of a commit event, or the bare DID for non-commit kinds. This is ONLY a
  * concurrency key — it needs stability and per-record uniqueness, not AT-URI
@@ -151,4 +254,26 @@ export function eventUri(ev: {
     return `at://${ev.did}/${ev.commit.collection}/${ev.commit.rkey}`
   }
   return ev.did
+}
+
+/**
+ * The identity of a record on a Spaces archive: (space, author DID,
+ * collection, rkey), as one opaque, injective string key. The same record
+ * path can exist in the public namespace and in several spaces, so an at://
+ * URI (which has no space) is not a unique key there. An absent `space` is
+ * the public namespace. Accepts handler inputs (PutEvent, DelEvent) directly;
+ * for a raw event pass `{ space: ev.space, did: ev.did, ...ev.commit }`.
+ */
+export function scopedRecordKey(record: {
+  space?: string
+  did: string
+  collection: string
+  rkey: string
+}): string {
+  return JSON.stringify([
+    record.space ?? '',
+    record.did,
+    record.collection,
+    record.rkey,
+  ])
 }
