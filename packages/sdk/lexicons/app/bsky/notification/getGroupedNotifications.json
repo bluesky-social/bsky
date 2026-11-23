@@ -580,6 +580,5 @@
       "description": "An actor joined Bluesky via a starter pack created by the requesting account."
     }
   },
-  "$type": "com.atproto.lexicon.schema",
   "lexicon": 1
 }
