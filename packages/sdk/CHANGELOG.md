@@ -1,5 +1,11 @@
 # @atproto/api
 
+## 1.5.3
+
+### Patch Changes
+
+- [#117](https://github.com/bluesky-social/bsky/pull/117) [`b61db19`](https://github.com/bluesky-social/bsky/commit/b61db19a1aef0559fb66ea27e8fec8828cf08164) Thanks [@estrattonbailey](https://github.com/estrattonbailey)! - Sync external embed viewer state with followed liker and publication subscriber previews and counts. Deprecate general article and gallery liker previews in favor of viewer.knownLikers.
+
 ## 1.5.2
 
 ### Patch Changes
