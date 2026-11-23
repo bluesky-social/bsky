@@ -26,6 +26,8 @@ const publication = external.viewArticlePublication.build({
   viewer: {
     subscription:
       'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/site.standard.graph.subscription/3m2lp5zsc7422',
+    knownSubscribers: [profile],
+    knownSubscriberCount: 1,
   },
   subscriptionCount: 3,
   subscribers: [profile],
@@ -35,6 +37,11 @@ const article = external.viewArticle.build({
   image: 'https://example.test/article.png',
   publisher: publication,
   readingTime: 1,
+  viewer: {
+    like: 'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/site.standard.graph.recommend/3m2lp5zsc7422',
+    knownLikers: [profile],
+    knownLikerCount: 1,
+  },
   likeCount: 0,
   likers: [profile],
   associatedRefs: [ref],
@@ -59,6 +66,11 @@ const gallery = external.viewGallery.build({
     }),
   ],
   photoCount: 0,
+  viewer: {
+    like: 'at://did:plc:ewvi7nxzyoun6zhxrhs64oiz/social.grain.favorite/3m2lp5zsc7422',
+    knownLikers: [profile],
+    knownLikerCount: 1,
+  },
   likeCount: 0,
   likers: [profile],
 })
@@ -153,6 +165,50 @@ describe('Atmosphere external embed views', () => {
           [previews]: [profile, profile, profile, profile],
         }),
       ).toBe(false)
+    },
+  )
+
+  it.each([
+    {
+      schema: external.viewArticle,
+      view: article,
+      count: 'knownLikerCount',
+      previews: 'knownLikers',
+    },
+    {
+      schema: external.viewArticlePublication,
+      view: publication,
+      count: 'knownSubscriberCount',
+      previews: 'knownSubscribers',
+    },
+    {
+      schema: external.viewGallery,
+      view: gallery,
+      count: 'knownLikerCount',
+      previews: 'knownLikers',
+    },
+  ])(
+    'validates optional followed-account social proof for $view.$type',
+    ({ schema, view, count, previews }) => {
+      expect(schema.matches({ ...view, viewer: undefined })).toBe(true)
+      expect(schema.matches({ ...view, viewer: {} })).toBe(true)
+      expect(
+        schema.matches({ ...view, viewer: { [count]: 0, [previews]: [] } }),
+      ).toBe(true)
+      expect(
+        schema.matches({
+          ...view,
+          viewer: { [count]: 3, [previews]: [profile, profile, profile] },
+        }),
+      ).toBe(true)
+      for (const viewer of [
+        { [count]: -1 },
+        { [count]: 0.5 },
+        { [previews]: [profile, profile, profile, profile] },
+        { [previews]: [{ did: profile.did }] },
+      ]) {
+        expect(schema.matches({ ...view, viewer })).toBe(false)
+      }
     },
   )
 
