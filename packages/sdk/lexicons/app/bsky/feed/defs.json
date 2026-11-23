@@ -69,6 +69,15 @@
         "debug": {
           "type": "unknown",
           "description": "Debug information for internal development"
+        },
+        "editedAt": {
+          "type": "string",
+          "format": "datetime",
+          "description": "Present if the post has been edited. Timestamp when the version of the post in this view was indexed. indexedAt is unchanged by edits."
+        },
+        "viewCount": {
+          "type": "integer",
+          "description": "Approximate number of times the post has been viewed. Only included in authenticated responses to the post's author when eligible to see the count. Counts less than 100 are omitted."
         }
       }
     },

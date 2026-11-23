@@ -27,6 +27,11 @@
           },
           "cursor": {
             "type": "string"
+          },
+          "sort": {
+            "type": "string",
+            "description": "Ordering of results. 'latest' (default when unset) is newest first; 'top' orders quotes by their like count.",
+            "knownValues": ["latest", "top"]
           }
         }
       },

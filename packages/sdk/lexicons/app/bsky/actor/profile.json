@@ -28,7 +28,8 @@
           },
           "website": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "description": "Deprecated: use links instead."
           },
           "avatar": {
             "type": "blob",

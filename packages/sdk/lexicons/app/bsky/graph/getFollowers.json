@@ -24,7 +24,8 @@
           },
           "sort": {
             "type": "string",
-            "knownValues": ["latest", "top"]
+            "knownValues": ["latest", "top"],
+            "description": "Sort order of the returned followers."
           }
         }
       },
