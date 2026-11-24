@@ -2,10 +2,14 @@ import { type RecordSchema } from '@atproto/lex'
 import { typedEventFromRaw } from './decode-typed.js'
 import {
   type EventBatch,
+  type JetstreamProgress,
   type RawEvent,
   type RawEventV1,
+  type RawSpacesEvent,
+  type SpacesEventBatch,
   type TypedEvent,
   type TypedEventV1,
+  type TypedSpacesEvent,
 } from './event.js'
 /**
  * Reported through the per-call onError when a put commit's record fails
@@ -42,31 +46,44 @@ export interface ShapeFlags {
   validateWire?: boolean
 }
 
-type AnyRaw = RawEventV1 | RawEvent
+type AnyRaw = RawEventV1 | RawEvent | RawSpacesEvent
 
 export async function* shape(
-  src: AsyncIterable<EventBatch<AnyRaw>>,
+  src: AsyncIterable<EventBatch<AnyRaw> | SpacesEventBatch<AnyRaw>>,
   flags: ShapeFlags,
   schemasByNsid: Map<string, RecordSchema>,
   onError?: (err: Error) => void,
-): AsyncGenerator<AnyRaw | TypedEventV1 | TypedEvent> {
+): AsyncGenerator<
+  AnyRaw | TypedEventV1 | TypedEvent | TypedSpacesEvent | JetstreamProgress
+> {
   const raw = flags.raw === true
+  // A record skipped as invalid in typed mode is data the consumer never
+  // saw, so coverage after it would be a false certificate: stop yielding
+  // progress for the rest of the stream (raw mode never skips).
+  let progressBlocked = false
   for await (const batch of src) {
     if (raw) {
       for (const e of batch.events) yield e
     } else {
       for (const e of batch.events) {
         // The overloads exist for callers; this internal fan-out runs one body
-        // for both wires. Only the input-side cast is needed — the v2
+        // for every wire. Only the input-side cast is needed — the v2
         // overload's result (TypedEvent) already sits inside the declared
-        // union (TypedEventV1 | TypedEvent), so a result-side cast would be a
-        // no-op that could silently swallow a future mismatch.
+        // union, so a result-side cast would be a no-op that could silently
+        // swallow a future mismatch. Scope events have no commit and pass
+        // through typedEventFromRaw unchanged.
         const t = typedEventFromRaw(e as RawEvent, schemasByNsid, {
           strict: flags.validateWire === true,
         })
-        if (skipInvalid(t, schemasByNsid, onError)) continue
+        if (skipInvalid(t, schemasByNsid, onError)) {
+          progressBlocked = true
+          continue
+        }
         yield t
       }
+    }
+    if ('progress' in batch && batch.progress && !progressBlocked) {
+      yield batch.progress
     }
   }
 }

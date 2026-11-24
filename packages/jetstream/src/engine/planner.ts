@@ -1,17 +1,20 @@
 import { type DidString } from '@atproto/lex'
-import { type Kind } from '../event.js'
+import { type SpacesKind } from '../event.js'
 import { type Plan, planSnapshot } from '../xrpc/plan.js'
+import { type SpacesProtocol } from '../xrpc/protocol.js'
 
 export interface PlanPagesOpts {
   host: string
   dids?: DidString[]
   collections: string[]
   /** Forwarded verbatim; see PlanRequest.kinds for the marker-safe default. */
-  kinds?: Kind[]
+  kinds?: readonly SpacesKind[]
   afterSeq?: number
   beforeSeq?: number
   fetchImpl: typeof fetch
   signal?: AbortSignal
+  /** The operation's Spaces contract, reused for every page. */
+  protocol?: SpacesProtocol
 }
 
 /**
@@ -37,6 +40,7 @@ export async function* planPages(opts: PlanPagesOpts): AsyncGenerator<Plan> {
         collections: opts.collections,
         afterSeq: cursor,
         beforeSeq: pinned ? sealedTip : opts.beforeSeq,
+        protocol: opts.protocol,
       },
       opts.fetchImpl,
       opts.signal,

@@ -20,15 +20,38 @@ export class CommitTracker {
     this.tracked.push(seq)
   }
 
+  /**
+   * Registers scanned-through coverage at its stream position: once every
+   * event tracked before it is done, the watermark advances to `throughSeq`
+   * (never backwards). Zero is valid coverage. Encoded in the same ordered
+   * list as -(throughSeq + 1), so it cannot collide with a seq and costs the
+   * event path nothing.
+   */
+  trackCoverage(throughSeq: number): void {
+    this.tracked.push(-(throughSeq + 1))
+    this.#advance()
+  }
+
   done(seq: number): void {
     this.doneSet.add(seq)
-    let cursor = 0 // index into tracked of the next not-yet-confirmed seq
-    while (
-      cursor < this.tracked.length &&
-      this.doneSet.has(this.tracked[cursor])
-    ) {
-      this.mark = this.tracked[cursor]
-      this.doneSet.delete(this.tracked[cursor])
+    this.#advance()
+  }
+
+  // Confirms the longest prefix of tracked entries whose events are done;
+  // coverage entries confirm as soon as everything before them has.
+  #advance(): void {
+    let cursor = 0 // index into tracked of the next not-yet-confirmed entry
+    while (cursor < this.tracked.length) {
+      const entry = this.tracked[cursor]
+      if (entry < 0) {
+        const through = -entry - 1
+        if (this.mark === undefined || through > this.mark) this.mark = through
+      } else if (this.doneSet.has(entry)) {
+        this.mark = entry
+        this.doneSet.delete(entry)
+      } else {
+        break
+      }
       cursor++
     }
     // Trim consumed prefix to bound memory usage

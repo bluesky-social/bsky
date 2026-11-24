@@ -10,6 +10,21 @@ export class MalformedError extends Error {
 }
 
 /**
+ * Spaces protocol negotiation or agreement failed: capability discovery was
+ * unavailable or malformed, no supported contract meets the server's
+ * requirement, or a response's negotiated version headers (or an artifact's
+ * format) disagree with the selection. Terminal — Spaces mode never retries
+ * it as a transient download failure and never downgrades to the public
+ * contract.
+ */
+export class ProtocolError extends Error {
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options)
+    this.name = 'ProtocolError'
+  }
+}
+
+/**
  * A terminal error frame on the v2 subscription
  * (`{"$type":"error","error":…,"message":…}`). The server closes right after
  * sending one. This is a legitimate server signal (e.g. ConsumerTooSlow), not

@@ -1,7 +1,7 @@
 import { defaultRuntime } from '#runtime'
 import { type DidString } from '@atproto/lex'
 import { assertValidApiKey, bearerAuth, withBearer } from './auth.js'
-import { type JetstreamConsumer } from './consumer.js'
+import { type JetstreamConsumer, type SpacesConsumer } from './consumer.js'
 import { backfillBatches } from './engine/backfill-pipeline.js'
 import {
   type CollectionFilter,
@@ -9,11 +9,21 @@ import {
 } from './engine/collections.js'
 import { planPages } from './engine/planner.js'
 import { makeSelector } from './engine/selector.js'
-import { type EventBatch, type Kind, type RawEvent } from './event.js'
+import {
+  type EventBatch,
+  type JetstreamMode,
+  type JetstreamProgress,
+  type Kind,
+  type RawEvent,
+  type RawSpacesEvent,
+  type SpacesEventBatch,
+  type SpacesKind,
+} from './event.js'
 import { type CursorStore } from './execute/cursor-store.js'
-import { type TypedEventFor, type WideTypedEvent } from './filter-types.js'
+import { type TypedEventFor, type TypedSpacesEventFor } from './filter-types.js'
 import { cutoverReplay } from './live/cutover.js'
 import { rawBatchStream } from './live/pipeline.js'
+import { Coverage } from './live/source.js'
 import {
   type LiveTransport,
   type LiveTransportHeaders,
@@ -23,10 +33,24 @@ import { JetstreamRunner } from './runner.js'
 import { type Decompressor, type Sha256 } from './runtime/interface.js'
 import { shape } from './shape.js'
 import { DownloadError } from './xrpc/errors.js'
+import {
+  type SpacesProtocol,
+  negotiateSpacesProtocol,
+} from './xrpc/protocol.js'
 import { type RetryPolicy } from './xrpc/retry.js'
 
-export interface JetstreamOpts {
+export interface JetstreamOpts<M extends JetstreamMode = 'public'> {
   service: string
+  /**
+   * The data contract (default `'public'`: the public Jetstream wire,
+   * unchanged). `'spaces'` selects a space-sync archive explicitly: every
+   * consumption operation first discovers the server's capabilities
+   * (getCapabilities), selects Spaces protocol 2, sends `protocolVersion` on
+   * every request and verifies the negotiated response headers. It never
+   * falls back to the public contract. Spaces events carry `space` and
+   * include `scope` markers; archive format 2 is decoded.
+   */
+  mode?: M
   /**
    * Strict wire validation. By default the branded string types on events are
    * optimistic — "the server said so." With validateWire: true, every decode
@@ -197,23 +221,104 @@ export interface SnapshotOpts<
   raw?: boolean
 }
 
+// Spaces options: the public options with the fifth kind, plus opt-in
+// ordered progress. Separate interfaces so the public option types — and
+// every public call site — stay exactly as they were.
+interface SpacesExtras {
+  /** Event kinds to receive; `scope` included. Omitted means all kinds. */
+  kinds?: SpacesKind[]
+  /**
+   * Opt into ordered coverage. Live: sends progress=true and requires the
+   * Jetstream-Progress acknowledgement on every connection. Archive: each
+   * fully delivered plan page certifies through its plannedThroughSeq
+   * (caughtUp false). Iterators then also yield JetstreamProgress values,
+   * raw batch streams carry them as `batch.progress`, and the runner
+   * checkpoints them once every earlier event is acked.
+   */
+  progress?: boolean
+}
+export interface SpacesLiveOpts<
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+>
+  extends Omit<LiveOpts<F>, 'kinds'>, SpacesExtras {}
+export interface SpacesReplayOpts<
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+>
+  extends Omit<ReplayOpts<F>, 'kinds'>, SpacesExtras {}
+export interface SpacesSnapshotOpts<
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+>
+  extends Omit<SnapshotOpts<F>, 'kinds'>, SpacesExtras {}
+
+// Mode-selected types. Non-distributive on purpose: an instance whose mode
+// is not statically 'spaces' (including Jetstream<JetstreamMode>, e.g. via
+// InstanceType) keeps the public types.
+type IsSpaces<M extends JetstreamMode> = [M] extends ['spaces'] ? true : false
+// The mode an instance actually has in its types: an unresolved mode is
+// public, so InstanceType<typeof Jetstream> stays assignable to Jetstream.
+type ModeOf<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? 'spaces' : 'public'
+type LiveOptsFor<
+  M extends JetstreamMode,
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+> = IsSpaces<M> extends true ? SpacesLiveOpts<F> : LiveOpts<F>
+type ReplayOptsFor<
+  M extends JetstreamMode,
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+> = IsSpaces<M> extends true ? SpacesReplayOpts<F> : ReplayOpts<F>
+type SnapshotOptsFor<
+  M extends JetstreamMode,
+  F extends readonly CollectionFilter[] = readonly CollectionFilter[],
+> = IsSpaces<M> extends true ? SpacesSnapshotOpts<F> : SnapshotOpts<F>
+// Spaces call sites without progress may say `progress: false`; public call
+// sites gain no new key.
+type NoProgress<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? { progress?: false } : unknown
+type TypedFor<M extends JetstreamMode, F extends readonly CollectionFilter[]> =
+  IsSpaces<M> extends true ? TypedSpacesEventFor<F> : TypedEventFor<F>
+type RawFor<
+  M extends JetstreamMode,
+  T extends RawRecordCbor | RawRecordJson = RawRecordCbor | RawRecordJson,
+> = IsSpaces<M> extends true ? RawSpacesEvent<T> : RawEvent<T>
+type BatchFor<M extends JetstreamMode, E> =
+  IsSpaces<M> extends true ? SpacesEventBatch<E> : EventBatch<E>
+/** The consumer a runner of this mode drives. */
+export type ConsumerFor<M extends JetstreamMode> =
+  IsSpaces<M> extends true ? SpacesConsumer : JetstreamConsumer
+
 /**
  * A Jetstream instance speaking the v2 wire
  * (`/xrpc/network.bsky.jetstream.subscribeEvents`). Live streaming via
  * `live()`, plus `runner()` for indexer-driven consumption. Cursors are `seq`
  * values — not portable to or from a v1 host (see `JetstreamV1`).
+ *
+ * `new Jetstream(url)` and `new Jetstream({ service })` are the public
+ * contract, unchanged. `new Jetstream({ service, mode: 'spaces' })` selects a
+ * space-sync archive; the mode is inferred into the instance type, so only a
+ * Spaces instance exposes `scope`, `space` and progress in its types.
  */
-export class Jetstream {
+export class Jetstream<M extends JetstreamMode = 'public'> {
   readonly service: string
-  readonly opts: JetstreamOpts
+  readonly opts: JetstreamOpts<ModeOf<M>>
+  readonly mode: ModeOf<M>
 
-  constructor(service: string | JetstreamOpts) {
-    const opts = typeof service === 'string' ? { service } : service
+  constructor(service: string | JetstreamOpts<M>) {
+    const opts: JetstreamOpts<M> =
+      typeof service === 'string' ? { service } : service
+    const mode = opts.mode ?? 'public'
+    if (mode !== 'public' && mode !== 'spaces') {
+      throw new TypeError(
+        `Jetstream mode must be 'public' or 'spaces' (got ${JSON.stringify(mode)})`,
+      )
+    }
     // Fail fast on a malformed key: deferring the check to request time
     // either leaks the key into a thrown message or silently disables auth.
     if (opts.apiKey !== undefined) assertValidApiKey(opts.apiKey)
     this.service = opts.service
-    this.opts = opts
+    // ModeOf<M> is M for either literal, and the check above rejects any
+    // other value.
+    this.opts = opts as JetstreamOpts<ModeOf<M>>
+    this.mode = mode as ModeOf<M>
   }
 
   // Resolved per call, not cached, so fetch/apiKey are read at use time.
@@ -242,69 +347,154 @@ export class Jetstream {
     return { outstandingHwmBytes: half, tailHwmBytes: half }
   }
 
+  // Spaces only: one discovery per consumption operation; the returned
+  // contract is then reused by every request that operation makes.
+  #negotiate(
+    kinds: readonly SpacesKind[] | undefined,
+    signal: AbortSignal | undefined,
+  ): Promise<SpacesProtocol> {
+    return negotiateSpacesProtocol({
+      host: this.service,
+      fetchImpl: this.#resolveFetch(),
+      signal,
+      kinds,
+    })
+  }
+
   live<const F extends readonly CollectionFilter[] = readonly []>(
-    opts?: LiveOpts<F> & { raw?: false },
-  ): AsyncGenerator<TypedEventFor<F>>
-  live(opts: LiveOpts & { raw: true }): AsyncGenerator<RawEvent<RawRecordJson>>
+    opts?: LiveOptsFor<M, F> & { raw?: false } & NoProgress<M>,
+  ): AsyncGenerator<TypedFor<M, F>>
   live(
-    opts: LiveOpts = {},
-  ): AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent> {
-    const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
-    // shape() is version-generic (one implementation serves both wires); this
-    // Jetstream is v2-backed, so its output is honestly RawEvent<RawRecordJson>
-    // | WideTypedEvent at runtime even though shape()'s declared return type
-    // covers both wires' possibilities.
+    opts: LiveOptsFor<M> & { raw: true } & NoProgress<M>,
+  ): AsyncGenerator<RawFor<M, RawRecordJson>>
+  live<const F extends readonly CollectionFilter[] = readonly []>(
+    this: Jetstream<'spaces'>,
+    opts: SpacesLiveOpts<F> & { raw?: false; progress: true },
+  ): AsyncGenerator<TypedSpacesEventFor<F> | JetstreamProgress>
+  live(
+    this: Jetstream<'spaces'>,
+    opts: SpacesLiveOpts & { raw: true; progress: true },
+  ): AsyncGenerator<RawSpacesEvent<RawRecordJson> | JetstreamProgress>
+  // Implementation signatures are deliberately wide: the overloads are the
+  // contract. Every mode's options are a subset of the Spaces shape read
+  // here, and shape() (one implementation for every wire) yields only what
+  // this instance's mode can produce.
+  live(opts: LiveOptsFor<M> | SpacesLiveOpts = {}): AsyncGenerator<unknown> {
+    const o = opts as SpacesLiveOpts
+    const { schemasByNsid } = parseCollectionFilters(o.collections ?? [])
     return shape(
-      this.liveRawBatches(opts),
-      { ...opts, validateWire: this.opts.validateWire },
+      this.#liveRawBatches(o),
+      { ...o, validateWire: this.opts.validateWire },
       schemasByNsid,
-      opts.onError,
-    ) as AsyncGenerator<RawEvent<RawRecordJson> | WideTypedEvent>
+      o.onError,
+    )
   }
 
   snapshot<const F extends readonly CollectionFilter[] = readonly []>(
-    opts?: SnapshotOpts<F> & { raw?: false },
-  ): AsyncGenerator<TypedEventFor<F>>
+    opts?: SnapshotOptsFor<M, F> & { raw?: false } & NoProgress<M>,
+  ): AsyncGenerator<TypedFor<M, F>>
   snapshot(
-    opts: SnapshotOpts & { raw: true },
-  ): AsyncGenerator<RawEvent<RawRecordCbor>>
+    opts: SnapshotOptsFor<M> & { raw: true } & NoProgress<M>,
+  ): AsyncGenerator<RawFor<M, RawRecordCbor>>
+  snapshot<const F extends readonly CollectionFilter[] = readonly []>(
+    this: Jetstream<'spaces'>,
+    opts: SpacesSnapshotOpts<F> & { raw?: false; progress: true },
+  ): AsyncGenerator<TypedSpacesEventFor<F> | JetstreamProgress>
   snapshot(
-    opts: SnapshotOpts = {},
-  ): AsyncGenerator<RawEvent<RawRecordCbor> | WideTypedEvent> {
-    const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
+    this: Jetstream<'spaces'>,
+    opts: SpacesSnapshotOpts & { raw: true; progress: true },
+  ): AsyncGenerator<RawSpacesEvent<RawRecordCbor> | JetstreamProgress>
+  snapshot(
+    opts: SnapshotOptsFor<M> | SpacesSnapshotOpts = {},
+  ): AsyncGenerator<unknown> {
+    const o = opts as SpacesSnapshotOpts
+    const { schemasByNsid } = parseCollectionFilters(o.collections ?? [])
     return shape(
-      this.snapshotRawBatches(opts),
-      { ...opts, validateWire: this.opts.validateWire },
+      this.#snapshotRawBatches(o),
+      { ...o, validateWire: this.opts.validateWire },
       schemasByNsid,
-      opts.onError,
-    ) as AsyncGenerator<RawEvent<RawRecordCbor> | WideTypedEvent>
+      o.onError,
+    )
   }
 
   replay<const F extends readonly CollectionFilter[] = readonly []>(
-    opts?: ReplayOpts<F> & { raw?: false },
-  ): AsyncGenerator<TypedEventFor<F>>
-  replay(opts: ReplayOpts & { raw: true }): AsyncGenerator<RawEvent>
-  replay(opts: ReplayOpts = {}): AsyncGenerator<RawEvent | WideTypedEvent> {
-    const { schemasByNsid } = parseCollectionFilters(opts.collections ?? [])
+    opts?: ReplayOptsFor<M, F> & { raw?: false } & NoProgress<M>,
+  ): AsyncGenerator<TypedFor<M, F>>
+  replay(
+    opts: ReplayOptsFor<M> & { raw: true } & NoProgress<M>,
+  ): AsyncGenerator<RawFor<M>>
+  replay<const F extends readonly CollectionFilter[] = readonly []>(
+    this: Jetstream<'spaces'>,
+    opts: SpacesReplayOpts<F> & { raw?: false; progress: true },
+  ): AsyncGenerator<TypedSpacesEventFor<F> | JetstreamProgress>
+  replay(
+    this: Jetstream<'spaces'>,
+    opts: SpacesReplayOpts & { raw: true; progress: true },
+  ): AsyncGenerator<RawSpacesEvent | JetstreamProgress>
+  replay(
+    opts: ReplayOptsFor<M> | SpacesReplayOpts = {},
+  ): AsyncGenerator<unknown> {
+    const o = opts as SpacesReplayOpts
+    const { schemasByNsid } = parseCollectionFilters(o.collections ?? [])
     return shape(
-      this.replayRawBatches(opts),
-      { ...opts, validateWire: this.opts.validateWire },
+      this.#replayRawBatches(o),
+      { ...o, validateWire: this.opts.validateWire },
       schemasByNsid,
-      opts.onError,
-    ) as AsyncGenerator<RawEvent | WideTypedEvent>
+      o.onError,
+    )
   }
 
-  runner(consumer: JetstreamConsumer): JetstreamRunner {
+  runner(consumer: ConsumerFor<M>): JetstreamRunner<M> {
     return new JetstreamRunner(this, consumer)
   }
 
   // The raw batch stream underlying replay(); the runner drives it directly.
   // Snapshot-phase batches carry the CBOR record arm, live-tail batches the
   // JSON arm (discriminate with `record instanceof Uint8Array`).
-  async *replayRawBatches(
-    opts: ReplayOpts,
-  ): AsyncGenerator<EventBatch<RawEvent>> {
+  replayRawBatches(
+    opts: ReplayOptsFor<M>,
+  ): AsyncGenerator<BatchFor<M, RawFor<M>>> {
+    return this.#replayRawBatches(opts) as AsyncGenerator<
+      BatchFor<M, RawFor<M>>
+    >
+  }
+
+  // The raw batch stream underlying live(); the runner drives it directly.
+  // Each event is wrapped in a trivial single-event "batch" with NO extra
+  // buffering — live delivery stays realtime. EventBatch is used only as the
+  // standard internal interface; snapshot/replay batches carry real grouping.
+  liveRawBatches(
+    opts: LiveOptsFor<M>,
+  ): AsyncGenerator<BatchFor<M, RawFor<M, RawRecordJson>>> {
+    return this.#liveRawBatches(opts) as AsyncGenerator<
+      BatchFor<M, RawFor<M, RawRecordJson>>
+    >
+  }
+
+  // The raw batch stream underlying snapshot(); the runner drives it
+  // directly. One batch per snapshot block, in strict seq order.
+  snapshotRawBatches(
+    opts: SnapshotOptsFor<M>,
+  ): AsyncGenerator<BatchFor<M, RawFor<M, RawRecordCbor>>> {
+    return this.#snapshotRawBatches(opts) as AsyncGenerator<
+      BatchFor<M, RawFor<M, RawRecordCbor>>
+    >
+  }
+
+  // Implementations, typed over the wider Spaces shapes; the public path
+  // never produces a Spaces-only value (format 1, no scope, no progress).
+
+  async *#replayRawBatches(
+    opts: SpacesReplayOpts,
+  ): AsyncGenerator<SpacesEventBatch<RawSpacesEvent>> {
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
+    const spaces =
+      this.mode === 'spaces'
+        ? {
+            protocol: await this.#negotiate(opts.kinds, opts.signal),
+            progress: opts.progress === true,
+          }
+        : undefined
     const afterSeq = opts.afterSeq ?? (await opts.cursor?.load())
     yield* cutoverReplay({
       host: this.service,
@@ -326,29 +516,40 @@ export class Jetstream {
       maxReplans: opts.maxReplans,
       retry: this.opts.retry,
       validateWire: this.opts.validateWire,
+      ...(spaces ? { spaces } : {}),
     })
   }
 
-  // The raw batch stream underlying live(); the runner drives it directly.
-  // Each event is wrapped in a trivial single-event "batch" with NO extra
-  // buffering — live delivery stays realtime. EventBatch is used only as the
-  // standard internal interface; snapshot/replay batches carry real grouping.
-  liveRawBatches(
-    opts: LiveOpts,
-  ): AsyncGenerator<EventBatch<RawEvent<RawRecordJson>>> {
-    return rawBatchStream(
+  #liveRawBatches(
+    opts: SpacesLiveOpts,
+  ): AsyncGenerator<SpacesEventBatch<RawSpacesEvent<RawRecordJson>>> {
+    if (this.mode !== 'spaces') {
+      return rawBatchStream(
+        this.service,
+        { ...opts, headers: this.#authHeaders() },
+        2,
+        this.opts.validateWire,
+      )
+    }
+    return this.#spacesLiveRawBatches(opts)
+  }
+
+  async *#spacesLiveRawBatches(
+    opts: SpacesLiveOpts,
+  ): AsyncGenerator<SpacesEventBatch<RawSpacesEvent<RawRecordJson>>> {
+    const protocol = await this.#negotiate(opts.kinds, opts.signal)
+    yield* rawBatchStream(
       this.service,
       { ...opts, headers: this.#authHeaders() },
       2,
       this.opts.validateWire,
+      { protocol, progress: opts.progress === true },
     )
   }
 
-  // The raw batch stream underlying snapshot(); the runner drives it
-  // directly. One batch per snapshot block, in strict seq order.
-  async *snapshotRawBatches(
-    opts: SnapshotOpts,
-  ): AsyncGenerator<EventBatch<RawEvent<RawRecordCbor>>> {
+  async *#snapshotRawBatches(
+    opts: SpacesSnapshotOpts,
+  ): AsyncGenerator<SpacesEventBatch<RawSpacesEvent<RawRecordCbor>>> {
     const host = this.service
     const signal = opts.signal
     if (signal?.aborted) return
@@ -360,13 +561,20 @@ export class Jetstream {
     const sha256 = this.opts.sha256 ?? defaultRuntime.sha256()
     const { nsids } = parseCollectionFilters(opts.collections ?? [])
     const maxReplans = opts.maxReplans ?? 50
+    // Spaces: one contract for the whole snapshot, re-plans included.
+    const protocol =
+      this.mode === 'spaces'
+        ? await this.#negotiate(opts.kinds, signal)
+        : undefined
     // kinds also goes to the planner (below), but the plan is a one-sided
     // transport hint — a selected block can still carry other kinds — so the
     // client-side prune stays authoritative. lastCursor is preserved so the
     // watermark advances past pruned events, and an empty-after-filter batch
     // still yields (same rule as replay's phase).
     const kindsFilter =
-      opts.kinds && opts.kinds.length > 0 ? new Set(opts.kinds) : undefined
+      opts.kinds && opts.kinds.length > 0
+        ? new Set<string>(opts.kinds)
+        : undefined
 
     // afterSeq wins; otherwise resume from the cursor store. lastEmitted
     // tracks the max EventBatch.lastCursor yielded. A DownloadError re-plans
@@ -384,6 +592,10 @@ export class Jetstream {
       collections: nsids,
       window,
     })
+    // Spaces progress: each fully delivered page certifies through its
+    // plannedThroughSeq (see cutoverReplay); the floor is already covered.
+    const coverage =
+      protocol && opts.progress ? new Coverage(resume - 1) : undefined
 
     for (;;) {
       if (signal?.aborted) return
@@ -397,6 +609,7 @@ export class Jetstream {
           beforeSeq: opts.beforeSeq,
           fetchImpl,
           signal,
+          protocol,
         })) {
           for await (const batch of backfillBatches({
             host,
@@ -410,6 +623,7 @@ export class Jetstream {
             signal,
             retry: this.opts.retry,
             validateWire: this.opts.validateWire,
+            protocol,
           })) {
             if (batch.lastCursor > lastEmitted) lastEmitted = batch.lastCursor
             yield kindsFilter
@@ -418,6 +632,14 @@ export class Jetstream {
                   lastCursor: batch.lastCursor,
                 }
               : batch
+          }
+          const sealed = {
+            kind: 'progress',
+            throughSeq: page.plannedThroughSeq,
+            caughtUp: false,
+          } as const
+          if (coverage?.admit(sealed)) {
+            yield { events: [], lastCursor: 0, progress: sealed }
           }
         }
         return

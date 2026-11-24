@@ -1,25 +1,38 @@
 import { MalformedError } from '../errors.js'
+import { type FormatVersion } from '../segment/block.js'
 import { streamSegmentFrames } from '../segment/segment-reader.js'
-import { getBlock, streamSegment } from '../xrpc/download.js'
+import {
+  type ArtifactContract,
+  getBlock,
+  streamSegment,
+} from '../xrpc/download.js'
 import { DownloadError } from '../xrpc/errors.js'
-import { type PlanEntry } from '../xrpc/plan.js'
+import { type SpacesPlanEntry } from '../xrpc/plan.js'
+import { type SpacesProtocol, planEntryFormat } from '../xrpc/protocol.js'
 import { type RetryPolicy } from '../xrpc/retry.js'
 
 export interface BlockChunk {
   entryIndex: number
-  entry: PlanEntry
+  entry: SpacesPlanEntry
   frame: Uint8Array
+  /** The format the frame must decode as (plan entry = headers = block). */
+  format: FormatVersion
 }
 
 export interface BlockSourceOpts {
   host: string
-  entries: PlanEntry[]
+  entries: SpacesPlanEntry[]
   fetchImpl: typeof fetch
   signal?: AbortSignal
   outstandingHwmBytes?: number
   tailHwmBytes?: number
   blockConcurrency?: number
   retry?: RetryPolicy
+  /**
+   * The operation's Spaces contract. Absent (public) means format 1 only and
+   * no version parameters or header checks — the requests are unchanged.
+   */
+  protocol?: SpacesProtocol
 }
 
 const DEFAULT_HWM = 32 * 1024 * 1024
@@ -34,18 +47,24 @@ const DEFAULT_HWM = 32 * 1024 * 1024
 // consumed in plan order (entries partition seq space ascending), frames are
 // emitted in strict seq order with no reorder buffer.
 type Download =
-  | { kind: 'segment'; entryIndex: number; entry: PlanEntry }
+  | {
+      kind: 'segment'
+      entryIndex: number
+      entry: SpacesPlanEntry
+      contract?: ArtifactContract
+    }
   | {
       kind: 'block'
       entryIndex: number
-      entry: PlanEntry
+      entry: SpacesPlanEntry
+      contract?: ArtifactContract
       blockIndex: number
     }
 
 export async function* blockSource(
   opts: BlockSourceOpts,
 ): AsyncGenerator<BlockChunk> {
-  const { host, entries, fetchImpl, signal } = opts
+  const { host, entries, fetchImpl, signal, protocol } = opts
   const retry = opts.retry
   const outstandingHwm = opts.outstandingHwmBytes ?? DEFAULT_HWM
   const tailHwm = opts.tailHwmBytes ?? DEFAULT_HWM
@@ -57,12 +76,24 @@ export async function* blockSource(
   const downloads: Download[] = []
   for (let e = 0; e < entries.length; e++) {
     const entry = entries[e]
+    const contract: ArtifactContract | undefined = protocol
+      ? {
+          protocol,
+          format: planEntryFormat(entry.formatVersion, protocol, entry.name),
+        }
+      : undefined
     if (entry.mode === 'segment') {
-      downloads.push({ kind: 'segment', entryIndex: e, entry })
+      downloads.push({ kind: 'segment', entryIndex: e, entry, contract })
     } else if (entry.mode === 'blocks') {
       for (const br of entry.blocks ?? []) {
         for (let b = br.first; b <= br.last; b++) {
-          downloads.push({ kind: 'block', entryIndex: e, entry, blockIndex: b })
+          downloads.push({
+            kind: 'block',
+            entryIndex: e,
+            entry,
+            contract,
+            blockIndex: b,
+          })
         }
       }
     } else {
@@ -78,7 +109,8 @@ export async function* blockSource(
   async function* framesOf(d: Download): AsyncGenerator<Uint8Array> {
     if (d.kind === 'segment') {
       yield* streamSegmentFrames(
-        streamSegment(host, d.entry.name, fetchImpl, signal, retry),
+        streamSegment(host, d.entry.name, fetchImpl, signal, retry, d.contract),
+        d.contract?.format ?? 1,
       )
     } else {
       yield await getBlock(
@@ -88,6 +120,7 @@ export async function* blockSource(
         fetchImpl,
         signal,
         retry,
+        d.contract,
       )
     }
   }
@@ -242,7 +275,12 @@ export async function* blockSource(
       try {
         for await (const frame of head.drain()) {
           if (signal?.aborted) return
-          yield { entryIndex: head.d.entryIndex, entry: head.d.entry, frame }
+          yield {
+            entryIndex: head.d.entryIndex,
+            entry: head.d.entry,
+            frame,
+            format: head.d.contract?.format ?? 1,
+          }
         }
       } catch (err) {
         // The head's download errored after a clean ascending prefix. Drop
