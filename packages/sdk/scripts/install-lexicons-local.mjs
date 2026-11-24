@@ -19,7 +19,8 @@
  * 1. Copy lexicon JSON files from the local atproto repo to lexicons/
  * 2. Add stubs for lxm-referenced NSIDs missing from local set
  * 3. Compute CIDs from file content using @atproto/lex-cbor
- * 4. Write lexicons.json with locally-computed CIDs and DNS-resolved AT URIs
+ * 4. Write a v2 lexicons.json with locally-computed CIDs and DNS-resolved AT URIs
+ *    and retain every installed lexicon as an explicit root
  *
  * DIDs were resolved via DNS TXT lookups (_lexicon.<authority>) at install time.
  * For authorities without DNS records (new/unpublished namespaces), a placeholder
@@ -128,22 +129,16 @@ function walk(dir) {
 
 const INCLUDED_PREFIXES = ['com.atproto.', 'app.bsky.', 'chat.bsky.']
 
-// Namespaces not part of the SDK's supported surface. These are excluded as
-// top-level roots only: any lexicon referenced transitively by an included
-// schema (e.g. tools.ozone.report.defs via com.atproto.moderation.defs
-// knownValues, or app.bsky.unspecced.* via permission-set lxm lists) is
-// deliberately still installed with its real content, since it is needed to
-// complete the types of the schemas we do want. Codegen `--exclude` flags in
-// package.json keep those dependencies out of the generated build.
+// Exclude these namespaces from the initial source selection, but retain any
+// referenced documents (e.g. app.bsky.unspecced.* via permission-set lxm lists).
+// All installed documents become explicit manifest roots so newer installers,
+// which no longer follow these references, retain them. Codegen `--exclude`
+// flags in package.json keep them out of the generated build.
 const EXCLUDED_PREFIXES = ['app.bsky.unspecced.', 'com.atproto.temp.']
 
 async function main() {
   // Load dependencies
-  const lexCborPath = new URL(
-    '../../../node_modules/.pnpm/@atproto+lex-cbor@0.1.3/node_modules/@atproto/lex-cbor/dist/index.js',
-    import.meta.url,
-  )
-  const { cidForLex } = await import(lexCborPath)
+  const { cidForLex } = await import('@atproto/lex')
 
   // Load NSID parser from installed syntax package
   nsidLib = await import(
@@ -170,8 +165,8 @@ async function main() {
 
   const localNsids = new Set(localFiles.map((f) => f.nsid))
 
-  // Walk NSID references the same way the lex installer does, so the manifest
-  // ends up with the same transitive closure that `lex install --ci` computes.
+  // Follow schema, knownValues, and permission references to preserve the
+  // vendored set, including links that newer installers no longer follow.
   function* defRefs(def) {
     if (!def || typeof def !== 'object') return
     switch (def.type) {
@@ -231,8 +226,7 @@ async function main() {
   }
 
   // Find referenced NSIDs outside the included set. Transitive deps that exist
-  // in the local repo get their real files copied (resolutions only, not
-  // manifest roots); truly missing ones get stubs.
+  // in the local repo get their real files copied; truly missing ones get stubs.
   const transitiveDeps = new Map() // nsid → srcPath
   const missingRefs = new Map() // nsid → referencing lexicon
   const queue = localFiles.map(({ srcPath, nsid }) => ({ srcPath, nsid }))
@@ -287,7 +281,7 @@ async function main() {
   mkdirSync(targetLexiconsDir, { recursive: true })
 
   const manifest = {
-    version: 1,
+    version: 2,
     lexicons: [],
     resolutions: {},
   }
@@ -311,8 +305,7 @@ async function main() {
     manifest.resolutions[nsid] = { uri, cid: cid.toString() }
   }
 
-  // Copy transitive dependencies (real content, resolutions only — not
-  // manifest roots). This mirrors how the lex installer records dependencies.
+  // Copy transitive dependencies with their real content.
   if (transitiveDeps.size > 0) {
     console.log('Copying transitive dependencies...')
     for (const [nsid, srcPath] of transitiveDeps) {
@@ -364,8 +357,9 @@ async function main() {
     }
   }
 
-  // Sort for determinism
-  manifest.lexicons.sort()
+  // Keep the full installed set: newer installers do not follow knownValues
+  // or permission references and would otherwise prune these documents.
+  manifest.lexicons = Object.keys(manifest.resolutions).sort()
   manifest.resolutions = Object.fromEntries(
     Object.entries(manifest.resolutions).sort(([a], [b]) =>
       a > b ? 1 : a < b ? -1 : 0,

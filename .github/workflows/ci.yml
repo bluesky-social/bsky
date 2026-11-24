@@ -25,8 +25,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-  # Verify the sdk works against every published @atproto/lex version
-  # satisfying its peer range: packs the sdk, installs it with each lex
+  # Verify the sdk against the earliest and latest supported @atproto/lex
+  # patch in each minor line: packs the sdk, installs it with each lex
   # version in a scratch project (real consumer resolution, no workspace
   # hoisting), and runs a runtime smoke test across the sdk/lex boundary.
   peer-matrix:
