@@ -17,10 +17,7 @@
       },
       "output": { "encoding": "application/octet-stream" },
       "errors": [
-        {
-          "name": "DictionaryNotFound",
-          "description": "No dictionary with the given ID is available on this server."
-        }
+        { "name": "DictionaryNotFound", "description": "No dictionary with the given ID is available on this server." }
       ]
     }
   }
