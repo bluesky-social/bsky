@@ -37,11 +37,23 @@
             "accept": ["image/png", "image/jpeg"],
             "maxSize": 1000000
           },
+          "avatarAlt": {
+            "type": "string",
+            "description": "Alt text description of the avatar image, for accessibility.",
+            "maxGraphemes": 2000,
+            "maxLength": 20000
+          },
           "banner": {
             "type": "blob",
             "description": "Larger horizontal image to display behind profile view.",
             "accept": ["image/png", "image/jpeg"],
             "maxSize": 1000000
+          },
+          "bannerAlt": {
+            "type": "string",
+            "description": "Alt text description of the banner image, for accessibility.",
+            "maxGraphemes": 2000,
+            "maxLength": 20000
           },
           "labels": {
             "type": "union",
