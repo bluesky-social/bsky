@@ -15,6 +15,12 @@
         },
         "pronouns": { "type": "string" },
         "avatar": { "type": "string", "format": "uri" },
+        "avatarAlt": {
+          "type": "string",
+          "description": "Alt text description of the avatar image, for accessibility.",
+          "maxGraphemes": 2000,
+          "maxLength": 20000
+        },
         "associated": {
           "type": "ref",
           "ref": "#profileAssociated"
@@ -57,6 +63,12 @@
           "maxLength": 2560
         },
         "avatar": { "type": "string", "format": "uri" },
+        "avatarAlt": {
+          "type": "string",
+          "description": "Alt text description of the avatar image, for accessibility.",
+          "maxGraphemes": 2000,
+          "maxLength": 20000
+        },
         "associated": {
           "type": "ref",
           "ref": "#profileAssociated"
@@ -105,7 +117,19 @@
           "description": "Deprecated: use links instead."
         },
         "avatar": { "type": "string", "format": "uri" },
+        "avatarAlt": {
+          "type": "string",
+          "description": "Alt text description of the avatar image, for accessibility.",
+          "maxGraphemes": 2000,
+          "maxLength": 20000
+        },
         "banner": { "type": "string", "format": "uri" },
+        "bannerAlt": {
+          "type": "string",
+          "description": "Alt text description of the banner image, for accessibility.",
+          "maxGraphemes": 2000,
+          "maxLength": 20000
+        },
         "followersCount": { "type": "integer" },
         "followsCount": { "type": "integer" },
         "postsCount": { "type": "integer" },
